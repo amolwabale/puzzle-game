@@ -139,6 +139,44 @@ const PaymentStat = ({
   </View>
 );
 
+const UtilityStat = ({
+  icon,
+  label,
+  value,
+  color,
+  sub,
+}: {
+  icon: string;
+  label: string;
+  value: string;
+  color: string;
+  sub?: string;
+}) => (
+  <View style={styles.utilStat}>
+    <View style={styles.utilStatTop}>
+      <Icon source={icon} size={16} color={color} />
+      <Text style={styles.utilStatLabel} numberOfLines={1}>
+        {label}
+      </Text>
+    </View>
+    <Text
+      style={[styles.utilStatValue, { color }]}
+      numberOfLines={1}
+      adjustsFontSizeToFit
+      minimumFontScale={0.75}
+    >
+      {value}
+    </Text>
+    {sub ? (
+      <Text style={styles.utilStatSub} numberOfLines={1}>
+        {sub}
+      </Text>
+    ) : (
+      <Text style={styles.utilStatSubPlaceholder}> </Text>
+    )}
+  </View>
+);
+
 export default function DashboardScreen() {
   const theme = useTheme();
   const navigation = useNavigation<any>();
@@ -218,6 +256,9 @@ export default function DashboardScreen() {
     const pendingThisMonth = Math.max(0, expectedThisMonth - collectedThisMonth);
     const collectionPct = expectedThisMonth > 0 ? Math.round((collectedThisMonth / expectedThisMonth) * 100) : 0;
 
+    // Rent billed this month (rent-only, regardless of status/paid).
+    const rentBilledThisMonth = sum(billsThisMonth.map((b) => b.rent));
+
     const allPending = sum((bills || []).map((b) => Math.max(0, Number(b.total_amount || 0) - Number(b.paid_amount || 0))));
     const prevMonthsPending = sum(
       (bills || [])
@@ -287,6 +328,7 @@ export default function DashboardScreen() {
       collectedThisMonth,
       pendingThisMonth,
       collectionPct,
+      rentBilledThisMonth,
       allPending,
       prevMonthsPending,
       overdueBillsCount,
@@ -487,127 +529,95 @@ export default function DashboardScreen() {
         </Surface>
       ) : null}
 
-      {/* FINANCIAL SUMMARY */}
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Financial summary</Text>
-        <Text style={styles.sectionHint}>₹ context for daily decisions</Text>
-      </View>
-      <View style={styles.grid2}>
-        <KpiCard
-          title={`Bill - (${monthLabel})`}
-          value={formatMoney(derived.expectedThisMonth)}
-          icon="cash-multiple"
-          onPress={() => openTab('Payments', 'PaymentList')}
-        />
-        <KpiCard
-          title="Pending dues"
-          value={formatMoney(derived.allPending)}
-          subtitle={derived.prevMonthsPending > 0 ? `${formatMoney(derived.prevMonthsPending)} pending from last month(s)` : 'All caught up'}
-          icon="alert-circle-outline"
-          tone={derived.allPending > 0 ? 'bad' : 'good'}
-          onPress={() => openTab('Payments', 'PaymentList')}
-        />
-      </View>
-      <View style={styles.grid2}>
-        <KpiCard
-          title="Overdue bills"
-          value={String(derived.overdueBillsCount)}
-          subtitle={derived.overdueBillsCount > 0 ? 'Older unpaid bills need attention' : 'No overdue bills'}
-          icon="calendar-alert"
-          tone={derived.overdueBillsCount > 0 ? 'bad' : 'good'}
-          onPress={() => openTab('Payments', 'PaymentList')}
-        />
-        <KpiCard
-          title="Collection rate"
-          value={`${derived.collectionPct}%`}
-          subtitle={`${formatMoney(derived.collectedThisMonth)} collected of ${formatMoney(derived.expectedThisMonth)}`}
-          icon="progress-check"
-          tone={derived.collectionPct >= 90 ? 'good' : derived.collectionPct >= 60 ? 'warn' : 'bad'}
-          onPress={() => openTab('Payments', 'PaymentList')}
-        />
-      </View>
-
-      {/* OCCUPANCY & TENANTS */}
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Occupancy & tenants</Text>
-        <Text style={styles.sectionHint}>Moves in/out and who needs follow-up</Text>
-      </View>
-      <View style={styles.grid2}>
-        <KpiCard
-          title="Tenants with dues"
-          value={String(derived.tenantsWithDuesCount)}
-          subtitle={
-            derived.tenantsWithDuesCount > 0
-              ? `Avg due ${formatMoney(derived.avgDuePerTenant)}`
-              : 'No pending dues'
-          }
-          icon="account-cash-outline"
-          tone={derived.tenantsWithDuesCount > 0 ? 'warn' : 'good'}
-          onPress={() => openTab('Payments', 'PaymentList')}
-        />
-        <KpiCard
-          title="Highest outstanding"
-          value={formatMoney(derived.highestOutstandingAmount)}
-          subtitle={derived.highestOutstandingTenantName ? `From ${derived.highestOutstandingTenantName}` : 'No pending dues'}
-          icon="account-alert"
-          tone={derived.highestOutstandingAmount > 0 ? 'warn' : 'good'}
-          onPress={() => openTab('Payments', 'PaymentList')}
-        />
-      </View>
-      <View style={styles.grid2}>
-        <KpiCard
-          title="Tenants joined (this month)"
-          value={String(derived.joinThisMonth)}
-          subtitle="New move-ins"
-          icon="account-plus-outline"
-          onPress={() => openTab('Rooms', 'RoomList')}
-        />
-        <KpiCard
-          title="Tenants vacated (this month)"
-          value={String(derived.vacatedThisMonth)}
-          subtitle="Move-outs"
-          icon="account-arrow-right-outline"
-          onPress={() => openTab('Rooms', 'RoomList')}
-        />
-      </View>
-
       {/* UTILITIES */}
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Utilities & metering</Text>
-        <Text style={styles.sectionHint}>Based on bills generated this month</Text>
-      </View>
-      <View style={styles.grid2}>
-        <KpiCard
-          title="Electricity units"
-          value={`${Math.round(derived.electricityUnitsThisMonth)}`}
-          subtitle={derived.electricityUnitRate > 0 ? `Rate ₹${derived.electricityUnitRate}/unit` : 'Set electricity unit rate in Settings'}
-          icon="flash-outline"
-          onPress={() => openTab('Settings')}
-        />
-        <KpiCard
-          title="Electricity charges"
-          value={formatMoney(derived.electricityChargesThisMonth)}
-          subtitle="This month"
-          icon="cash"
-          onPress={() => openTab('Payments', 'PaymentList')}
-        />
-      </View>
-      <View style={styles.grid2}>
-        <KpiCard
-          title="Water charges"
-          value={formatMoney(derived.waterChargesThisMonth)}
-          subtitle="This month"
-          icon="water-outline"
-          onPress={() => openTab('Payments', 'PaymentList')}
-        />
-        <KpiCard
-          title="Ad-hoc charges"
-          value={formatMoney(derived.adHocThisMonth)}
-          subtitle="This month"
-          icon="note-text-outline"
-          onPress={() => openTab('Payments', 'PaymentList')}
-        />
-      </View>
+     
+      <Surface style={styles.utilStrip} elevation={1}>
+        <View style={styles.utilHeaderRow}>
+          <View style={[styles.utilHeaderIcon, { backgroundColor: theme.colors.primaryContainer }]}>
+            <Icon source="cash-multiple" size={18} color={theme.colors.primary} />
+          </View>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={styles.utilHeaderTitle} numberOfLines={1}>
+              This month charges
+            </Text>
+            <Text style={styles.utilHeaderSub} numberOfLines={1}>
+              From bills generated this month
+            </Text>
+          </View>
+          <TouchableRipple onPress={() => openTab('Settings')} borderless style={styles.utilHeaderCta}>
+            <View style={styles.utilHeaderCtaInner}>
+              <Icon source="cog-outline" size={16} color={theme.colors.primary} />
+              <Text style={[styles.utilHeaderCtaText, { color: theme.colors.primary }]} numberOfLines={1}>
+                Rates
+              </Text>
+            </View>
+          </TouchableRipple>
+        </View>
+
+        <Surface
+          style={[
+            styles.utilGridCard,
+            {
+              backgroundColor: theme.colors.surface,
+              borderColor: (theme.colors as any).outlineVariant ?? theme.colors.outline,
+            },
+          ]}
+          elevation={0}
+        >
+          <View style={styles.utilRow}>
+            <UtilityStat
+              icon="home-currency-usd"
+              label="Rent"
+              value={formatMoney(derived.rentBilledThisMonth)}
+              color={theme.colors.primary}
+              sub="Billed (rent only)"
+            />
+            <View
+              style={[
+                styles.utilDividerV,
+                { backgroundColor: (theme.colors as any).outlineVariant ?? theme.colors.outline },
+              ]}
+            />
+            <UtilityStat
+              icon="cash"
+              label="Electricity"
+              value={formatMoney(derived.electricityChargesThisMonth)}
+              color={theme.colors.primary}
+              sub={derived.electricityUnitRate > 0 ? `Rate ₹${derived.electricityUnitRate}/unit` : 'Charges'}
+            />
+          </View>
+
+          <View
+            style={[
+              styles.utilDividerH,
+              { backgroundColor: (theme.colors as any).outlineVariant ?? theme.colors.outline },
+            ]}
+          />
+
+          <View style={styles.utilRow}>
+            <UtilityStat
+              icon="water-outline"
+              label="Water"
+              value={formatMoney(derived.waterChargesThisMonth)}
+              color={theme.colors.primary}
+              sub="Charges"
+            />
+            <View
+              style={[
+                styles.utilDividerV,
+                { backgroundColor: (theme.colors as any).outlineVariant ?? theme.colors.outline },
+              ]}
+            />
+            <UtilityStat
+              icon="note-text-outline"
+              label="Ad-hoc"
+              value={formatMoney(derived.adHocThisMonth)}
+              color={theme.colors.primary}
+              sub="Charges"
+            />
+          </View>
+        </Surface>
+      </Surface>
 
       {/* ALERTS */}
       <View style={styles.sectionHeader}>
@@ -719,6 +729,26 @@ const styles = StyleSheet.create({
   paymentStatLabel: { color: '#6B7280', fontWeight: '800', fontSize: 11 },
   paymentStatAmount: { marginTop: 6, fontWeight: '900', fontSize: 16, fontVariant: ['tabular-nums'] },
   paymentProgress: { marginTop: 10, height: 6, borderRadius: 999 },
+
+  utilStrip: { borderRadius: 18, padding: 14, borderWidth: 1, borderColor: '#E5E7EB', backgroundColor: '#FFFFFF' },
+  utilHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
+  utilHeaderIcon: { width: 36, height: 36, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  utilHeaderTitle: { fontWeight: '900', fontSize: 14, color: '#111827' },
+  utilHeaderSub: { marginTop: 2, color: '#6B7280', fontWeight: '800', fontSize: 12 },
+  utilHeaderCta: { borderRadius: 999, borderWidth: 1, borderColor: '#E5E7EB' },
+  utilHeaderCtaInner: { paddingHorizontal: 10, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  utilHeaderCtaText: { fontWeight: '900', fontSize: 12 },
+
+  utilGridCard: { borderRadius: 16, borderWidth: 1, padding: 10 },
+  utilRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  utilDividerV: { width: StyleSheet.hairlineWidth, height: 58, borderRadius: 1 },
+  utilDividerH: { height: StyleSheet.hairlineWidth, marginVertical: 10, opacity: 0.9 },
+  utilStat: { flex: 1, minWidth: 0 },
+  utilStatTop: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  utilStatLabel: { color: '#6B7280', fontWeight: '800', fontSize: 11 },
+  utilStatValue: { marginTop: 6, fontWeight: '900', fontSize: 16, fontVariant: ['tabular-nums'] },
+  utilStatSub: { marginTop: 2, color: '#6B7280', fontWeight: '800', fontSize: 11 },
+  utilStatSubPlaceholder: { marginTop: 2, opacity: 0 },
 
   sectionHeader: { marginTop: 14, marginBottom: 10 },
   sectionTitle: { fontWeight: '900', fontSize: 16, color: '#111827' },
