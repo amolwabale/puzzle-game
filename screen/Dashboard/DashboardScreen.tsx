@@ -369,9 +369,8 @@ export default function DashboardScreen() {
       <Surface style={styles.hero} elevation={2}>
         <View style={styles.heroTopRow}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.heroKicker}>DASHBOARD</Text>
             <Text style={styles.heroTitle} numberOfLines={1}>
-              Property health
+              Dashboard
             </Text>
           </View>
           <Chip
@@ -682,8 +681,7 @@ const styles = StyleSheet.create({
 
   hero: { borderRadius: 18, padding: 16, marginBottom: 14 },
   heroTopRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  heroKicker: { color: '#6B7280', fontWeight: '900', letterSpacing: 1.2, fontSize: 11 },
-  heroTitle: { fontWeight: '900', fontSize: 20, color: '#111827', marginTop: 2 },
+  heroTitle: { fontWeight: '900', fontSize: 26, color: '#111827' },
   heroChip: { borderRadius: 999 },
   heroGrid: { marginTop: 14, flexDirection: 'column', gap: 12 },
   heroStatLabel: { color: '#6B7280', fontWeight: '900', fontSize: 11, letterSpacing: 0.6 },
