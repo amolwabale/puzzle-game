@@ -4,7 +4,6 @@ import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import {
   ActivityIndicator,
   Chip,
-  Divider,
   Icon,
   ProgressBar,
   Surface,
@@ -58,57 +57,6 @@ const getMonthLabel = (d: Date) =>
 
 const sum = (vals: Array<number | null | undefined>) =>
   vals.reduce<number>((a, b) => a + Number(b || 0), 0);
-
-const KpiCard = ({
-  title,
-  value,
-  subtitle,
-  icon,
-  tone = 'neutral',
-  onPress,
-}: {
-  title: string;
-  value: string;
-  subtitle?: string;
-  icon: string;
-  tone?: 'neutral' | 'good' | 'warn' | 'bad';
-  onPress?: () => void;
-}) => {
-  const theme = useTheme();
-  const toneMap =
-    tone === 'good'
-      ? { bg: '#ECFDF3', border: '#86EFAC', fg: '#16A34A' }
-      : tone === 'warn'
-        ? { bg: '#FFF7ED', border: '#FDBA74', fg: '#F97316' }
-        : tone === 'bad'
-          ? { bg: '#FFF5F5', border: '#FECACA', fg: '#EF4444' }
-          : { bg: theme.colors.surface, border: theme.colors.outlineVariant || '#E5E7EB', fg: theme.colors.primary };
-
-  return (
-    <TouchableRipple onPress={onPress} borderless style={styles.kpiPress}>
-      <Surface style={[styles.kpiCard, { borderColor: toneMap.border }]} elevation={1}>
-        <View style={styles.kpiTopRow}>
-          <View style={[styles.kpiIconWrap, { backgroundColor: toneMap.bg, borderColor: toneMap.border }]}>
-            <Icon source={icon} size={16} color={toneMap.fg} />
-          </View>
-          <Text style={styles.kpiTitle} numberOfLines={1}>
-            {title}
-          </Text>
-        </View>
-        <Text style={styles.kpiValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
-          {value}
-        </Text>
-        {subtitle ? (
-          <Text style={styles.kpiSubtitle} numberOfLines={2}>
-            {subtitle}
-          </Text>
-        ) : (
-          <Text style={styles.kpiSubtitlePlaceholder}> </Text>
-        )}
-      </Surface>
-    </TouchableRipple>
-  );
-};
 
 const PaymentStat = ({
   icon,
@@ -188,7 +136,12 @@ export default function DashboardScreen() {
   const [tenants, setTenants] = React.useState<TenantRecord[]>([]);
   const [bills, setBills] = React.useState<BillRecord[]>([]);
   const [mappings, setMappings] = React.useState<TenantRoomMappingLite[]>([]);
-  const [setting, setSetting] = React.useState<{ water: number; electricity_unit: number } | null>(null);
+  const [setting, setSetting] = React.useState<{
+    water: number;
+    electricity_unit: number;
+    rent_date: number;
+    rent_due_date: number;
+  } | null>(null);
 
   const monthRange = React.useMemo(() => getMonthRange(new Date()), []);
   const monthLabel = React.useMemo(() => getMonthLabel(new Date()), []);
@@ -212,7 +165,7 @@ export default function DashboardScreen() {
         fetchRooms(),
         fetchTenants(),
         fetchBills(),
-        fetchLatestSetting().catch(() => ({ water: 0, electricity_unit: 0 })),
+        fetchLatestSetting().catch(() => ({ water: 0, electricity_unit: 0, rent_date: 0, rent_due_date: 0 })),
         supabase
           .from('tenant_room_mapping')
           .select('id, room_id, tenant_id, joining_date, leaving_date')
@@ -318,6 +271,99 @@ export default function DashboardScreen() {
     const billedRoomIdsThisMonth = new Set(billsThisMonth.map((b) => b.room_id).filter(Boolean));
     const missingBillsForOccupied = Array.from(occupiedRoomIds).filter((rid) => !billedRoomIdsThisMonth.has(rid)).length;
 
+    // Attention needed: occupied tenants with bill not generated after rent day / due day.
+    const now = new Date();
+    const rentDay = Number(setting?.rent_date || 0);
+    const dueDay = Number(setting?.rent_due_date || 0);
+    const isValidDay = (d: number) => Number.isFinite(d) && d >= 1 && d <= 31;
+    const daysInMonth = (y: number, m: number) => new Date(y, m + 1, 0).getDate();
+    const clampDayToMonth = (y: number, m: number, day: number) => {
+      const dd = Math.max(1, Math.min(daysInMonth(y, m), Math.floor(day)));
+      return new Date(y, m, dd);
+    };
+
+    const y = now.getFullYear();
+    const m = now.getMonth();
+    const prevMonth = m === 0 ? 11 : m - 1;
+    const prevYear = m === 0 ? y - 1 : y;
+
+    const rentDateThisMonth = isValidDay(rentDay) ? clampDayToMonth(y, m, rentDay) : null;
+    const afterRentGate = Boolean(rentDateThisMonth && now >= rentDateThisMonth);
+
+    // Current rent cycle is anchored to the most recent rent date <= now.
+    const cycleStart =
+      rentDateThisMonth && now >= rentDateThisMonth
+        ? rentDateThisMonth
+        : isValidDay(rentDay)
+          ? clampDayToMonth(prevYear, prevMonth, rentDay)
+          : null;
+
+    const cycleEnd =
+      cycleStart && isValidDay(rentDay)
+        ? clampDayToMonth(
+            cycleStart.getMonth() === 11 ? cycleStart.getFullYear() + 1 : cycleStart.getFullYear(),
+            cycleStart.getMonth() === 11 ? 0 : cycleStart.getMonth() + 1,
+            rentDay,
+          )
+        : null;
+
+    const dueDate =
+      cycleStart && isValidDay(rentDay) && isValidDay(dueDay)
+        ? (() => {
+            const dueIsNextMonth = dueDay < rentDay;
+            const baseMonth = cycleStart.getMonth();
+            const baseYear = cycleStart.getFullYear();
+            const dm = dueIsNextMonth ? (baseMonth === 11 ? 0 : baseMonth + 1) : baseMonth;
+            const dy = dueIsNextMonth && baseMonth === 11 ? baseYear + 1 : baseYear;
+            return clampDayToMonth(dy, dm, dueDay);
+          })()
+        : null;
+    const afterDueGate = Boolean(dueDate && now >= dueDate);
+
+    const billsInCycle = (bills || []).filter((b) => {
+      if (!cycleStart || !cycleEnd) return false;
+      const dt = new Date(b.created_at);
+      if (Number.isNaN(dt.getTime())) return false;
+      return dt >= cycleStart && dt < cycleEnd;
+    });
+
+    const billKeySet = new Set(
+      billsInCycle
+        .map((b) => {
+          if (b.tenant_id == null || b.room_id == null) return null;
+          return `${b.tenant_id}-${b.room_id}`;
+        })
+        .filter(Boolean) as string[],
+    );
+
+    const missingTenantIds = new Set<number>();
+    // Only count occupancies that existed before the cycle started.
+    activeMappings
+      .filter((mm) => {
+        if (!cycleStart) return false;
+        const jd = new Date(mm.joining_date);
+        if (Number.isNaN(jd.getTime())) return true;
+        return jd <= cycleStart;
+      })
+      .forEach((mm) => {
+        if (mm.tenant_id == null || mm.room_id == null) return;
+        const key = `${mm.tenant_id}-${mm.room_id}`;
+        if (!billKeySet.has(key)) missingTenantIds.add(mm.tenant_id);
+      });
+
+    const tenantsMissingBillsAfterRentDayCount =
+      afterRentGate && cycleStart && isValidDay(rentDay) ? missingTenantIds.size : 0;
+
+    const billsUnpaidAfterDueDayCount = afterDueGate
+      ? billsInCycle.filter((b) => {
+          const total = Number(b.total_amount || 0);
+          const paid = Number(b.paid_amount || 0);
+          const pending = Math.max(0, total - paid);
+          const status = String(b.status || '').toUpperCase();
+          return pending > 0 && status !== 'PAID';
+        }).length
+      : 0;
+
     return {
       roomCount,
       tenantCount,
@@ -344,6 +390,12 @@ export default function DashboardScreen() {
       highestOutstandingAmount: highestOutstanding?.amount ?? 0,
       missingBillsForOccupied,
       electricityUnitRate: setting?.electricity_unit ?? 0,
+      rentDay,
+      dueDay,
+      afterRentGate,
+      afterDueGate,
+      tenantsMissingBillsAfterRentDayCount,
+      billsUnpaidAfterDueDayCount,
     };
   }, [rooms, tenants, bills, mappings, setting, monthRange]);
 
@@ -619,54 +671,74 @@ export default function DashboardScreen() {
       </Surface>
 
       {/* ALERTS */}
-      <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>Attention needed</Text>
-        <Text style={styles.sectionHint}>Small issues that become big later</Text>
-      </View>
-      <Surface style={styles.alertCard} elevation={1}>
-        <View style={styles.alertRow}>
-          <View style={[styles.alertIconWrap, { backgroundColor: theme.colors.primaryContainer }]}>
+      <Surface style={[styles.utilStrip, { marginTop: 14 }]} elevation={1}>
+        <View style={styles.utilHeaderRow}>
+          <View style={[styles.utilHeaderIcon, { backgroundColor: theme.colors.primaryContainer }]}>
             <Icon source="alert" size={18} color={theme.colors.primary} />
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.alertTitle}>Bills missing for occupied rooms</Text>
-            <Text style={styles.alertSub}>
-              {derived.missingBillsForOccupied > 0
-                ? `${derived.missingBillsForOccupied} occupied room(s) don’t have a bill for ${monthLabel}.`
-                : `All occupied rooms have bills for ${monthLabel}.`}
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={styles.utilHeaderTitle} numberOfLines={1}>
+              Attention needed
+            </Text>
+            <Text style={styles.utilHeaderSub} numberOfLines={1}>
+              Billing & collections follow-up
             </Text>
           </View>
-          <TouchableRipple onPress={() => openTab('Payments', 'PaymentList')} borderless style={styles.alertCta}>
-            <View style={styles.alertCtaInner}>
-              <Text style={[styles.alertCtaText, { color: theme.colors.primary }]}>Open</Text>
-              <Icon source="chevron-right" size={18} color={theme.colors.primary} />
+          <TouchableRipple onPress={() => openTab('Payments', 'PaymentList')} borderless style={styles.utilHeaderCta}>
+            <View style={styles.utilHeaderCtaInner}>
+              <Icon source="credit-card-outline" size={16} color={theme.colors.primary} />
+              <Text style={[styles.utilHeaderCtaText, { color: theme.colors.primary }]} numberOfLines={1}>
+                Payments
+              </Text>
             </View>
           </TouchableRipple>
         </View>
-        <Divider style={{ marginTop: 12, opacity: 0.5 }} />
-        <View style={styles.alertMiniRow}>
-          <Chip
-            icon="door-open"
-            style={[styles.alertChip, { backgroundColor: derived.vacantRooms > 0 ? '#FFF7ED' : '#ECFDF3' }]}
-            textStyle={{ fontWeight: '900', color: derived.vacantRooms > 0 ? '#F97316' : '#16A34A' }}
-          >
-            Vacant {derived.vacantRooms}
-          </Chip>
-          <Chip
-            icon="calendar-alert"
-            style={[styles.alertChip, { backgroundColor: derived.overdueBillsCount > 0 ? '#FFF5F5' : '#ECFDF3' }]}
-            textStyle={{ fontWeight: '900', color: derived.overdueBillsCount > 0 ? '#EF4444' : '#16A34A' }}
-          >
-            Overdue {derived.overdueBillsCount}
-          </Chip>
-          <Chip
-            icon="cash-minus"
-            style={[styles.alertChip, { backgroundColor: derived.allPending > 0 ? '#FFF5F5' : '#ECFDF3' }]}
-            textStyle={{ fontWeight: '900', color: derived.allPending > 0 ? '#EF4444' : '#16A34A' }}
-          >
-            Pending {formatMoney(derived.allPending)}
-          </Chip>
-        </View>
+
+        <Surface
+          style={[
+            styles.utilGridCard,
+            {
+              backgroundColor: theme.colors.surface,
+              borderColor: (theme.colors as any).outlineVariant ?? theme.colors.outline,
+            },
+          ]}
+          elevation={0}
+        >
+          <View style={styles.utilRow}>
+            <UtilityStat
+              icon="cash-multiple"
+              label="Bills not generated"
+              value={String(derived.tenantsMissingBillsAfterRentDayCount)}
+              color={theme.colors.primary}
+              sub={
+                derived.rentDay
+                  ? derived.afterRentGate
+                    ? `Rent day: ${derived.rentDay}`
+                    : `Starts on rent day ${derived.rentDay}`
+                  : 'Set rent day (Settings)'
+              }
+            />
+            <View
+              style={[
+                styles.utilDividerV,
+                { backgroundColor: (theme.colors as any).outlineVariant ?? theme.colors.outline },
+              ]}
+            />
+            <UtilityStat
+              icon="calendar-alert"
+              label="Bills unpaid"
+              value={String(derived.billsUnpaidAfterDueDayCount)}
+              color={derived.billsUnpaidAfterDueDayCount > 0 ? theme.colors.error : theme.colors.primary}
+              sub={
+                derived.dueDay
+                  ? derived.afterDueGate
+                    ? `Due day: ${derived.dueDay}`
+                    : `Starts on due day ${derived.dueDay}`
+                  : 'Set due day (Settings)'
+              }
+            />
+          </View>
+        </Surface>
       </Surface>
 
       <View style={{ height: 24 }} />
@@ -747,21 +819,6 @@ const styles = StyleSheet.create({
   utilStatValue: { marginTop: 6, fontWeight: '900', fontSize: 16, fontVariant: ['tabular-nums'] },
   utilStatSub: { marginTop: 2, color: '#6B7280', fontWeight: '800', fontSize: 11 },
   utilStatSubPlaceholder: { marginTop: 2, opacity: 0 },
-
-  sectionHeader: { marginTop: 14, marginBottom: 10 },
-  sectionTitle: { fontWeight: '900', fontSize: 16, color: '#111827' },
-  sectionHint: { marginTop: 2, color: '#6B7280', fontWeight: '800', fontSize: 12 },
-
-  grid2: { flexDirection: 'row', gap: 12 },
-
-  kpiPress: { flex: 1 },
-  kpiCard: { borderRadius: 18, padding: 14, borderWidth: 1, backgroundColor: '#FFFFFF' },
-  kpiTopRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  kpiIconWrap: { width: 28, height: 28, borderRadius: 10, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  kpiTitle: { color: '#6B7280', fontWeight: '900', fontSize: 12, flex: 1 },
-  kpiValue: { fontWeight: '900', fontSize: 20, color: '#111827', marginTop: 8, fontVariant: ['tabular-nums'] },
-  kpiSubtitle: { marginTop: 4, color: '#6B7280', fontWeight: '800', fontSize: 12 },
-  kpiSubtitlePlaceholder: { marginTop: 4, opacity: 0 },
 
   emptyCard: { borderRadius: 18, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: '#E5E7EB' },
   emptyTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },

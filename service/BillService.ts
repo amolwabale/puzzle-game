@@ -186,12 +186,14 @@ export async function updateBillPayment(params: {
 export async function fetchLatestSetting(): Promise<{
   water: number;
   electricity_unit: number;
+  rent_date: number;
+  rent_due_date: number;
 }> {
   const userId = await getCurrentUserId();
 
   const { data, error } = await supabase
     .from('setting')
-    .select('water, electricity_unit, modified_at, created_at')
+    .select('water, electricity_unit, rent_date, rent_due_date, modified_at, created_at')
     .eq('user_id', userId)
     .order('modified_at', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false })
@@ -203,7 +205,9 @@ export async function fetchLatestSetting(): Promise<{
   const water = data?.water != null ? Number(data.water) : 0;
   const electricity_unit =
     data?.electricity_unit != null ? Number(data.electricity_unit) : 0;
+  const rent_date = data?.rent_date != null ? Number(data.rent_date) : 0;
+  const rent_due_date = data?.rent_due_date != null ? Number(data.rent_due_date) : 0;
 
-  return { water, electricity_unit };
+  return { water, electricity_unit, rent_date, rent_due_date };
 }
 
