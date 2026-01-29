@@ -190,94 +190,96 @@ const PaymentCard = ({
   theme: any;
 }) => (
   <Surface style={styles.card} elevation={2}>
-    <TouchableOpacity style={styles.cardContent} activeOpacity={0.85} onPress={onPress}>
-      <AvatarDisplay uri={photoUrl} size={AVATAR_SIZE} />
+    <View style={styles.cardClip}>
+      <TouchableOpacity style={styles.cardContent} activeOpacity={0.85} onPress={onPress}>
+        <AvatarDisplay uri={photoUrl} size={AVATAR_SIZE} />
 
-      <View style={styles.cardBody}>
-        {(() => {
-          const total = Number(item.total_amount || 0);
-          const paid = Number(item.paid_amount || 0);
-          const pending = Math.max(0, total - paid);
-          const status = (item.status || '-').toUpperCase();
-          const statusTone =
-            status === 'PAID'
-              ? { bg: '#ECFDF3', border: '#86EFAC', text: '#16A34A' }
-              : status === 'PARTIAL'
-                ? { bg: '#FFF7ED', border: '#FDBA74', text: '#F97316' }
-                : { bg: '#FFF5F5', border: '#FECACA', text: '#EF4444' };
+        <View style={styles.cardBody}>
+          {(() => {
+            const total = Number(item.total_amount || 0);
+            const paid = Number(item.paid_amount || 0);
+            const pending = Math.max(0, total - paid);
+            const status = (item.status || '-').toUpperCase();
+            const statusTone =
+              status === 'PAID'
+                ? { bg: '#ECFDF3', border: '#86EFAC', text: '#16A34A' }
+                : status === 'PARTIAL'
+                  ? { bg: '#FFF7ED', border: '#FDBA74', text: '#F97316' }
+                  : { bg: '#FFF5F5', border: '#FECACA', text: '#EF4444' };
 
-          return (
-            <>
-              <View style={styles.titleRow}>
-                <Text variant="titleMedium" style={styles.cardTitle} numberOfLines={1}>
-                  {tenantName}
-                </Text>
-                <Text
-                  style={[styles.totalTopRight, { color: theme.colors.primary }]}
-                  numberOfLines={1}
-                  adjustsFontSizeToFit
-                  minimumFontScale={0.7}
-                >
-                  {formatMoney(total)}
-                </Text>
-              </View>
-
-              <View style={styles.metaRow}>
-                <View style={styles.metaLeft}>
-                  <View style={styles.roomRow}>
-                    <Icon source="home-city-outline" size={16} color={theme.colors.primary} />
-                    <Text style={styles.roomText} numberOfLines={1}>
-                      {roomName}
-                    </Text>
-                  </View>
-                  <View style={styles.issuedRow}>
-                    <Icon source="calendar" size={14} color="#6B7280" />
-                    <Text style={styles.dateText} numberOfLines={1}>
-                      {formatDate(item.created_at)}
-                    </Text>
-                  </View>
+            return (
+              <>
+                <View style={styles.titleRow}>
+                  <Text variant="titleMedium" style={styles.cardTitle} numberOfLines={1}>
+                    {tenantName}
+                  </Text>
+                  <Text
+                    style={[styles.totalTopRight, { color: theme.colors.primary }]}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.7}
+                  >
+                    {formatMoney(total)}
+                  </Text>
                 </View>
 
-                <View style={styles.metaRight}>
-                  <View style={styles.recordStatusRow}>
-                    <View
-                      style={[styles.statusPill, { backgroundColor: statusTone.bg, borderColor: statusTone.border }]}
-                    >
-                      <Text
-                        style={[styles.statusPillText, { color: statusTone.text }]}
-                        numberOfLines={1}
-                        adjustsFontSizeToFit
-                        minimumFontScale={0.85}
-                      >
-                        {status}
+                <View style={styles.metaRow}>
+                  <View style={styles.metaLeft}>
+                    <View style={styles.roomRow}>
+                      <Icon source="home-city-outline" size={16} color={theme.colors.primary} />
+                      <Text style={styles.roomText} numberOfLines={1}>
+                        {roomName}
                       </Text>
                     </View>
+                    <View style={styles.issuedRow}>
+                      <Icon source="calendar" size={14} color="#6B7280" />
+                      <Text style={styles.dateText} numberOfLines={1}>
+                        {formatDate(item.created_at)}
+                      </Text>
+                    </View>
+                  </View>
 
-                    <TouchableRipple
-                      onPress={onRecord}
-                      borderless
-                      disabled={pending <= 0}
-                      style={[
-                        styles.statusActionBtn,
-                        {
-                          backgroundColor: theme.colors.primaryContainer,
-                          borderColor: theme.colors.primary,
-                          opacity: pending > 0 ? 1 : 0.4,
-                        },
-                      ]}
-                    >
-                      <View style={styles.statusActionBtnInner}>
-                        <Icon source="cash-plus" size={16} color={theme.colors.primary} />
+                  <View style={styles.metaRight}>
+                    <View style={styles.recordStatusRow}>
+                      <View
+                        style={[styles.statusPill, { backgroundColor: statusTone.bg, borderColor: statusTone.border }]}
+                      >
+                        <Text
+                          style={[styles.statusPillText, { color: statusTone.text }]}
+                          numberOfLines={1}
+                          adjustsFontSizeToFit
+                          minimumFontScale={0.85}
+                        >
+                          {status}
+                        </Text>
                       </View>
-                    </TouchableRipple>
+
+                      <TouchableRipple
+                        onPress={onRecord}
+                        borderless
+                        disabled={pending <= 0}
+                        style={[
+                          styles.statusActionBtn,
+                          {
+                            backgroundColor: theme.colors.primaryContainer,
+                            borderColor: theme.colors.primary,
+                            opacity: pending > 0 ? 1 : 0.4,
+                          },
+                        ]}
+                      >
+                        <View style={styles.statusActionBtnInner}>
+                          <Icon source="cash-plus" size={16} color={theme.colors.primary} />
+                        </View>
+                      </TouchableRipple>
+                    </View>
                   </View>
                 </View>
-              </View>
-            </>
-          );
-        })()}
-      </View>
-    </TouchableOpacity>
+              </>
+            );
+          })()}
+        </View>
+      </TouchableOpacity>
+    </View>
   </Surface>
 );
 
@@ -292,8 +294,8 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 16,
     marginBottom: 12,
-    overflow: 'hidden',
   },
+  cardClip: { borderRadius: 16, overflow: 'hidden' },
   cardContent: {
     flex: 1,
     flexDirection: 'row',
