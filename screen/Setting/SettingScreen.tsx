@@ -5,10 +5,14 @@ import {
   ActivityIndicator,
   Avatar,
   Button,
+  Chip,
+  Dialog,
   HelperText,
+  Portal,
   Surface,
   Text,
   TextInput,
+  TouchableRipple,
   useTheme,
 } from 'react-native-paper';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -16,7 +20,10 @@ import supabase from '../../service/SupabaseClient';
 import { RootStackParamList } from '../../navigation/StackParam';
 
 type Errors = Partial<
-  Record<'propertyName' | 'propertyAddress' | 'water' | 'electricity', string>
+  Record<
+    'propertyName' | 'propertyAddress' | 'water' | 'electricity' | 'rentDate' | 'rentDueDate',
+    string
+  >
 >;
 
 type RootNav = NativeStackNavigationProp<RootStackParamList>;
@@ -31,6 +38,8 @@ export default function SettingScreen() {
   const [propertyAddress, setPropertyAddress] = React.useState('');
   const [water, setWater] = React.useState('');
   const [electricity, setElectricity] = React.useState('');
+  const [rentDate, setRentDate] = React.useState('');
+  const [rentDueDate, setRentDueDate] = React.useState('');
   const [recordId, setRecordId] = React.useState<number | null>(null);
 
   /* ---------------- UI STATE ---------------- */
@@ -38,6 +47,22 @@ export default function SettingScreen() {
   const [initialLoading, setInitialLoading] = React.useState(true);
   const [saving, setSaving] = React.useState(false);
   const [errors, setErrors] = React.useState<Errors>({});
+  const [dayPickerOpenFor, setDayPickerOpenFor] = React.useState<null | 'rentDate' | 'rentDueDate'>(null);
+
+  const selectDay = React.useCallback(
+    (day: number) => {
+      const v = String(day);
+      if (dayPickerOpenFor === 'rentDate') {
+        setRentDate(v);
+        setErrors((prev) => ({ ...prev, rentDate: '' }));
+      } else if (dayPickerOpenFor === 'rentDueDate') {
+        setRentDueDate(v);
+        setErrors((prev) => ({ ...prev, rentDueDate: '' }));
+      }
+      setDayPickerOpenFor(null);
+    },
+    [dayPickerOpenFor],
+  );
 
   /* ---------------- FETCH SETTINGS ---------------- */
 
@@ -73,6 +98,8 @@ export default function SettingScreen() {
         setElectricity(
           data.electricity_unit != null ? String(data.electricity_unit) : '',
         );
+        setRentDate(data.rent_date != null ? String(data.rent_date) : '');
+        setRentDueDate(data.rent_due_date != null ? String(data.rent_due_date) : '');
       }
     } catch (err: any) {
       Alert.alert('Load Failed', err.message || 'Could not load settings');
@@ -105,6 +132,19 @@ export default function SettingScreen() {
     if (electricity && isNaN(Number(electricity))) {
       nextErrors.electricity = 'Electricity unit must be a number';
     }
+    const rentDay = rentDate ? Number(rentDate) : null;
+    const dueDay = rentDueDate ? Number(rentDueDate) : null;
+
+    const isValidDay = (d: number) => Number.isFinite(d) && d >= 1 && d <= 31;
+    if (rentDate && (!Number.isFinite(rentDay as any) || !isValidDay(rentDay as number))) {
+      nextErrors.rentDate = 'Rent date must be a day between 1 and 31';
+    }
+    if (rentDueDate && (!Number.isFinite(dueDay as any) || !isValidDay(dueDay as number))) {
+      nextErrors.rentDueDate = 'Rent due date must be a day between 1 and 31';
+    }
+    // Important: due date can be in the next month.
+    // Example: rent_date = 31 (last day), rent_due_date = 5 (5th of next month).
+    // So we intentionally DO NOT enforce dueDay >= rentDay.
 
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
@@ -129,6 +169,8 @@ export default function SettingScreen() {
         property_address: propertyAddress.trim() || null,
         water: water ? Number(water) : null,
         electricity_unit: electricity ? Number(electricity) : null,
+        rent_date: rentDate ? Number(rentDate) : null,
+        rent_due_date: rentDueDate ? Number(rentDueDate) : null,
         user_id: userId,
         modified_at: new Date().toISOString(),
       };
@@ -199,7 +241,8 @@ export default function SettingScreen() {
   }
 
   return (
-    <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+    <>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
       {/* ---------- HERO ---------- */}
       <Surface style={styles.hero} elevation={3}>
         <Avatar.Icon size={56} icon="office-building-outline" />
@@ -252,6 +295,30 @@ export default function SettingScreen() {
           onChange={setElectricity}
           keyboardType="numeric"
         />
+      </Surface>
+
+      {/* ---------- RENT CYCLE ---------- */}
+      <Surface style={styles.section} elevation={2}>
+        <SectionTitle title="Rent Cycle" />
+
+        <DayPickerField
+          label="Rent Date (day of month)"
+          value={rentDate}
+          error={errors.rentDate}
+          onPress={() => setDayPickerOpenFor('rentDate')}
+        />
+
+        <DayPickerField
+          label="Rent Due Date (day of month)"
+          value={rentDueDate}
+          error={errors.rentDueDate}
+          onPress={() => setDayPickerOpenFor('rentDueDate')}
+        />
+
+        <Text style={styles.rentHint}>
+          Tip: Due date can be in the next month (e.g. Rent = Last day, Due = 5). If you choose 29/30/31,
+          months with fewer days will treat it as the last day of that month.
+        </Text>
 
         <Button
           mode="contained"
@@ -277,7 +344,71 @@ export default function SettingScreen() {
           Logout
         </Button>
       </Surface>
-    </ScrollView>
+      </ScrollView>
+
+      {/* ---------- DAY PICKER (DAY OF MONTH) ---------- */}
+      <Portal>
+        <Dialog visible={dayPickerOpenFor != null} onDismiss={() => setDayPickerOpenFor(null)}>
+          <Dialog.Title>
+            {dayPickerOpenFor === 'rentDate' ? 'Select Rent Date' : 'Select Rent Due Date'}
+          </Dialog.Title>
+          <Dialog.Content>
+            <Text style={styles.pickerHint}>
+              Pick a day of month (1–31). If the day doesn’t exist in a month, it will auto-adjust to the month’s last day.
+            </Text>
+
+            <View style={styles.quickRow}>
+              {[1, 5, 10, 15, 20, 25, 28, 30, 31].map((d) => (
+                <Chip key={d} compact style={styles.quickChip} onPress={() => selectDay(d)}>
+                  {d === 31 ? 'Last day' : String(d)}
+                </Chip>
+              ))}
+            </View>
+
+            <View style={styles.dayGrid}>
+              {Array.from({ length: 31 }).map((_, idx) => {
+                const day = idx + 1;
+                const selected =
+                  (dayPickerOpenFor === 'rentDate' ? rentDate : rentDueDate) === String(day);
+                return (
+                  <Chip
+                    key={day}
+                    compact
+                    style={[
+                      styles.dayChip,
+                      {
+                        backgroundColor: selected ? theme.colors.primaryContainer : theme.colors.surface,
+                        borderColor: selected ? theme.colors.primary : theme.colors.outline,
+                      },
+                    ]}
+                    textStyle={{
+                      fontWeight: '900',
+                      color: selected ? theme.colors.primary : theme.colors.onSurface,
+                      fontVariant: ['tabular-nums'],
+                    }}
+                    onPress={() => selectDay(day)}
+                  >
+                    {String(day)}
+                  </Chip>
+                );
+              })}
+            </View>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button
+              onPress={() => {
+                if (dayPickerOpenFor === 'rentDate') setRentDate('');
+                if (dayPickerOpenFor === 'rentDueDate') setRentDueDate('');
+                setDayPickerOpenFor(null);
+              }}
+            >
+              Clear
+            </Button>
+            <Button onPress={() => setDayPickerOpenFor(null)}>Close</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
+    </>
   );
 }
 
@@ -307,6 +438,35 @@ const Field = ({
       multiline={multiline}
       error={!!error}
     />
+    <HelperText type="error" visible={!!error}>
+      {error || ' '}
+    </HelperText>
+  </View>
+);
+
+const DayPickerField = ({
+  label,
+  value,
+  error,
+  onPress,
+}: {
+  label: string;
+  value: string;
+  error?: string;
+  onPress: () => void;
+}) => (
+  <View style={styles.field}>
+    <TouchableRipple onPress={onPress} borderless>
+      <View pointerEvents="none">
+        <TextInput
+          label={label}
+          mode="outlined"
+          value={value ? String(value) : ''}
+          right={<TextInput.Icon icon="calendar-month" />}
+          error={!!error}
+        />
+      </View>
+    </TouchableRipple>
     <HelperText type="error" visible={!!error}>
       {error || ' '}
     </HelperText>
@@ -358,6 +518,13 @@ const styles = StyleSheet.create({
   field: {
     marginBottom: 12,
   },
+  rentHint: { color: '#6B7280', fontWeight: '800', fontSize: 12, marginTop: 4 },
+  pickerHint: { color: '#6B7280', fontWeight: '800', marginBottom: 10 },
+  quickRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
+  quickChip: { borderRadius: 12 },
+  dayGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  dayChip: { borderRadius: 12, borderWidth: 1 },
+
 
   primaryButton: {
     marginTop: 8,
