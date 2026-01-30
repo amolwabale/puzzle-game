@@ -1574,7 +1574,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     backgroundColor: '#F8FAFC',
-    width: 88,
+    width: 99,
     alignItems: 'center',
   },
   shareStatusText: { fontSize: 14, fontWeight: '900', color: '#111827', letterSpacing: 0.6 },
