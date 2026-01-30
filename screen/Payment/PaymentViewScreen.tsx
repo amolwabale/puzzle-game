@@ -609,12 +609,14 @@ export default function PaymentViewScreen() {
             <View style={styles.shareCardFrame}>
               <View style={styles.shareCard}>
               <View style={styles.shareHeaderRow}>
-                <View>
+                <View style={styles.shareHeaderLeft}>
                   <Text style={styles.shareBrand}>{propertyName}</Text>
                   {!!propertyAddress && <Text style={styles.shareMuted}>{propertyAddress}</Text>}
                 </View>
                 <View style={styles.shareStatusPill}>
-                  <Text style={styles.shareStatusText}>{billMonthShort}</Text>
+                  <Text style={styles.shareStatusText} numberOfLines={1} ellipsizeMode="clip">
+                    {billMonthShort}
+                  </Text>
                 </View>
               </View>
 
@@ -635,19 +637,16 @@ export default function PaymentViewScreen() {
                   <Text style={styles.shareMetaLabel}>Issue date</Text>
                   <Text style={styles.shareMetaValue}>{formatDate(bill.created_at)}</Text>
                 </View>
-              </View>
-
-              <View style={styles.shareDivider} />
-              <View style={styles.shareReadingsRow}>
-                <View style={styles.shareReadingsItem}>
+                <View style={styles.shareMetaItem}>
                   <Text style={styles.shareMetaLabel}>Prev reading</Text>
                   <Text style={styles.shareMetaValue}>{String(prev)}</Text>
                 </View>
-                <View style={styles.shareReadingsItem}>
+                <View style={styles.shareMetaItem}>
                   <Text style={styles.shareMetaLabel}>Curr reading</Text>
                   <Text style={styles.shareMetaValue}>{String(curr)}</Text>
                 </View>
               </View>
+              <View style={styles.shareDivider} />
               <Text style={styles.shareSectionTitle}>Charges</Text>
               <View style={styles.shareTableHeader}>
                 <Text style={[styles.shareDescCell, styles.shareTableHeaderText]}>Description</Text>
@@ -680,17 +679,20 @@ export default function PaymentViewScreen() {
                   <Text style={styles.shareTotalValue}>{formatMoney(total)}</Text>
                 </View>
               </View>
-              <View style={styles.shareTotalsInlineRow}>
-                <View style={styles.shareTotalsItem}>
+
+              <View style={styles.shareDivider} />
+
+              <View style={styles.shareMetaGrid}>
+                <View style={styles.shareMetaItem}>
                   <Text style={styles.shareMetaLabel}>Paid</Text>
                   <Text style={styles.shareMetaValue}>{formatMoney(paid)}</Text>
                 </View>
-                <View style={styles.shareTotalsItem}>
+                <View style={styles.shareMetaItem}>
                   <Text style={styles.shareMetaLabel}>Pending</Text>
                   <Text style={styles.shareMetaValue}>{formatMoney(pending)}</Text>
                 </View>
               </View>
-
+              <View style={styles.shareDivider} />
               {!!bill.paid_amount_comment?.trim() && (
                 <View style={styles.shareNotesBlock}>
                   <Text style={styles.shareSectionTitle}>Payment notes</Text>
@@ -703,6 +705,7 @@ export default function PaymentViewScreen() {
                         {line}
                       </Text>
                     ))}
+                    <View style={styles.shareDivider} />
                 </View>
               )}
 
@@ -1531,23 +1534,27 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 0,
     padding: 18,
-    shadowColor: '#0F172A',
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 0,
   },
   shareCardFrame: {
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: '#D1D5DB',
     borderRadius: 16,
-    padding: 12, // ~3mm padding
+    padding: 0,
     backgroundColor: '#FFFFFF',
+    shadowColor: '#0F172A',
+    shadowOpacity: 0.16,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 1,
   },
   shareCanvas: {
     width: 400,
     padding: 16,
-    backgroundColor: '#F8F9FB',
+    backgroundColor: '#FFFFFF',
   },
   shareHeaderRow: {
     flexDirection: 'row',
@@ -1558,7 +1565,8 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E5E7EB',
     marginBottom: 12,
   },
-  shareBrand: { fontSize: 18, fontWeight: '800', color: '#111827' },
+  shareHeaderLeft: { flex: 1, paddingRight: 10 },
+  shareBrand: { fontSize: 18, fontWeight: '800', color: '#111827', flexShrink: 1 },
   shareMuted: { marginTop: 4, color: '#6B7280', fontSize: 12, fontWeight: '600' },
   shareStatusPill: {
     borderRadius: 999,
@@ -1567,6 +1575,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     backgroundColor: '#F8FAFC',
+    width: 88,
+    alignItems: 'center',
   },
   shareStatusText: { fontSize: 14, fontWeight: '900', color: '#111827', letterSpacing: 0.6 },
   shareMetaGrid: {
@@ -1628,9 +1638,8 @@ const styles = StyleSheet.create({
   shareNote: { marginTop: 6, color: '#6B7280', fontSize: 11, fontWeight: '600' },
   shareTotalRow: {
     marginTop: 10,
-    paddingTop: 10,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#D1D5DB',
+    paddingTop: 0,
+    borderTopWidth: 0,
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
