@@ -303,6 +303,7 @@ export default function PaymentViewScreen() {
   const rate = units > 0 ? twoDp(electricity / units) : settings.electricity_unit || 0;
   const propertyName = settings.property_name || 'Property';
   const propertyAddress = settings.property_address || '';
+  const billMonthShort = formatMonth(new Date(bill.created_at)).toUpperCase();
 
   const { prevLabel, currLabel } = getPrevAndCurrMonthLabels(bill.created_at);
   const billMonth = formatMonthYear(bill.created_at);
@@ -612,7 +613,7 @@ export default function PaymentViewScreen() {
                   {!!propertyAddress && <Text style={styles.shareMuted}>{propertyAddress}</Text>}
                 </View>
                 <View style={styles.shareStatusPill}>
-                  <Text style={styles.shareStatusText}>{status || 'UNPAID'}</Text>
+                  <Text style={styles.shareStatusText}>{billMonthShort}</Text>
                 </View>
               </View>
 
@@ -626,8 +627,8 @@ export default function PaymentViewScreen() {
                   <Text style={styles.shareMetaValue}>{roomName}</Text>
                 </View>
                 <View style={styles.shareMetaItem}>
-                  <Text style={styles.shareMetaLabel}>Billing period</Text>
-                  <Text style={styles.shareMetaValue}>{billMonth}</Text>
+                  <Text style={styles.shareMetaLabel}>Payment status</Text>
+                  <Text style={styles.shareMetaValue}>{status || 'UNPAID'}</Text>
                 </View>
                 <View style={styles.shareMetaItem}>
                   <Text style={styles.shareMetaLabel}>Issue date</Text>
@@ -1526,10 +1527,10 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: '#E5E7EB',
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 6,
     backgroundColor: '#F8FAFC',
   },
-  shareStatusText: { fontSize: 11, fontWeight: '800', color: '#374151' },
+  shareStatusText: { fontSize: 14, fontWeight: '900', color: '#111827', letterSpacing: 0.6 },
   shareMetaGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
