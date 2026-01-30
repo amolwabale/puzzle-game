@@ -708,7 +708,6 @@ export default function PaymentViewScreen() {
                     <View style={styles.shareDivider} />
                 </View>
               )}
-
               <Text style={styles.shareFooter}>This is a system generated invoice.</Text>
             </View>
             </View>
@@ -1595,7 +1594,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
   },
   shareMetaValue: { color: '#111827', fontSize: 14, fontWeight: '700', marginTop: 4 },
-  shareSectionTitle: { marginTop: 10, fontSize: 12, fontWeight: '800', color: '#111827' },
+  shareSectionTitle: { marginTop: 5, fontSize: 12, fontWeight: '800', color: '#111827' },
   shareDivider: {
     height: StyleSheet.hairlineWidth,
     backgroundColor: '#D1D5DB',
@@ -1650,10 +1649,9 @@ const styles = StyleSheet.create({
   shareTotalsInlineRow: { flexDirection: 'row', gap: 12, marginTop: 6, justifyContent: 'flex-end' },
   shareTotalsItem: { flex: 1 },
   shareNotesBlock: {
-    marginTop: 10,
-    paddingTop: 8,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#D1D5DB',
+    marginTop: 0,
+    paddingTop: 0,
+    borderTopWidth: 0,
   },
   shareNoteLine: { marginTop: 4, color: '#374151', fontSize: 12, fontWeight: '600' },
   shareFooter: { marginTop: 12, textAlign: 'center', color: '#6B7280', fontSize: 11 },
