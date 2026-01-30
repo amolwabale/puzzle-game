@@ -617,7 +617,7 @@ export default function DashboardScreen() {
         >
           <View style={styles.utilRow}>
             <UtilityStat
-              icon="home-currency-usd"
+              icon="home-city-outline"
               label="Rent"
               value={formatMoney(derived.rentBilledThisMonth)}
               color={theme.colors.primary}
@@ -630,7 +630,7 @@ export default function DashboardScreen() {
               ]}
             />
             <UtilityStat
-              icon="cash"
+              icon="flash-outline"
               label="Electricity"
               value={formatMoney(derived.electricityChargesThisMonth)}
               color={theme.colors.primary}
