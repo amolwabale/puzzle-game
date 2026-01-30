@@ -655,7 +655,7 @@ export default function PaymentViewScreen() {
                 <Text style={styles.shareAmountCell}>{formatMoney(bill.electricity)}</Text>
               </View>
               <View style={styles.shareTableRow}>
-                <Text style={styles.shareDescCell}>Other</Text>
+                <Text style={styles.shareDescCell}>Ad hoc</Text>
                 <Text style={styles.shareAmountCell}>{formatMoney(bill.ad_hoc_amount)}</Text>
               </View>
               <View style={styles.shareTotalRow}>
