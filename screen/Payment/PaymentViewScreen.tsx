@@ -608,8 +608,8 @@ export default function PaymentViewScreen() {
             <View style={styles.shareCard}>
               <View style={styles.shareHeaderRow}>
                 <View>
-                  <Text style={styles.shareBrand}>Tenant Manager</Text>
-                  <Text style={styles.shareMuted}>Property billing</Text>
+                  <Text style={styles.shareBrand}>{propertyName}</Text>
+                  {!!propertyAddress && <Text style={styles.shareMuted}>{propertyAddress}</Text>}
                 </View>
                 <View style={styles.shareStatusPill}>
                   <Text style={styles.shareStatusText}>{status || 'UNPAID'}</Text>
@@ -618,18 +618,6 @@ export default function PaymentViewScreen() {
 
               <View style={styles.shareMetaGrid}>
                 <View style={styles.shareMetaItem}>
-                  <Text style={styles.shareMetaLabel}>Invoice #</Text>
-                  <Text style={styles.shareMetaValue}>INV-{bill.id}</Text>
-                </View>
-                <View style={styles.shareMetaItem}>
-                  <Text style={styles.shareMetaLabel}>Issue date</Text>
-                  <Text style={styles.shareMetaValue}>{formatDate(bill.created_at)}</Text>
-                </View>
-                <View style={styles.shareMetaItem}>
-                  <Text style={styles.shareMetaLabel}>Billing period</Text>
-                  <Text style={styles.shareMetaValue}>{billMonth}</Text>
-                </View>
-                <View style={styles.shareMetaItem}>
                   <Text style={styles.shareMetaLabel}>Billed to</Text>
                   <Text style={styles.shareMetaValue}>{tenantName}</Text>
                 </View>
@@ -637,33 +625,36 @@ export default function PaymentViewScreen() {
                   <Text style={styles.shareMetaLabel}>Property / Room</Text>
                   <Text style={styles.shareMetaValue}>{roomName}</Text>
                 </View>
+                <View style={styles.shareMetaItem}>
+                  <Text style={styles.shareMetaLabel}>Billing period</Text>
+                  <Text style={styles.shareMetaValue}>{billMonth}</Text>
+                </View>
+                <View style={styles.shareMetaItem}>
+                  <Text style={styles.shareMetaLabel}>Issue date</Text>
+                  <Text style={styles.shareMetaValue}>{formatDate(bill.created_at)}</Text>
+                </View>
               </View>
 
               <Text style={styles.shareSectionTitle}>Charges</Text>
               <View style={styles.shareTableHeader}>
-                <Text style={[styles.shareTableCell, styles.shareTableHeaderText]}>Description</Text>
-                <Text style={[styles.shareTableCell, styles.shareTableHeaderText]}>Period</Text>
-                <Text style={[styles.shareTableCell, styles.shareTableHeaderText, styles.shareAmount]}>Amount</Text>
+                <Text style={[styles.shareDescCell, styles.shareTableHeaderText]}>Description</Text>
+                <Text style={[styles.shareAmountCell, styles.shareTableHeaderText]}>Amount</Text>
               </View>
               <View style={[styles.shareTableRow, styles.shareAltRow]}>
-                <Text style={styles.shareTableCell}>Rent</Text>
-                <Text style={styles.shareTableCell}>{billMonth}</Text>
-                <Text style={[styles.shareTableCell, styles.shareAmount]}>{formatMoney(bill.rent)}</Text>
+                <Text style={styles.shareDescCell}>Rent</Text>
+                <Text style={styles.shareAmountCell}>{formatMoney(bill.rent)}</Text>
               </View>
               <View style={styles.shareTableRow}>
-                <Text style={styles.shareTableCell}>Water</Text>
-                <Text style={styles.shareTableCell}>{billMonth}</Text>
-                <Text style={[styles.shareTableCell, styles.shareAmount]}>{formatMoney(bill.water)}</Text>
+                <Text style={styles.shareDescCell}>Water</Text>
+                <Text style={styles.shareAmountCell}>{formatMoney(bill.water)}</Text>
               </View>
               <View style={[styles.shareTableRow, styles.shareAltRow]}>
-                <Text style={styles.shareTableCell}>Electricity ({units} × {rate})</Text>
-                <Text style={styles.shareTableCell}>{billMonth}</Text>
-                <Text style={[styles.shareTableCell, styles.shareAmount]}>{formatMoney(bill.electricity)}</Text>
+                <Text style={styles.shareDescCell}>Electricity ({units} × {rate})</Text>
+                <Text style={styles.shareAmountCell}>{formatMoney(bill.electricity)}</Text>
               </View>
               <View style={styles.shareTableRow}>
-                <Text style={styles.shareTableCell}>Other</Text>
-                <Text style={styles.shareTableCell}>{billMonth}</Text>
-                <Text style={[styles.shareTableCell, styles.shareAmount]}>{formatMoney(bill.ad_hoc_amount)}</Text>
+                <Text style={styles.shareDescCell}>Other</Text>
+                <Text style={styles.shareAmountCell}>{formatMoney(bill.ad_hoc_amount)}</Text>
               </View>
 
               <View style={styles.shareTotalRow}>
@@ -683,7 +674,7 @@ export default function PaymentViewScreen() {
                 </View>
               </View>
 
-              <Text style={styles.shareFooter}>This is a system generated invoice · tenantmanager.app</Text>
+              <Text style={styles.shareFooter}>This is a system generated invoice.</Text>
             </View>
           </View>
         </ViewShot>
@@ -1576,6 +1567,8 @@ const styles = StyleSheet.create({
   },
   shareTableCell: { flex: 1, fontSize: 12, color: '#111827' },
   shareAmount: { textAlign: 'right', fontVariant: ['tabular-nums'] },
+  shareDescCell: { flex: 2, fontSize: 12, color: '#111827' },
+  shareAmountCell: { flex: 1, fontSize: 12, color: '#111827', textAlign: 'right', fontVariant: ['tabular-nums'] },
   shareTotalRow: {
     marginTop: 10,
     paddingTop: 10,
