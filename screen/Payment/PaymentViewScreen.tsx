@@ -127,7 +127,11 @@ export default function PaymentViewScreen() {
   const [tenantName, setTenantName] = React.useState('-');
   const [roomName, setRoomName] = React.useState('-');
   const [tenantPhotoUrl, setTenantPhotoUrl] = React.useState<string | undefined>(undefined);
-  const [settings, setSettings] = React.useState<{ electricity_unit: number }>({ electricity_unit: 0 });
+  const [settings, setSettings] = React.useState<{
+    electricity_unit: number;
+    property_name?: string;
+    property_address?: string;
+  }>({ electricity_unit: 0 });
 
   const [paymentDialogOpen, setPaymentDialogOpen] = React.useState(false);
   const [paymentSaving, setPaymentSaving] = React.useState(false);
@@ -179,7 +183,11 @@ export default function PaymentViewScreen() {
       ]);
 
       setBill(b);
-      setSettings({ electricity_unit: s.electricity_unit || 0 });
+      setSettings({
+        electricity_unit: s.electricity_unit || 0,
+        property_name: s.property_name,
+        property_address: s.property_address,
+      });
 
       const roomMap: Record<number, string> = {};
       (rooms || []).forEach((r: any) => {
@@ -293,6 +301,8 @@ export default function PaymentViewScreen() {
   const curr = Number(bill.current_month_meter_reading || 0);
   const units = Math.max(0, curr - prev);
   const rate = units > 0 ? twoDp(electricity / units) : settings.electricity_unit || 0;
+  const propertyName = settings.property_name || 'Property';
+  const propertyAddress = settings.property_address || '';
 
   const { prevLabel, currLabel } = getPrevAndCurrMonthLabels(bill.created_at);
   const billMonth = formatMonthYear(bill.created_at);
@@ -348,69 +358,123 @@ export default function PaymentViewScreen() {
 
   const buildShareHtml = () => {
     const issued = formatDate(bill.created_at);
-    const paidLine = formatMoney(paid);
-    const pendingLine = formatMoney(pending);
-    const statusText = status || 'UNPAID';
+    const statusText = status || 'PENDING';
 
     return `
       <html>
         <head>
           <meta charset="utf-8" />
           <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Arial, sans-serif; margin: 0; padding: 0; color: #111827; }
-            .page { padding: 24px; }
-            .header { border-bottom: 1px solid #E5E7EB; padding-bottom: 12px; margin-bottom: 16px; }
-            .title { font-size: 20px; font-weight: 800; }
+            body { font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Arial, sans-serif; margin: 0; padding: 0; color: #111827; background: #F8F9FB; }
+            .page { padding: 24px; display: flex; justify-content: center; }
+            .card { width: 520px; background: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 16px; box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06); padding: 20px; }
+            .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid #E5E7EB; padding-bottom: 14px; margin-bottom: 16px; }
+            .brand { font-size: 18px; font-weight: 800; }
             .sub { color: #6B7280; font-size: 12px; margin-top: 4px; }
-            .row { display: flex; justify-content: space-between; gap: 12px; }
-            .card { border: 1px solid #E5E7EB; border-radius: 12px; padding: 12px; margin-bottom: 12px; }
-            .label { color: #6B7280; font-size: 12px; font-weight: 700; }
-            .value { font-size: 15px; font-weight: 700; margin-top: 4px; }
-            .total { font-size: 24px; font-weight: 900; }
-            .pill { display: inline-block; border-radius: 999px; padding: 4px 10px; border: 1px solid #E5E7EB; font-size: 12px; font-weight: 800; }
-            .table { width: 100%; border-collapse: collapse; margin-top: 8px; }
-            .table td { padding: 6px 0; border-bottom: 1px solid #F3F4F6; font-size: 13px; }
-            .footer { margin-top: 16px; font-size: 11px; color: #6B7280; text-align: center; }
+            .badge { border-radius: 999px; padding: 4px 10px; border: 1px solid #E5E7EB; font-size: 11px; font-weight: 800; text-transform: uppercase; }
+            .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; margin-bottom: 14px; }
+            .label { color: #6B7280; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; }
+            .value { font-size: 14px; font-weight: 700; margin-top: 4px; }
+            .section-title { margin-top: 6px; font-size: 12px; font-weight: 800; color: #111827; }
+            table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
+            th, td { padding: 8px; text-align: left; }
+            th { color: #6B7280; font-weight: 700; border-bottom: 1px solid #E5E7EB; }
+            tr:nth-child(even) td { background: #F8FAFC; }
+            .amount { text-align: right; font-variant-numeric: tabular-nums; }
+            .total { margin-top: 10px; border-top: 1px solid #E5E7EB; padding-top: 10px; display: flex; justify-content: space-between; align-items: center; }
+            .total-label { color: #6B7280; font-size: 12px; font-weight: 700; }
+            .total-value { font-size: 22px; font-weight: 900; }
+            .footer { margin-top: 14px; font-size: 11px; color: #6B7280; text-align: center; }
           </style>
         </head>
         <body>
           <div class="page">
-            <div class="header">
-              <div class="title">Payment Bill</div>
-              <div class="sub">Issued ${issued} · ${billMonth}</div>
-            </div>
-
             <div class="card">
-              <div class="label">Tenant</div>
-              <div class="value">${tenantName}</div>
-              <div class="label" style="margin-top:8px;">Room</div>
-              <div class="value">${roomName}</div>
-            </div>
-
-            <div class="card">
-              <div class="row" style="align-items: center;">
+              <div class="header">
                 <div>
-                  <div class="label">Total Payable</div>
-                  <div class="total">${formatMoney(total)}</div>
+                  <div class="brand">Tenant Manager</div>
+                  <div class="sub">Property billing</div>
                 </div>
-                <div class="pill">${statusText}</div>
+                <div>
+                  <div class="badge">${statusText}</div>
+                </div>
               </div>
-              <table class="table">
-                <tr><td>Rent</td><td style="text-align:right;">${formatMoney(bill.rent)}</td></tr>
-                <tr><td>Electricity</td><td style="text-align:right;">${formatMoney(bill.electricity)}</td></tr>
-                <tr><td>Water</td><td style="text-align:right;">${formatMoney(bill.water)}</td></tr>
-                <tr><td>Other</td><td style="text-align:right;">${formatMoney(bill.ad_hoc_amount)}</td></tr>
+
+              <div class="meta">
+                <div>
+                  <div class="label">Invoice #</div>
+                  <div class="value">INV-${bill.id}</div>
+                </div>
+                <div>
+                  <div class="label">Issue date</div>
+                  <div class="value">${issued}</div>
+                </div>
+                <div>
+                  <div class="label">Billing period</div>
+                  <div class="value">${billMonth}</div>
+                </div>
+                <div>
+                  <div class="label">Billed to</div>
+                  <div class="value">${tenantName}</div>
+                </div>
+                <div>
+                  <div class="label">Property / Room</div>
+                  <div class="value">${roomName}</div>
+                </div>
+              </div>
+
+              <div class="section-title">Charges</div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Description</th>
+                    <th>Period</th>
+                    <th class="amount">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Rent</td>
+                    <td>${billMonth}</td>
+                    <td class="amount">${formatMoney(bill.rent)}</td>
+                  </tr>
+                  <tr>
+                    <td>Water</td>
+                    <td>${billMonth}</td>
+                    <td class="amount">${formatMoney(bill.water)}</td>
+                  </tr>
+                  <tr>
+                    <td>Electricity (${units} × ${rate})</td>
+                    <td>${billMonth}</td>
+                    <td class="amount">${formatMoney(bill.electricity)}</td>
+                  </tr>
+                  <tr>
+                    <td>Other</td>
+                    <td>${billMonth}</td>
+                    <td class="amount">${formatMoney(bill.ad_hoc_amount)}</td>
+                  </tr>
+                </tbody>
               </table>
-            </div>
 
-            <div class="card">
-              <div class="label">Paid</div>
-              <div class="value">${paidLine}</div>
-              <div class="label" style="margin-top:8px;">Pending</div>
-              <div class="value">${pendingLine}</div>
-            </div>
+              <div class="total">
+                <div>
+                  <div class="total-label">Total payable</div>
+                  <div class="total-value">${formatMoney(total)}</div>
+                </div>
+                <div>
+                  <div class="total-label">Paid</div>
+                  <div class="value">${formatMoney(paid)}</div>
+                </div>
+                <div>
+                  <div class="total-label">Pending</div>
+                  <div class="value">${formatMoney(pending)}</div>
+                </div>
+              </div>
 
-            <div class="footer">Generated by Tenant Manager</div>
+              <div class="footer">
+                This is a system generated invoice · tenantmanager.app
+              </div>
+            </div>
           </div>
         </body>
       </html>
@@ -540,53 +604,87 @@ export default function PaymentViewScreen() {
 
       <View style={styles.shareShotWrap}>
         <ViewShot ref={shareShotRef} options={{ format: 'png', quality: 0.9 }}>
-          <View style={styles.shareCard}>
-            <Text style={styles.shareTitle}>Payment Bill</Text>
-            <Text style={styles.shareSub}>Issued {formatDate(bill.created_at)} · {billMonth}</Text>
-
-            <View style={styles.shareBlock}>
-              <Text style={styles.shareLabel}>Tenant</Text>
-              <Text style={styles.shareValue}>{tenantName}</Text>
-              <Text style={[styles.shareLabel, { marginTop: 8 }]}>Room</Text>
-              <Text style={styles.shareValue}>{roomName}</Text>
-            </View>
-
-            <View style={styles.shareBlock}>
-              <View style={styles.shareRow}>
+          <View style={styles.shareCanvas}>
+            <View style={styles.shareCard}>
+              <View style={styles.shareHeaderRow}>
                 <View>
-                  <Text style={styles.shareLabel}>Total Payable</Text>
-                  <Text style={styles.shareTotal}>{formatMoney(total)}</Text>
+                  <Text style={styles.shareBrand}>Tenant Manager</Text>
+                  <Text style={styles.shareMuted}>Property billing</Text>
                 </View>
-                <View style={styles.sharePill}>
-                  <Text style={styles.sharePillText}>{status || 'UNPAID'}</Text>
+                <View style={styles.shareStatusPill}>
+                  <Text style={styles.shareStatusText}>{status || 'UNPAID'}</Text>
                 </View>
               </View>
-              <View style={styles.shareLine}>
-                <Text style={styles.shareLabel}>Rent</Text>
-                <Text style={styles.shareValue}>{formatMoney(bill.rent)}</Text>
-              </View>
-              <View style={styles.shareLine}>
-                <Text style={styles.shareLabel}>Electricity</Text>
-                <Text style={styles.shareValue}>{formatMoney(bill.electricity)}</Text>
-              </View>
-              <View style={styles.shareLine}>
-                <Text style={styles.shareLabel}>Water</Text>
-                <Text style={styles.shareValue}>{formatMoney(bill.water)}</Text>
-              </View>
-              <View style={styles.shareLine}>
-                <Text style={styles.shareLabel}>Other</Text>
-                <Text style={styles.shareValue}>{formatMoney(bill.ad_hoc_amount)}</Text>
-              </View>
-            </View>
 
-            <View style={styles.shareBlock}>
-              <Text style={styles.shareLabel}>Paid</Text>
-              <Text style={styles.shareValue}>{formatMoney(paid)}</Text>
-              <Text style={[styles.shareLabel, { marginTop: 8 }]}>Pending</Text>
-              <Text style={styles.shareValue}>{formatMoney(pending)}</Text>
-            </View>
+              <View style={styles.shareMetaGrid}>
+                <View style={styles.shareMetaItem}>
+                  <Text style={styles.shareMetaLabel}>Invoice #</Text>
+                  <Text style={styles.shareMetaValue}>INV-{bill.id}</Text>
+                </View>
+                <View style={styles.shareMetaItem}>
+                  <Text style={styles.shareMetaLabel}>Issue date</Text>
+                  <Text style={styles.shareMetaValue}>{formatDate(bill.created_at)}</Text>
+                </View>
+                <View style={styles.shareMetaItem}>
+                  <Text style={styles.shareMetaLabel}>Billing period</Text>
+                  <Text style={styles.shareMetaValue}>{billMonth}</Text>
+                </View>
+                <View style={styles.shareMetaItem}>
+                  <Text style={styles.shareMetaLabel}>Billed to</Text>
+                  <Text style={styles.shareMetaValue}>{tenantName}</Text>
+                </View>
+                <View style={styles.shareMetaItem}>
+                  <Text style={styles.shareMetaLabel}>Property / Room</Text>
+                  <Text style={styles.shareMetaValue}>{roomName}</Text>
+                </View>
+              </View>
 
-            <Text style={styles.shareFooter}>Generated by Tenant Manager</Text>
+              <Text style={styles.shareSectionTitle}>Charges</Text>
+              <View style={styles.shareTableHeader}>
+                <Text style={[styles.shareTableCell, styles.shareTableHeaderText]}>Description</Text>
+                <Text style={[styles.shareTableCell, styles.shareTableHeaderText]}>Period</Text>
+                <Text style={[styles.shareTableCell, styles.shareTableHeaderText, styles.shareAmount]}>Amount</Text>
+              </View>
+              <View style={[styles.shareTableRow, styles.shareAltRow]}>
+                <Text style={styles.shareTableCell}>Rent</Text>
+                <Text style={styles.shareTableCell}>{billMonth}</Text>
+                <Text style={[styles.shareTableCell, styles.shareAmount]}>{formatMoney(bill.rent)}</Text>
+              </View>
+              <View style={styles.shareTableRow}>
+                <Text style={styles.shareTableCell}>Water</Text>
+                <Text style={styles.shareTableCell}>{billMonth}</Text>
+                <Text style={[styles.shareTableCell, styles.shareAmount]}>{formatMoney(bill.water)}</Text>
+              </View>
+              <View style={[styles.shareTableRow, styles.shareAltRow]}>
+                <Text style={styles.shareTableCell}>Electricity ({units} × {rate})</Text>
+                <Text style={styles.shareTableCell}>{billMonth}</Text>
+                <Text style={[styles.shareTableCell, styles.shareAmount]}>{formatMoney(bill.electricity)}</Text>
+              </View>
+              <View style={styles.shareTableRow}>
+                <Text style={styles.shareTableCell}>Other</Text>
+                <Text style={styles.shareTableCell}>{billMonth}</Text>
+                <Text style={[styles.shareTableCell, styles.shareAmount]}>{formatMoney(bill.ad_hoc_amount)}</Text>
+              </View>
+
+              <View style={styles.shareTotalRow}>
+                <View>
+                  <Text style={styles.shareTotalLabel}>Total payable</Text>
+                  <Text style={styles.shareTotalValue}>{formatMoney(total)}</Text>
+                </View>
+                <View style={styles.shareTotalsInline}>
+                  <View style={styles.shareTotalsItem}>
+                    <Text style={styles.shareMetaLabel}>Paid</Text>
+                    <Text style={styles.shareMetaValue}>{formatMoney(paid)}</Text>
+                  </View>
+                  <View style={styles.shareTotalsItem}>
+                    <Text style={styles.shareMetaLabel}>Pending</Text>
+                    <Text style={styles.shareMetaValue}>{formatMoney(pending)}</Text>
+                  </View>
+                </View>
+              </View>
+
+              <Text style={styles.shareFooter}>This is a system generated invoice · tenantmanager.app</Text>
+            </View>
           </View>
         </ViewShot>
       </View>
@@ -1405,35 +1503,89 @@ const styles = StyleSheet.create({
     top: -9999,
   },
   shareCard: {
-    width: 360,
     backgroundColor: '#FFFFFF',
-    padding: 18,
     borderRadius: 16,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: '#E5E7EB',
+    padding: 18,
+    shadowColor: '#0F172A',
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
-  shareTitle: { fontSize: 20, fontWeight: '900', color: '#111827' },
-  shareSub: { marginTop: 4, color: '#6B7280', fontSize: 12, fontWeight: '600' },
-  shareBlock: {
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#E5E7EB',
+  shareCanvas: {
+    width: 400,
+    padding: 16,
+    backgroundColor: '#F8F9FB',
   },
-  shareRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  shareLabel: { color: '#6B7280', fontWeight: '700', fontSize: 12 },
-  shareValue: { color: '#111827', fontWeight: '700', fontSize: 14, marginTop: 4 },
-  shareTotal: { color: '#111827', fontWeight: '900', fontSize: 22, marginTop: 6 },
-  sharePill: {
+  shareHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingBottom: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#E5E7EB',
+    marginBottom: 12,
+  },
+  shareBrand: { fontSize: 18, fontWeight: '800', color: '#111827' },
+  shareMuted: { marginTop: 4, color: '#6B7280', fontSize: 12, fontWeight: '600' },
+  shareStatusPill: {
     borderRadius: 999,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: '#E5E7EB',
     paddingHorizontal: 10,
     paddingVertical: 4,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F8FAFC',
   },
-  sharePillText: { fontSize: 11, fontWeight: '800', color: '#374151' },
-  shareLine: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 },
+  shareStatusText: { fontSize: 11, fontWeight: '800', color: '#374151' },
+  shareMetaGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  shareMetaItem: {
+    width: '48%',
+  },
+  shareMetaLabel: {
+    color: '#6B7280',
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  shareMetaValue: { color: '#111827', fontSize: 14, fontWeight: '700', marginTop: 4 },
+  shareSectionTitle: { marginTop: 10, fontSize: 12, fontWeight: '800', color: '#111827' },
+  shareTableHeader: {
+    flexDirection: 'row',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#E5E7EB',
+    paddingVertical: 8,
+    marginTop: 6,
+  },
+  shareTableHeaderText: { color: '#6B7280', fontWeight: '700' },
+  shareTableRow: {
+    flexDirection: 'row',
+    paddingVertical: 8,
+    alignItems: 'center',
+  },
+  shareAltRow: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 8,
+    paddingHorizontal: 6,
+  },
+  shareTableCell: { flex: 1, fontSize: 12, color: '#111827' },
+  shareAmount: { textAlign: 'right', fontVariant: ['tabular-nums'] },
+  shareTotalRow: {
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#E5E7EB',
+  },
+  shareTotalLabel: { color: '#6B7280', fontSize: 12, fontWeight: '700' },
+  shareTotalValue: { fontSize: 22, fontWeight: '900', color: '#111827', marginTop: 4 },
+  shareTotalsInline: { flexDirection: 'row', gap: 12, marginTop: 6 },
+  shareTotalsItem: { flex: 1 },
   shareFooter: { marginTop: 12, textAlign: 'center', color: '#6B7280', fontSize: 11 },
 });
 

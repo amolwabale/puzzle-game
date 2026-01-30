@@ -188,12 +188,14 @@ export async function fetchLatestSetting(): Promise<{
   electricity_unit: number;
   rent_date: number;
   rent_due_date: number;
+  property_name?: string;
+  property_address?: string;
 }> {
   const userId = await getCurrentUserId();
 
   const { data, error } = await supabase
     .from('setting')
-    .select('water, electricity_unit, rent_date, rent_due_date, modified_at, created_at')
+    .select('property_name, property_address, water, electricity_unit, rent_date, rent_due_date, modified_at, created_at')
     .eq('user_id', userId)
     .order('modified_at', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false })
@@ -207,7 +209,9 @@ export async function fetchLatestSetting(): Promise<{
     data?.electricity_unit != null ? Number(data.electricity_unit) : 0;
   const rent_date = data?.rent_date != null ? Number(data.rent_date) : 0;
   const rent_due_date = data?.rent_due_date != null ? Number(data.rent_due_date) : 0;
+  const property_name = data?.property_name ?? undefined;
+  const property_address = data?.property_address ?? undefined;
 
-  return { water, electricity_unit, rent_date, rent_due_date };
+  return { water, electricity_unit, rent_date, rent_due_date, property_name, property_address };
 }
 

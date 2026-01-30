@@ -165,7 +165,14 @@ export default function DashboardScreen() {
         fetchRooms(),
         fetchTenants(),
         fetchBills(),
-        fetchLatestSetting().catch(() => ({ water: 0, electricity_unit: 0, rent_date: 0, rent_due_date: 0 })),
+        fetchLatestSetting().catch(() => ({
+          water: 0,
+          electricity_unit: 0,
+          rent_date: 0,
+          rent_due_date: 0,
+          property_name: undefined,
+          property_address: undefined,
+        })),
         supabase
           .from('tenant_room_mapping')
           .select('id, room_id, tenant_id, joining_date, leaving_date')
