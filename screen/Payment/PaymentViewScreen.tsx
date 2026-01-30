@@ -636,6 +636,7 @@ export default function PaymentViewScreen() {
                 </View>
               </View>
 
+              <View style={styles.shareDivider} />
               <Text style={styles.shareSectionTitle}>Charges</Text>
               <View style={styles.shareTableHeader}>
                 <Text style={[styles.shareDescCell, styles.shareTableHeaderText]}>Description</Text>
@@ -657,21 +658,25 @@ export default function PaymentViewScreen() {
                 <Text style={styles.shareDescCell}>Other</Text>
                 <Text style={styles.shareAmountCell}>{formatMoney(bill.ad_hoc_amount)}</Text>
               </View>
-
               <View style={styles.shareTotalRow}>
+                <View style={styles.shareTotalLeft}>
+                  {!!bill.ad_hoc_comment?.trim() && (
+                    <Text style={styles.shareNote}>Ad-hoc note: {bill.ad_hoc_comment.trim()}</Text>
+                  )}
+                </View>
                 <View>
                   <Text style={styles.shareTotalLabel}>Total payable</Text>
                   <Text style={styles.shareTotalValue}>{formatMoney(total)}</Text>
                 </View>
-                <View style={styles.shareTotalsInline}>
-                  <View style={styles.shareTotalsItem}>
-                    <Text style={styles.shareMetaLabel}>Paid</Text>
-                    <Text style={styles.shareMetaValue}>{formatMoney(paid)}</Text>
-                  </View>
-                  <View style={styles.shareTotalsItem}>
-                    <Text style={styles.shareMetaLabel}>Pending</Text>
-                    <Text style={styles.shareMetaValue}>{formatMoney(pending)}</Text>
-                  </View>
+              </View>
+              <View style={styles.shareTotalsInlineRow}>
+                <View style={styles.shareTotalsItem}>
+                  <Text style={styles.shareMetaLabel}>Paid</Text>
+                  <Text style={styles.shareMetaValue}>{formatMoney(paid)}</Text>
+                </View>
+                <View style={styles.shareTotalsItem}>
+                  <Text style={styles.shareMetaLabel}>Pending</Text>
+                  <Text style={styles.shareMetaValue}>{formatMoney(pending)}</Text>
                 </View>
               </View>
 
@@ -1548,37 +1553,49 @@ const styles = StyleSheet.create({
   },
   shareMetaValue: { color: '#111827', fontSize: 14, fontWeight: '700', marginTop: 4 },
   shareSectionTitle: { marginTop: 10, fontSize: 12, fontWeight: '800', color: '#111827' },
+  shareDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: '#E5E7EB',
+    marginTop: 10,
+    marginBottom: 6,
+  },
   shareTableHeader: {
     flexDirection: 'row',
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#E5E7EB',
     paddingVertical: 8,
     marginTop: 6,
+    paddingHorizontal: 6,
   },
   shareTableHeaderText: { color: '#6B7280', fontWeight: '700' },
   shareTableRow: {
     flexDirection: 'row',
     paddingVertical: 8,
     alignItems: 'center',
+    paddingHorizontal: 6,
   },
   shareAltRow: {
     backgroundColor: '#F8FAFC',
     borderRadius: 8,
-    paddingHorizontal: 6,
   },
   shareTableCell: { flex: 1, fontSize: 12, color: '#111827' },
   shareAmount: { textAlign: 'right', fontVariant: ['tabular-nums'] },
   shareDescCell: { flex: 2, fontSize: 12, color: '#111827' },
   shareAmountCell: { flex: 1, fontSize: 12, color: '#111827', textAlign: 'right', fontVariant: ['tabular-nums'] },
+  shareNote: { marginTop: 6, color: '#6B7280', fontSize: 11, fontWeight: '600' },
   shareTotalRow: {
     marginTop: 10,
     paddingTop: 10,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: '#E5E7EB',
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
   },
+  shareTotalLeft: { flex: 1, paddingRight: 10 },
   shareTotalLabel: { color: '#6B7280', fontSize: 12, fontWeight: '700' },
-  shareTotalValue: { fontSize: 22, fontWeight: '900', color: '#111827', marginTop: 4 },
-  shareTotalsInline: { flexDirection: 'row', gap: 12, marginTop: 6 },
+  shareTotalValue: { fontSize: 22, fontWeight: '900', color: '#111827', marginTop: 4, textAlign: 'right' },
+  shareTotalsInlineRow: { flexDirection: 'row', gap: 12, marginTop: 6, justifyContent: 'flex-end' },
   shareTotalsItem: { flex: 1 },
   shareFooter: { marginTop: 12, textAlign: 'center', color: '#6B7280', fontSize: 11 },
 });
