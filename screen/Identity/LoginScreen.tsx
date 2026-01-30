@@ -1,6 +1,6 @@
 import { CompositeNavigationProp, useNavigation } from '@react-navigation/native';
 import * as React from 'react';
-import { View, StyleSheet, Alert, ScrollView } from 'react-native';
+import { View, StyleSheet, Alert, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import {
   Button,
   Text,
@@ -68,92 +68,114 @@ export default function LoginScreen() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Surface style={styles.card} elevation={4}>
-        <Text
-          variant="headlineMedium"
-          style={[styles.title, { color: theme.colors.primary }]}
-        >
-          Login
-        </Text>
+    <KeyboardAvoidingView
+      style={styles.screen}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+    >
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.container}
+        automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode={Platform.OS === 'ios' ? 'on-drag' : 'none'}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.inner}>
+          <Surface style={styles.card} elevation={4}>
+            <Text
+              variant="headlineMedium"
+              style={[styles.title, { color: theme.colors.primary }]}
+            >
+              Login
+            </Text>
 
-        <Text variant="bodyMedium" style={styles.subtitle}>
-          Enter your credentials to continue
-        </Text>
+            <Text variant="bodyMedium" style={styles.subtitle}>
+              Enter your credentials to continue
+            </Text>
 
-        {/* Email */}
-        <View style={styles.field}>
-          <TextInput
-            label="Email *"
-            mode="outlined"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            value={email}
-            onChangeText={(text) => {
-              setEmail(text);
-              setErrors({ ...errors, email: '' });
-            }}
-            error={!!errors.email}
-          />
-          <HelperText type="error" visible>
-            {errors.email || ' '}
-          </HelperText>
+            {/* Email */}
+            <View style={styles.field}>
+              <TextInput
+                label="Email *"
+                mode="outlined"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                value={email}
+                onChangeText={(text) => {
+                  setEmail(text);
+                  setErrors({ ...errors, email: '' });
+                }}
+                error={!!errors.email}
+              />
+            <HelperText type="error" visible style={styles.helperTight}>
+                {errors.email || ' '}
+              </HelperText>
+            </View>
+
+            {/* Password */}
+            <View style={styles.field}>
+              <TextInput
+                label="Password *"
+                mode="outlined"
+                secureTextEntry
+                value={password}
+                onChangeText={(text) => {
+                  setPassword(text);
+                  setErrors({ ...errors, password: '' });
+                }}
+                error={!!errors.password}
+              />
+            <HelperText type="error" visible style={styles.helperTight}>
+                {errors.password || ' '}
+              </HelperText>
+            </View>
+
+            <View style={styles.buttonRow}>
+              <Button
+                mode="outlined"
+                onPress={handleBack}
+                style={styles.secondaryButton}
+                contentStyle={styles.buttonContent}
+                disabled={loading}
+              >
+                Back
+              </Button>
+
+              <Button
+                mode="contained"
+                onPress={handleLogin}
+                style={styles.primaryButton}
+                contentStyle={styles.buttonContent}
+                disabled={loading}
+              >
+                Login
+              </Button>
+            </View>
+
+            {loading && <ActivityIndicator style={{ marginTop: 16 }} />}
+          </Surface>
         </View>
-
-        {/* Password */}
-        <View style={styles.field}>
-          <TextInput
-            label="Password *"
-            mode="outlined"
-            secureTextEntry
-            value={password}
-            onChangeText={(text) => {
-              setPassword(text);
-              setErrors({ ...errors, password: '' });
-            }}
-            error={!!errors.password}
-          />
-          <HelperText type="error" visible>
-            {errors.password || ' '}
-          </HelperText>
-        </View>
-
-        <View style={styles.buttonRow}>
-          <Button
-            mode="outlined"
-            onPress={handleBack}
-            style={styles.secondaryButton}
-            contentStyle={styles.buttonContent}
-            disabled={loading}
-          >
-            Back
-          </Button>
-
-          <Button
-            mode="contained"
-            onPress={handleLogin}
-            style={styles.primaryButton}
-            contentStyle={styles.buttonContent}
-            disabled={loading}
-          >
-            Login
-          </Button>
-        </View>
-
-        {loading && (
-          <ActivityIndicator style={{ marginTop: 16 }} />
-        )}
-      </Surface>
-    </ScrollView>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+  },
+  scroll: {
+    flex: 1,
+  },
   container: {
     flexGrow: 1,
-    justifyContent: 'center',
     padding: 24,
+  },
+  inner: {
+    flex: 1,
+    justifyContent: 'center',
   },
   card: {
     padding: 28,
@@ -170,7 +192,12 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   field: {
-    marginBottom: 12, // ✅ consistent spacing
+    marginBottom: 8, // slightly tighter, still readable
+  },
+  helperTight: {
+    paddingVertical: 0,
+    marginTop: 2,
+    marginBottom: 0,
   },
   button: {
     marginTop: 16,
@@ -181,7 +208,7 @@ const styles = StyleSheet.create({
   buttonRow: {
     flexDirection: 'row',
     gap: 12, // RN >= 0.71
-    marginTop: 16,
+    marginTop: 10,
   },
   primaryButton: {
     flex: 1,
