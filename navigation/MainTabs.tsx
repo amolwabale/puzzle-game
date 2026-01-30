@@ -1,5 +1,5 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Icon } from 'react-native-paper';
+import { Icon, useTheme } from 'react-native-paper';
 
 import DashboardStack from './DashboardStack';
 import TenantStack from './TenantStack';
@@ -10,10 +10,22 @@ import SettingsStack from './SettingsStack';
 const Tab = createBottomTabNavigator();
 
 export default function MainTabs() {
+  const theme = useTheme();
+
   return (
-    <Tab.Navigator screenOptions={{ headerShown: false,
-      tabBarStyle: { paddingTop: 8, paddingBottom: 10, height: 78 }
-     }}>
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarStyle: {
+          paddingTop: 8,
+          paddingBottom: 10,
+          height: 78,
+          backgroundColor: theme.colors.background,
+        },
+        tabBarActiveTintColor: theme.colors.primary,
+        tabBarInactiveTintColor: theme.colors.onSurfaceVariant,
+      }}
+    >
       <Tab.Screen
         name="Dashboard"
         component={DashboardStack}
