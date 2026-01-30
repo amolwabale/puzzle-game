@@ -30,6 +30,8 @@ type Nav = NativeStackNavigationProp<RoomStackParamList, 'RoomList'>;
 
 const ICON_SIZE = 48;
 const DIVIDER_HEIGHT = ICON_SIZE;
+// Slightly smaller than the home icon (48) to keep breathing room.
+const OCCUPANT_AVATAR_SIZE = 44;
 
 const formatDate = (d?: string | null) =>
   d
@@ -39,6 +41,24 @@ const formatDate = (d?: string | null) =>
         year: 'numeric',
       })
     : '-';
+
+const formatMoney = (n?: number | string | null) => {
+  const v = Math.round(Number(n || 0));
+  try {
+    return `₹${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(v)}`;
+  } catch {
+    return `₹${String(v).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
+  }
+};
+
+const formatMoneyCompact = (n?: number | string | null) => {
+  const v = Math.round(Number(n || 0));
+  const trim = (s: string) => s.replace(/\.0$/, '');
+  if (v >= 1e7) return `₹${trim((v / 1e7).toFixed(1))}Cr`;
+  if (v >= 1e5) return `₹${trim((v / 1e5).toFixed(1))}L`;
+  if (v >= 1e3) return `₹${trim((v / 1e3).toFixed(1))}k`;
+  return `₹${v}`;
+};
 
 const getInitials = (name?: string | null) => {
   const parts = (name || '')
@@ -233,10 +253,10 @@ const RoomCard = ({
           <View style={styles.occupantAvatarWrap}>
             {occupant ? (
               occupantPhotoUrl ? (
-                <Avatar.Image size={30} source={{ uri: occupantPhotoUrl }} />
+                <Avatar.Image size={OCCUPANT_AVATAR_SIZE} source={{ uri: occupantPhotoUrl }} />
               ) : (
                 <Avatar.Text
-                  size={30}
+                  size={OCCUPANT_AVATAR_SIZE}
                   label={getInitials(occupant.tenant?.name)}
                   style={{ backgroundColor: themeColors.secondaryContainer }}
                   color={themeColors.secondary}
@@ -244,7 +264,7 @@ const RoomCard = ({
               )
             ) : (
               <Avatar.Icon
-                size={30}
+                size={OCCUPANT_AVATAR_SIZE}
                 icon="account-off-outline"
                 style={{ backgroundColor: '#EDEFF5' }}
                 color="#5B6475"
@@ -282,7 +302,7 @@ const RoomCard = ({
 
           <View style={styles.metaBlock}>
             <Text style={styles.cardSubtitle} numberOfLines={1}>
-              Rent: ₹{item.rent || '-'} | Deposit: ₹{item.deposit || '-'}
+              Rent: {formatMoney(item.rent)} | Deposit: {formatMoneyCompact(item.deposit)}
             </Text>
           </View>
 
@@ -371,9 +391,9 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   occupantAvatarWrap: {
-    marginTop: 10,
+    marginTop: 8,
     borderRadius: 999,
-    padding: 2,
+    padding: 1,
     backgroundColor: '#FFFFFF',
     // subtle outline effect without hard border
     shadowColor: '#000',
@@ -390,9 +410,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 10,
   },
-  cardTitle: { fontWeight: '700', flex: 1 },
+  // ~10% typography bump for readability
+  cardTitle: { fontWeight: '700', flex: 1, fontSize: 18 },
   metaBlock: { marginTop: 6, gap: 2 },
-  cardSubtitle: { color: '#555' },
+  cardSubtitle: { color: '#555', fontSize: 14, fontWeight: '600' },
 
   statusPill: {
     paddingHorizontal: 10,
@@ -400,7 +421,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   statusText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '800',
   },
 
@@ -414,8 +435,8 @@ const styles = StyleSheet.create({
     marginLeft: 6,
     color: '#666',
     fontWeight: '600',
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 13,
+    lineHeight: 18,
   },
 
   occupantBlock: {
@@ -424,11 +445,12 @@ const styles = StyleSheet.create({
   occupantName: {
     fontWeight: '700',
     color: '#1F2937',
+    fontSize: 16,
   },
   occupantMeta: {
     color: '#666',
     marginTop: 2,
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
   },
 
@@ -455,11 +477,13 @@ const styles = StyleSheet.create({
   editText: {
     fontWeight: '600',
     color: '#1A73E8',
+    fontSize: 14,
   },
 
   deleteText: {
     fontWeight: '600',
     color: '#D32F2F',
+    fontSize: 14,
   },
 
   fab: { position: 'absolute', right: 16, bottom: 24 },
@@ -471,10 +495,11 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   emptyIcon: { marginBottom: 16, backgroundColor: '#E0E0E0' },
-  emptyTitle: { fontWeight: '600', marginBottom: 6 },
+  emptyTitle: { fontWeight: '600', marginBottom: 6, fontSize: 18 },
   emptySubtitle: {
     color: '#666',
     textAlign: 'center',
     marginBottom: 16,
+    fontSize: 14,
   },
 });

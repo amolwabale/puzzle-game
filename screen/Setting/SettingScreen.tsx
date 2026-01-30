@@ -9,6 +9,7 @@ import {
   Dialog,
   HelperText,
   Portal,
+  Provider as PaperProvider,
   Surface,
   Text,
   TextInput,
@@ -28,8 +29,25 @@ type Errors = Partial<
 
 type RootNav = NativeStackNavigationProp<RootStackParamList>;
 
+const scalePaperThemeFonts = (t: any, scale: number) => {
+  const s = Number.isFinite(scale) ? scale : 1;
+  const fonts = t?.fonts ?? {};
+  const nextFonts: Record<string, any> = { ...fonts };
+  Object.keys(nextFonts).forEach((k) => {
+    const v = nextFonts[k];
+    if (!v || typeof v !== 'object') return;
+    const nv: any = { ...v };
+    if (typeof nv.fontSize === 'number') nv.fontSize = Math.round(nv.fontSize * s);
+    if (typeof nv.lineHeight === 'number') nv.lineHeight = Math.round(nv.lineHeight * s);
+    if (typeof nv.letterSpacing === 'number') nv.letterSpacing = Number((nv.letterSpacing * s).toFixed(2));
+    nextFonts[k] = nv;
+  });
+  return { ...t, fonts: nextFonts };
+};
+
 export default function SettingScreen() {
   const theme = useTheme();
+  const scaledTheme = React.useMemo(() => scalePaperThemeFonts(theme, 1.1), [theme]);
   const navigation = useNavigation<RootNav>();
 
   /* ---------------- FORM STATE ---------------- */
@@ -234,15 +252,18 @@ export default function SettingScreen() {
 
   if (initialLoading) {
     return (
-      <View style={styles.loader}>
-        <ActivityIndicator size="large" />
-      </View>
+      <PaperProvider theme={scaledTheme}>
+        <View style={styles.loader}>
+          <ActivityIndicator size="large" />
+        </View>
+      </PaperProvider>
     );
   }
 
   return (
     <>
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+      <PaperProvider theme={scaledTheme}>
+        <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
       {/* ---------- HERO ---------- */}
       <Surface style={styles.hero} elevation={3}>
         <Avatar.Icon size={56} icon="office-building-outline" />
@@ -344,7 +365,7 @@ export default function SettingScreen() {
           Logout
         </Button>
       </Surface>
-      </ScrollView>
+        </ScrollView>
 
       {/* ---------- DAY PICKER (DAY OF MONTH) ---------- */}
       <Portal>
@@ -408,6 +429,7 @@ export default function SettingScreen() {
           </Dialog.Actions>
         </Dialog>
       </Portal>
+      </PaperProvider>
     </>
   );
 }
@@ -518,7 +540,7 @@ const styles = StyleSheet.create({
   field: {
     marginBottom: 12,
   },
-  rentHint: { color: '#6B7280', fontWeight: '800', fontSize: 12, marginTop: 4 },
+  rentHint: { color: '#6B7280', fontWeight: '800', fontSize: 13, marginTop: 4 },
   pickerHint: { color: '#6B7280', fontWeight: '800', marginBottom: 10 },
   quickRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
   quickChip: { borderRadius: 12 },

@@ -311,7 +311,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 10,
   },
-  cardTitle: { fontWeight: '700', flex: 1 },
+  // ~10% typography bump for readability
+  cardTitle: { fontWeight: '700', flex: 1, fontSize: 18 },
   metaRow: {
     marginTop: 6,
     flexDirection: 'row',
@@ -321,9 +322,9 @@ const styles = StyleSheet.create({
   },
   metaLeft: { flex: 1, minWidth: 0 },
   roomRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 },
-  roomText: { color: '#555', fontWeight: '700', flex: 1 },
+  roomText: { color: '#555', fontWeight: '700', flex: 1, fontSize: 15 },
   issuedRow: { marginTop: 4, flexDirection: 'row', alignItems: 'center', gap: 6 },
-  dateText: { color: '#777', fontSize: 12, fontWeight: '700' },
+  dateText: { color: '#777', fontSize: 13, fontWeight: '700' },
   metaRight: { alignItems: 'flex-end', justifyContent: 'flex-start' },
   recordStatusRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' },
   statusPill: {
@@ -334,7 +335,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  statusPillText: { fontWeight: '900', fontSize: 11, letterSpacing: 0.4, textAlign: 'center' },
+  statusPillText: { fontWeight: '900', fontSize: 12, letterSpacing: 0.4, textAlign: 'center' },
   statusActionBtn: {
     width: 28,
     height: 28,
@@ -344,7 +345,7 @@ const styles = StyleSheet.create({
   statusActionBtnInner: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   totalTopRight: {
     fontWeight: '900',
-    fontSize: 13,
+    fontSize: 14,
     fontVariant: ['tabular-nums'],
     maxWidth: 120,
     textAlign: 'right',

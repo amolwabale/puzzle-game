@@ -19,6 +19,7 @@ import {
   Surface,
   Text,
   TextInput,
+  useTheme,
 } from 'react-native-paper';
 import DocumentPicker, { types as docTypes } from 'react-native-document-picker';
 import { launchImageLibrary } from 'react-native-image-picker';
@@ -205,10 +206,10 @@ export default function TenantFormScreen() {
           <Surface style={styles.hero} elevation={4}>
             <AvatarDisplay uri={avatarUri} size={88} />
             <View style={{ marginLeft: 16 }}>
-              <Text variant="titleLarge" style={{ fontWeight: '700' }}>
+              <Text variant="titleLarge" style={styles.heroTitle}>
                 {mode === 'edit' ? 'Edit Tenant' : 'Add Tenant'}
               </Text>
-              <Button mode="text" onPress={pickPhoto}>
+              <Button mode="text" onPress={pickPhoto} labelStyle={styles.heroLinkLabel}>
                 {profile.file || profile.url ? 'Change Photo' : 'Upload Photo'}
               </Button>
             </View>
@@ -253,27 +254,48 @@ const Section = ({ title, children }: any) => (
   </Surface>
 );
 
-const Input = ({ label, value, onChange, error, keyboard, multiline }: any) => (
-  <>
-    <TextInput
-      label={label}
-      value={value}
-      onChangeText={onChange}
-      mode="outlined"
-      keyboardType={keyboard}
-      multiline={multiline}
-      style={{ marginBottom: 4 }}
-      error={!!error}
-    />
-    <HelperText type="error" visible={!!error}>{error || ' '}</HelperText>
-  </>
-);
+const Input = ({ label, value, onChange, error, keyboard, multiline }: any) => {
+  const theme = useTheme();
+  const inputTheme = React.useMemo(
+    () =>
+      ({
+        ...theme,
+        fonts: {
+          ...(theme as any).fonts,
+          // MD3: labelLarge is used for TextInput label, bodyLarge for input text.
+          labelLarge: { ...(theme as any).fonts?.labelLarge, fontSize: 16 },
+          bodyLarge: { ...(theme as any).fonts?.bodyLarge, fontSize: 18 },
+        },
+      }) as any,
+    [theme],
+  );
+
+  return (
+    <>
+      <TextInput
+        label={label}
+        value={value}
+        onChangeText={onChange}
+        mode="outlined"
+        keyboardType={keyboard}
+        multiline={multiline}
+        style={styles.input}
+        contentStyle={styles.inputContent}
+        theme={inputTheme}
+        error={!!error}
+      />
+      <HelperText type="error" visible={!!error} style={styles.helperText}>
+        {error || ' '}
+      </HelperText>
+    </>
+  );
+};
 
 const DocTile = ({ icon, label, state, onPick }: any) => (
   <Surface style={styles.docTile} elevation={2}>
     <IconButton icon={icon} size={28} />
     <Text style={styles.docLabel}>{label}</Text>
-    <Button mode="text" onPress={onPick}>
+    <Button mode="text" onPress={onPick} labelStyle={styles.docButtonLabel}>
       {state.file || state.url ? 'Change' : 'Upload'}
     </Button>
   </Surface>
@@ -297,6 +319,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
+  // ~15% typography bump
+  heroTitle: { fontWeight: '700', fontSize: 25 },
+  heroLinkLabel: { fontSize: 15 },
   section: {
     borderRadius: 16,
     padding: 16,
@@ -305,7 +330,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontWeight: '600',
     marginBottom: 12,
+    fontSize: 18,
   },
+  input: { marginBottom: 4 },
+  inputContent: { fontSize: 18 },
+  helperText: { fontSize: 14 },
   docGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -320,7 +349,9 @@ const styles = StyleSheet.create({
   docLabel: {
     fontWeight: '600',
     marginVertical: 6,
+    fontSize: 16,
   },
+  docButtonLabel: { fontSize: 15 },
   fab: {
     position: 'absolute',
     right: 16,

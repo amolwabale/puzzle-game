@@ -187,8 +187,8 @@ export default function RoomViewScreen() {
             <Surface style={styles.occupancyHint} elevation={0}>
               <Avatar.Icon size={40} icon="account-off-outline" />
               <View style={{ flex: 1, marginLeft: 12 }}>
-                <Text style={{ fontWeight: '700' }}>Not assigned</Text>
-                <Text style={{ color: '#666', marginTop: 2 }}>
+                <Text style={styles.occupancyHintTitle}>Not assigned</Text>
+                <Text style={styles.occupancyHintSub}>
                   No tenant is currently occupying this room.
                 </Text>
               </View>
@@ -207,8 +207,8 @@ export default function RoomViewScreen() {
               <Surface key={i} style={styles.historyCard} elevation={1}>
                 <Avatar.Icon size={36} icon="account" />
                 <View style={{ marginLeft: 12, flex: 1 }}>
-                  <Text style={{ fontWeight: '600' }}>{h.tenant_name}</Text>
-                  <Text style={{ color: '#666', marginTop: 2 }}>
+                  <Text style={styles.historyName}>{h.tenant_name}</Text>
+                  <Text style={styles.historyDates}>
                     {formatDate(h.joining_date)} → {formatDate(h.leaving_date)}
                   </Text>
                 </View>
@@ -277,10 +277,12 @@ const styles = StyleSheet.create({
   },
   roomName: {
     fontWeight: '700',
+    fontSize: 25, // +~15%
   },
   roomType: {
     color: '#666',
     marginTop: 4,
+    fontSize: 16, // +~15%
   },
 
   highlightRow: {
@@ -295,13 +297,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   highlightLabel: {
-    fontSize: 12,
+    fontSize: 14, // +~15%
     color: '#777',
     marginTop: 4,
   },
   highlightValue: {
     fontWeight: '700',
     marginTop: 4,
+    fontSize: 17, // +~15%
   },
 
   section: {
@@ -312,6 +315,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontWeight: '600',
     marginBottom: 12,
+    fontSize: 18, // +~15%
   },
 
   infoRow: {
@@ -319,18 +323,18 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   infoLabel: {
-    fontSize: 12,
+    fontSize: 14, // +~15%
     color: '#888',
   },
   infoValue: {
-    fontSize: 15,
+    fontSize: 17, // +~15%
     fontWeight: '500',
     marginTop: 2,
   },
 
   muted: {
     color: '#999',
-    fontSize: 12,
+    fontSize: 14, // +~15%
     marginTop: 4,
   },
 
@@ -350,10 +354,12 @@ const styles = StyleSheet.create({
   },
   occupancyName: {
     fontWeight: '800',
+    fontSize: 18, // +~15%
   },
   occupancySub: {
     color: '#666',
     marginTop: 2,
+    fontSize: 14, // +~15%
   },
   statusPill: {
     paddingHorizontal: 10,
@@ -362,7 +368,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#EEF2FF',
   },
   statusPillText: {
-    fontSize: 12,
+    fontSize: 14, // +~15%
     fontWeight: '800',
     color: '#1A73E8',
   },
@@ -381,11 +387,11 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   metaLabel: {
-    fontSize: 12,
+    fontSize: 14, // +~15%
     color: '#888',
   },
   metaValue: {
-    fontSize: 15,
+    fontSize: 17, // +~15%
     fontWeight: '700',
     marginTop: 2,
   },
@@ -397,6 +403,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#F6F8FF',
     marginTop: 8,
   },
+  occupancyHintTitle: { fontWeight: '700', fontSize: 18 },
+  occupancyHintSub: { color: '#666', marginTop: 2, fontSize: 14 },
 
   historyCard: {
     flexDirection: 'row',
@@ -405,6 +413,8 @@ const styles = StyleSheet.create({
     marginTop: 8,
     borderRadius: 14,
   },
+  historyName: { fontWeight: '600', fontSize: 16 },
+  historyDates: { color: '#666', marginTop: 2, fontSize: 14 },
 
   fab: {
     position: 'absolute',

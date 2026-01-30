@@ -246,7 +246,7 @@ const DocTile = ({
     <IconButton icon={icon} size={28} />
     <Text style={styles.docLabel}>{label}</Text>
     {url ? (
-      <Button mode="text" onPress={onPress}>
+      <Button mode="text" onPress={onPress} labelStyle={styles.docButtonLabel}>
         View
       </Button>
     ) : (
@@ -284,15 +284,17 @@ const styles = StyleSheet.create({
   },
   tenantName: {
     fontWeight: '700',
+    fontSize: 25, // +~5% more
   },
   subText: {
     color: '#666',
     marginTop: 4,
+    fontSize: 16,
   },
   subSubText: {
     color: '#888',
     marginTop: 2,
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '500',
   },
 
@@ -304,6 +306,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontWeight: '600',
     marginBottom: 12,
+    fontSize: 19,
   },
 
   infoRow: {
@@ -312,11 +315,11 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   infoLabel: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#888',
   },
   infoValue: {
-    fontSize: 15,
+    fontSize: 18,
     fontWeight: '500',
   },
 
@@ -334,10 +337,14 @@ const styles = StyleSheet.create({
   docLabel: {
     fontWeight: '600',
     marginVertical: 6,
+    fontSize: 16,
+  },
+  docButtonLabel: {
+    fontSize: 15,
   },
   muted: {
     color: '#999',
-    fontSize: 12,
+    fontSize: 14,
   },
 
   fab: {

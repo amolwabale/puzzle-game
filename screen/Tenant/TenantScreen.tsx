@@ -25,7 +25,8 @@ import { fetchActiveRoomForTenants } from '../../service/TenantRoomService';
 
 type Nav = NativeStackNavigationProp<TenantStackParamList, 'TenantList'>;
 
-const AVATAR_SIZE = 52;
+// Match Payment list avatar size for consistency.
+const AVATAR_SIZE = 58;
 
 const formatDate = (d?: string | null) =>
   d
@@ -192,9 +193,6 @@ const TenantCard = ({
       <TouchableOpacity style={styles.cardContent} activeOpacity={0.85} onPress={onView}>
         <AvatarDisplay uri={photoUrl} size={AVATAR_SIZE} />
 
-        {/* VERTICAL DIVIDER */}
-        <View style={styles.verticalDivider} />
-
         <View style={styles.cardBody}>
           <Text variant="titleMedium" style={styles.cardTitle}>
             {item.name || '-'}
@@ -249,21 +247,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: 16,
     paddingVertical: 16,
-    alignItems: 'flex-start',
+    alignItems: 'center',
   },
 
-  verticalDivider: {
-    width: 1.5,
-    height: 65,
-    backgroundColor: '#cccccc',
-    borderRadius: 1,
-    marginHorizontal: 12,
-  },
-
-  cardBody: { flex: 1, paddingTop: 2 },
-  cardTitle: { fontWeight: '700' },
-  cardSubtitle: { color: '#555', marginTop: 4, fontWeight: '600' },
-  cardCaption: { color: '#777', fontSize: 12, marginTop: 4, lineHeight: 16 },
+  cardBody: { flex: 1, paddingLeft: 14 },
+  // ~10% typography bump for readability
+  cardTitle: { fontWeight: '700', fontSize: 18 },
+  cardSubtitle: { color: '#555', marginTop: 4, fontWeight: '600', fontSize: 15 },
+  cardCaption: { color: '#777', fontSize: 13, marginTop: 4, lineHeight: 18 },
 
   /* ACTION RAIL */
   actionRail: {
@@ -287,11 +278,13 @@ const styles = StyleSheet.create({
 
   editText: {
     fontWeight: '600',
+    fontSize: 14,
     color: '#1A73E8',
   },
 
   deleteText: {
     fontWeight: '600',
+    fontSize: 14,
     color: '#D32F2F',
   },
 

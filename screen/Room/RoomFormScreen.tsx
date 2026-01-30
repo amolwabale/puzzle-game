@@ -15,6 +15,7 @@ import {
   Avatar,
   FAB,
   HelperText,
+  Provider as PaperProvider,
   Surface,
   Text,
   TextInput,
@@ -63,12 +64,29 @@ const getInitials = (name?: string | null) => {
   return parts.length ? parts.map(p => p[0]).join('').toUpperCase() : 'R';
 };
 
+const scalePaperThemeFonts = (t: any, scale: number) => {
+  const s = Number.isFinite(scale) ? scale : 1;
+  const fonts = t?.fonts ?? {};
+  const nextFonts: Record<string, any> = { ...fonts };
+  Object.keys(nextFonts).forEach((k) => {
+    const v = nextFonts[k];
+    if (!v || typeof v !== 'object') return;
+    const nv: any = { ...v };
+    if (typeof nv.fontSize === 'number') nv.fontSize = Math.round(nv.fontSize * s);
+    if (typeof nv.lineHeight === 'number') nv.lineHeight = Math.round(nv.lineHeight * s);
+    if (typeof nv.letterSpacing === 'number') nv.letterSpacing = Number((nv.letterSpacing * s).toFixed(2));
+    nextFonts[k] = nv;
+  });
+  return { ...t, fonts: nextFonts };
+};
+
 /* ---------------- SCREEN ---------------- */
 
 export default function RoomFormScreen() {
   const navigation = useNavigation();
   const route = useRoute<Props['route']>();
   const theme = useTheme();
+  const scaledTheme = React.useMemo(() => scalePaperThemeFonts(theme, 1.15), [theme]);
 
   const mode = route.params?.mode ?? 'add';
   const roomId = mode === 'edit' ? route.params?.roomId : undefined;
@@ -321,8 +339,9 @@ export default function RoomFormScreen() {
 
   return (
     <>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+      <PaperProvider theme={scaledTheme}>
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
 
           {/* ===== ROOM DETAILS (ENHANCED) ===== */}
           <Surface style={styles.roomHero} elevation={2}>
@@ -627,22 +646,23 @@ export default function RoomFormScreen() {
             </Surface>
           )}
 
-        </ScrollView>
-      </KeyboardAvoidingView>
+          </ScrollView>
+        </KeyboardAvoidingView>
 
-      <FAB icon="content-save" style={styles.fab} loading={saving} onPress={save} />
+        <FAB icon="content-save" style={styles.fab} loading={saving} onPress={save} />
 
-      <DatePickerModal
-        locale="en"
-        mode="single"
-        visible={dateModalOpen}
-        date={joiningDate ?? new Date()}
-        onDismiss={() => setDateModalOpen(false)}
-        onConfirm={({ date }) => {
-          setDateModalOpen(false);
-          setJoiningDate(date ?? null);
-        }}
-      />
+        <DatePickerModal
+          locale="en"
+          mode="single"
+          visible={dateModalOpen}
+          date={joiningDate ?? new Date()}
+          onDismiss={() => setDateModalOpen(false)}
+          onConfirm={({ date }) => {
+            setDateModalOpen(false);
+            setJoiningDate(date ?? null);
+          }}
+        />
+      </PaperProvider>
     </>
   );
 }
@@ -732,7 +752,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   statusPillText: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '800',
   },
   occupancyMetaRow: {
@@ -750,11 +770,11 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   metaLabel: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#888',
   },
   metaValue: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '700',
     marginTop: 2,
   },

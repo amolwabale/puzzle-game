@@ -17,6 +17,7 @@ import {
   HelperText,
   Icon,
   IconButton,
+  Provider as PaperProvider,
   Surface,
   Text,
   TextInput,
@@ -61,8 +62,25 @@ function getPrevAndCurrMonthLabels(date?: Date) {
   return { prevLabel, currLabel };
 }
 
+const scalePaperThemeFonts = (t: any, scale: number) => {
+  const s = Number.isFinite(scale) ? scale : 1;
+  const fonts = t?.fonts ?? {};
+  const nextFonts: Record<string, any> = { ...fonts };
+  Object.keys(nextFonts).forEach((k) => {
+    const v = nextFonts[k];
+    if (!v || typeof v !== 'object') return;
+    const nv: any = { ...v };
+    if (typeof nv.fontSize === 'number') nv.fontSize = Math.round(nv.fontSize * s);
+    if (typeof nv.lineHeight === 'number') nv.lineHeight = Math.round(nv.lineHeight * s);
+    if (typeof nv.letterSpacing === 'number') nv.letterSpacing = Number((nv.letterSpacing * s).toFixed(2));
+    nextFonts[k] = nv;
+  });
+  return { ...t, fonts: nextFonts };
+};
+
 export default function PaymentFormScreen() {
   const theme = useTheme();
+  const scaledTheme = React.useMemo(() => scalePaperThemeFonts(theme, 1.15), [theme]);
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const billId: number | undefined = route.params?.billId;
@@ -291,23 +309,26 @@ export default function PaymentFormScreen() {
 
   if (loading) {
     return (
-      <View style={styles.loader}>
-        <ActivityIndicator size="large" />
-      </View>
+      <PaperProvider theme={scaledTheme}>
+        <View style={styles.loader}>
+          <ActivityIndicator size="large" />
+        </View>
+      </PaperProvider>
     );
   }
 
   return (
     <>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <ScrollView
-          contentContainerStyle={styles.container}
-          keyboardShouldPersistTaps="handled"
+      <PaperProvider theme={scaledTheme}>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
-          <View>
+          <ScrollView
+            contentContainerStyle={styles.container}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View>
             {/* HERO */}
             <Surface style={styles.hero} elevation={2}>
               <Avatar.Icon
@@ -376,7 +397,7 @@ export default function PaymentFormScreen() {
                           <Text style={{ fontWeight: '800' }}>
                             {(room.name || '-') + ' - ' + (tenant.name || '-')}
                           </Text>
-                          <Text style={{ color: '#666', fontSize: 12, marginTop: 2 }}>
+                          <Text style={{ color: '#666', fontSize: 14, marginTop: 2 }}>
                             Rent: {room.rent ? formatMoney(Number(room.rent)) : '-'}
                           </Text>
                         </TouchableOpacity>
@@ -538,16 +559,17 @@ export default function PaymentFormScreen() {
               </View>
             </View>
           </Surface>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
 
-      <FAB
-        icon="content-save"
-        style={styles.fab}
-        loading={saving}
-        onPress={save}
-      />
+        <FAB
+          icon="content-save"
+          style={styles.fab}
+          loading={saving}
+          onPress={save}
+        />
+      </PaperProvider>
     </>
   );
 }
@@ -706,14 +728,14 @@ const styles = StyleSheet.create({
   },
   summaryHeroValue: {
     marginTop: 6,
-    fontSize: 26,
+    fontSize: 30,
     fontWeight: '900',
     color: '#111827',
   },
   summaryHeroSub: {
     marginTop: 8,
     color: '#666',
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: '600',
   },
   statusPill: {
@@ -727,7 +749,7 @@ const styles = StyleSheet.create({
   statusPillText: {
     color: '#D32F2F',
     fontWeight: '900',
-    fontSize: 12,
+    fontSize: 14,
   },
   tileGrid: {
     flexDirection: 'row',
@@ -748,14 +770,14 @@ const styles = StyleSheet.create({
   tileValue: {
     marginTop: 10,
     fontWeight: '900',
-    fontSize: 16,
+    fontSize: 18,
     color: '#111827',
     fontVariant: ['tabular-nums'],
   },
   tileSub: {
     marginTop: 4,
     color: '#777',
-    fontSize: 11,
+    fontSize: 13,
     fontWeight: '700',
   },
   tileSubPlaceholder: {
@@ -786,7 +808,7 @@ const styles = StyleSheet.create({
   },
   meterUnitsChipText: {
     fontWeight: '900',
-    fontSize: 12,
+    fontSize: 14,
     color: '#1A73E8',
   },
   meterGrid: {
@@ -829,14 +851,14 @@ const styles = StyleSheet.create({
   meterMonthText: {
     marginTop: 2,
     fontWeight: '800',
-    fontSize: 12,
+    fontSize: 14,
   },
   meterMonthTextPrev: { color: '#1A73E8' },
   meterMonthTextCurr: { color: '#0F766E' },
   meterValue: {
     marginTop: 10,
     fontWeight: '900',
-    fontSize: 16,
+    fontSize: 18,
     color: '#111827',
     fontVariant: ['tabular-nums'],
   },
@@ -852,7 +874,7 @@ const styles = StyleSheet.create({
     borderColor: '#D6DEFF',
     flex: 1,
   },
-  metaPillText: { fontWeight: '800', color: '#1A73E8', fontSize: 12, flex: 1 },
+  metaPillText: { fontWeight: '800', color: '#1A73E8', fontSize: 14, flex: 1 },
 
   fab: { position: 'absolute', right: 16, bottom: 24 },
 });
