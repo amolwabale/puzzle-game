@@ -606,7 +606,8 @@ export default function PaymentViewScreen() {
       <View style={styles.shareShotWrap}>
         <ViewShot ref={shareShotRef} options={{ format: 'png', quality: 0.9 }}>
           <View style={styles.shareCanvas}>
-            <View style={styles.shareCard}>
+            <View style={styles.shareCardFrame}>
+              <View style={styles.shareCard}>
               <View style={styles.shareHeaderRow}>
                 <View>
                   <Text style={styles.shareBrand}>{propertyName}</Text>
@@ -637,6 +638,16 @@ export default function PaymentViewScreen() {
               </View>
 
               <View style={styles.shareDivider} />
+              <View style={styles.shareReadingsRow}>
+                <View style={styles.shareReadingsItem}>
+                  <Text style={styles.shareMetaLabel}>Prev reading</Text>
+                  <Text style={styles.shareMetaValue}>{String(prev)}</Text>
+                </View>
+                <View style={styles.shareReadingsItem}>
+                  <Text style={styles.shareMetaLabel}>Curr reading</Text>
+                  <Text style={styles.shareMetaValue}>{String(curr)}</Text>
+                </View>
+              </View>
               <Text style={styles.shareSectionTitle}>Charges</Text>
               <View style={styles.shareTableHeader}>
                 <Text style={[styles.shareDescCell, styles.shareTableHeaderText]}>Description</Text>
@@ -680,7 +691,23 @@ export default function PaymentViewScreen() {
                 </View>
               </View>
 
+              {!!bill.paid_amount_comment?.trim() && (
+                <View style={styles.shareNotesBlock}>
+                  <Text style={styles.shareSectionTitle}>Payment notes</Text>
+                  {bill.paid_amount_comment
+                    .trim()
+                    .split('\n')
+                    .filter((line) => line.trim().length > 0)
+                    .map((line, idx) => (
+                      <Text key={String(idx)} style={styles.shareNoteLine}>
+                        {line}
+                      </Text>
+                    ))}
+                </View>
+              )}
+
               <Text style={styles.shareFooter}>This is a system generated invoice.</Text>
+            </View>
             </View>
           </View>
         </ViewShot>
@@ -1502,14 +1529,20 @@ const styles = StyleSheet.create({
   shareCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#E5E7EB',
+    borderWidth: 0,
     padding: 18,
     shadowColor: '#0F172A',
     shadowOpacity: 0.08,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 4 },
     elevation: 2,
+  },
+  shareCardFrame: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#D1D5DB',
+    borderRadius: 16,
+    padding: 12, // ~3mm padding
+    backgroundColor: '#FFFFFF',
   },
   shareCanvas: {
     width: 400,
@@ -1555,14 +1588,22 @@ const styles = StyleSheet.create({
   shareSectionTitle: { marginTop: 10, fontSize: 12, fontWeight: '800', color: '#111827' },
   shareDivider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: '#D1D5DB',
     marginTop: 10,
     marginBottom: 6,
+  },
+  shareReadingsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  shareReadingsItem: {
+    width: '48%',
   },
   shareTableHeader: {
     flexDirection: 'row',
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#E5E7EB',
+    borderBottomColor: '#D1D5DB',
     paddingVertical: 8,
     marginTop: 6,
     paddingHorizontal: 6,
@@ -1573,6 +1614,8 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     alignItems: 'center',
     paddingHorizontal: 6,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#D1D5DB',
   },
   shareAltRow: {
     backgroundColor: '#F8FAFC',
@@ -1587,7 +1630,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     paddingTop: 10,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: '#D1D5DB',
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
@@ -1597,6 +1640,13 @@ const styles = StyleSheet.create({
   shareTotalValue: { fontSize: 22, fontWeight: '900', color: '#111827', marginTop: 4, textAlign: 'right' },
   shareTotalsInlineRow: { flexDirection: 'row', gap: 12, marginTop: 6, justifyContent: 'flex-end' },
   shareTotalsItem: { flex: 1 },
+  shareNotesBlock: {
+    marginTop: 10,
+    paddingTop: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#D1D5DB',
+  },
+  shareNoteLine: { marginTop: 4, color: '#374151', fontSize: 12, fontWeight: '600' },
   shareFooter: { marginTop: 12, textAlign: 'center', color: '#6B7280', fontSize: 11 },
 });
 
