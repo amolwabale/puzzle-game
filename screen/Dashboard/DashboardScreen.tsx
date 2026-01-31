@@ -93,12 +93,14 @@ const UtilityStat = ({
   value,
   color,
   sub,
+  valueIndent = 'none',
 }: {
   icon: string;
   label: string;
   value: string;
   color: string;
   sub?: string;
+  valueIndent?: 'none' | 'label';
 }) => (
   <View style={styles.utilStat}>
     <View style={styles.utilStatTop}>
@@ -108,7 +110,11 @@ const UtilityStat = ({
       </Text>
     </View>
     <Text
-      style={[styles.utilStatValue, { color }]}
+      style={[
+        styles.utilStatValue,
+        { color },
+        valueIndent === 'label' ? styles.utilStatValueIndent : null,
+      ]}
       numberOfLines={1}
       adjustsFontSizeToFit
       minimumFontScale={0.75}
@@ -116,12 +122,13 @@ const UtilityStat = ({
       {value}
     </Text>
     {sub ? (
-      <Text style={styles.utilStatSub} numberOfLines={1}>
+      <Text
+        style={[styles.utilStatSub, valueIndent === 'label' ? styles.utilStatValueIndent : null]}
+        numberOfLines={1}
+      >
         {sub}
       </Text>
-    ) : (
-      <Text style={styles.utilStatSubPlaceholder}> </Text>
-    )}
+    ) : null}
   </View>
 );
 
@@ -371,6 +378,9 @@ export default function DashboardScreen() {
         }).length
       : 0;
 
+    const agreementAbsentCount = (tenants || []).filter((t) => !String((t as any).agreement_url || '').trim()).length;
+    const adharAbsentCount = (tenants || []).filter((t) => !String((t as any).adhar_card_url || '').trim()).length;
+
     return {
       roomCount,
       tenantCount,
@@ -403,6 +413,8 @@ export default function DashboardScreen() {
       afterDueGate,
       tenantsMissingBillsAfterRentDayCount,
       billsUnpaidAfterDueDayCount,
+      agreementAbsentCount,
+      adharAbsentCount,
     };
   }, [rooms, tenants, bills, mappings, setting, monthRange]);
 
@@ -717,6 +729,7 @@ export default function DashboardScreen() {
               label="Bills not generated"
               value={String(derived.tenantsMissingBillsAfterRentDayCount)}
               color={theme.colors.primary}
+              valueIndent="label"
               sub={
                 derived.rentDay
                   ? derived.afterRentGate
@@ -736,6 +749,7 @@ export default function DashboardScreen() {
               label="Bills unpaid"
               value={String(derived.billsUnpaidAfterDueDayCount)}
               color={derived.billsUnpaidAfterDueDayCount > 0 ? theme.colors.error : theme.colors.primary}
+              valueIndent="label"
               sub={
                 derived.dueDay
                   ? derived.afterDueGate
@@ -743,6 +757,38 @@ export default function DashboardScreen() {
                     : `Starts on due day ${derived.dueDay}`
                   : 'Set due day (Settings)'
               }
+            />
+          </View>
+
+          <View
+            style={[
+              styles.utilDividerH,
+              { backgroundColor: (theme.colors as any).outlineVariant ?? theme.colors.outline },
+            ]}
+          />
+
+          <View style={styles.utilRow}>
+            <UtilityStat
+              icon="file-document-outline"
+              label="Agreement absent"
+              value={String(derived.agreementAbsentCount)}
+              color={derived.agreementAbsentCount > 0 ? theme.colors.error : theme.colors.primary}
+              sub={undefined}
+              valueIndent="label"
+            />
+            <View
+              style={[
+                styles.utilDividerV,
+                { backgroundColor: (theme.colors as any).outlineVariant ?? theme.colors.outline },
+              ]}
+            />
+            <UtilityStat
+              icon="card-account-details-outline"
+              label="Aadhaar absent"
+              value={String(derived.adharAbsentCount)}
+              color={derived.adharAbsentCount > 0 ? theme.colors.error : theme.colors.primary}
+              sub={undefined}
+              valueIndent="label"
             />
           </View>
         </Surface>
@@ -824,8 +870,9 @@ const styles = StyleSheet.create({
   utilStatTop: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   utilStatLabel: { color: '#6B7280', fontWeight: '800', fontSize: 12 },
   utilStatValue: { marginTop: 6, fontWeight: '900', fontSize: 18, fontVariant: ['tabular-nums'] },
+  // Align value/sub under the label start (after the icon + gap).
+  utilStatValueIndent: { marginLeft: 22 },
   utilStatSub: { marginTop: 2, color: '#6B7280', fontWeight: '800', fontSize: 12 },
-  utilStatSubPlaceholder: { marginTop: 2, opacity: 0 },
 
   emptyCard: { borderRadius: 18, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: '#E5E7EB' },
   emptyTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
