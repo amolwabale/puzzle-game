@@ -158,6 +158,8 @@ export default function TenantScreen() {
         <View style={styles.loader}>
           <ActivityIndicator size="large" />
         </View>
+      ) : tenants.length === 0 ? (
+        <EmptyState onAdd={() => navigation.navigate('TenantForm', { mode: 'add' })} />
       ) : (
         <FlatList
           data={tenants}
@@ -231,6 +233,23 @@ const TenantCard = ({
 const AvatarDisplay = ({ uri, size }: { uri?: string; size: number }) =>
   uri ? <Avatar.Image size={size} source={{ uri }} /> : <Avatar.Icon size={size} icon="account" />;
 
+/* ---------------- EMPTY ---------------- */
+
+const EmptyState = ({ onAdd }: { onAdd: () => void }) => (
+  <View style={styles.emptyState}>
+    <Avatar.Icon size={72} icon="account-group-outline" style={styles.emptyIcon} />
+    <Text variant="titleMedium" style={styles.emptyTitle}>
+      No tenants yet
+    </Text>
+    <Text style={styles.emptySubtitle}>
+      Add tenants to manage occupancy, bills and documents.
+    </Text>
+    <Button mode="contained" onPress={onAdd}>
+      Add Tenant
+    </Button>
+  </View>
+);
+
 /* ---------------- STYLES ---------------- */
 
 const styles = StyleSheet.create({
@@ -297,4 +316,19 @@ const styles = StyleSheet.create({
   },
 
   fab: { position: 'absolute', right: 16, bottom: 24 },
+
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  emptyIcon: { marginBottom: 16, backgroundColor: '#E0E0E0' },
+  emptyTitle: { fontWeight: '600', marginBottom: 6, fontSize: 18 },
+  emptySubtitle: {
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 16,
+    fontSize: 14,
+  },
 });

@@ -470,6 +470,52 @@ export default function DashboardScreen() {
 
   const hasAnyData = derived.roomCount > 0 || derived.tenantCount > 0 || (bills || []).length > 0;
 
+  // If nothing is configured yet, show only a single "No data yet" card.
+  if (!hasAnyData) {
+    return (
+      <ScrollView
+        style={styles.screen}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} />}
+      >
+        <Surface style={styles.emptyCard} elevation={1}>
+          <View style={styles.emptyTop}>
+            <View style={[styles.emptyIcon, { backgroundColor: theme.colors.primaryContainer }]}>
+              <Icon source="home-city-outline" size={22} color={theme.colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.emptyTitle}>No data yet</Text>
+              <Text style={styles.emptySub}>
+                Add rooms, tenants, or a bill to start tracking occupancy, dues, and utilities.
+              </Text>
+            </View>
+          </View>
+          <View style={styles.emptyActions}>
+            <TouchableRipple onPress={() => openTab('Rooms', 'RoomList')} style={styles.emptyBtn} borderless>
+              <View style={styles.emptyBtnInner}>
+                <Icon source="home-city-outline" size={16} color={theme.colors.primary} />
+                <Text style={[styles.emptyBtnText, { color: theme.colors.primary }]}>Rooms</Text>
+              </View>
+            </TouchableRipple>
+            <TouchableRipple onPress={() => openTab('Tenant', 'TenantList')} style={styles.emptyBtn} borderless>
+              <View style={styles.emptyBtnInner}>
+                <Icon source="account-group" size={16} color={theme.colors.primary} />
+                <Text style={[styles.emptyBtnText, { color: theme.colors.primary }]}>Tenants</Text>
+              </View>
+            </TouchableRipple>
+            <TouchableRipple onPress={() => openTab('Payments', 'PaymentList')} style={styles.emptyBtn} borderless>
+              <View style={styles.emptyBtnInner}>
+                <Icon source="credit-card-outline" size={16} color={theme.colors.primary} />
+                <Text style={[styles.emptyBtnText, { color: theme.colors.primary }]}>Payments</Text>
+              </View>
+            </TouchableRipple>
+          </View>
+        </Surface>
+      </ScrollView>
+    );
+  }
+
   return (
     <ScrollView
       style={styles.screen}
@@ -603,42 +649,6 @@ export default function DashboardScreen() {
           </Surface>
         </View>
       </Surface>
-
-      {!hasAnyData ? (
-        <Surface style={styles.emptyCard} elevation={1}>
-          <View style={styles.emptyTop}>
-            <View style={[styles.emptyIcon, { backgroundColor: theme.colors.primaryContainer }]}>
-              <Icon source="home-city-outline" size={22} color={theme.colors.primary} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.emptyTitle}>No data yet</Text>
-              <Text style={styles.emptySub}>
-                Add rooms and tenants to start tracking occupancy, dues, and utilities.
-              </Text>
-            </View>
-          </View>
-          <View style={styles.emptyActions}>
-            <TouchableRipple onPress={() => openTab('Rooms', 'RoomList')} style={styles.emptyBtn} borderless>
-              <View style={styles.emptyBtnInner}>
-                <Icon source="home-city-outline" size={16} color={theme.colors.primary} />
-                <Text style={[styles.emptyBtnText, { color: theme.colors.primary }]}>Rooms</Text>
-              </View>
-            </TouchableRipple>
-            <TouchableRipple onPress={() => openTab('Tenant', 'TenantList')} style={styles.emptyBtn} borderless>
-              <View style={styles.emptyBtnInner}>
-                <Icon source="account-group" size={16} color={theme.colors.primary} />
-                <Text style={[styles.emptyBtnText, { color: theme.colors.primary }]}>Tenants</Text>
-              </View>
-            </TouchableRipple>
-            <TouchableRipple onPress={() => openTab('Payments', 'PaymentList')} style={styles.emptyBtn} borderless>
-              <View style={styles.emptyBtnInner}>
-                <Icon source="credit-card-outline" size={16} color={theme.colors.primary} />
-                <Text style={[styles.emptyBtnText, { color: theme.colors.primary }]}>Payments</Text>
-              </View>
-            </TouchableRipple>
-          </View>
-        </Surface>
-      ) : null}
 
       {/* UTILITIES */}
      

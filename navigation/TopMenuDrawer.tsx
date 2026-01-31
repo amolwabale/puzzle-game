@@ -1,5 +1,5 @@
 import React from 'react';
-import { Animated, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, Animated, Pressable, StyleSheet, View } from 'react-native';
 import { Portal, Surface, Text, TouchableRipple, useTheme } from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -62,7 +62,6 @@ export function TopMenuProvider({
   );
 
   const doLogout = React.useCallback(async () => {
-    closeMenu();
     try {
       await supabase.auth.signOut();
       // AppNavigator listens to session changes and will redirect to AuthStack.
@@ -70,7 +69,21 @@ export function TopMenuProvider({
       // no-op: keep UI stable
       console.warn('Logout failed', e?.message || e);
     }
-  }, [closeMenu]);
+  }, []);
+
+  const confirmLogout = React.useCallback(() => {
+    Alert.alert('Logout', 'Are you sure you want to logout?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Logout',
+        style: 'destructive',
+        onPress: () => {
+          closeMenu();
+          void doLogout();
+        },
+      },
+    ]);
+  }, [closeMenu, doLogout]);
 
   const translateY = anim.interpolate({
     inputRange: [0, 1],
@@ -97,7 +110,13 @@ export function TopMenuProvider({
                 ]}
                 elevation={3}
               >
-                <Text style={styles.panelTitle}>Menu</Text>
+                <View
+                  style={[
+                    styles.handle,
+                    { backgroundColor: (theme.colors as any).outlineVariant ?? theme.colors.outline },
+                  ]}
+                />
+                <Text style={[styles.panelTitle, { color: theme.colors.onSurface }]}>Menu</Text>
 
                 <MenuItem
                   icon="account-circle-outline"
@@ -125,7 +144,7 @@ export function TopMenuProvider({
                 <MenuItem
                   icon="logout"
                   label="Logout"
-                  onPress={() => void doLogout()}
+                  onPress={confirmLogout}
                   tone="danger"
                 />
               </Surface>
@@ -151,14 +170,32 @@ function MenuItem({
   const theme = useTheme();
   const color = tone === 'danger' ? theme.colors.error : theme.colors.onSurface;
   const iconColor = tone === 'danger' ? theme.colors.error : theme.colors.primary;
+  const chevronColor = (theme.colors as any).onSurfaceVariant ?? theme.colors.onSurface;
+  const itemBg =
+    tone === 'danger'
+      ? theme.colors.surface
+      : theme.colors.surface;
+  const itemBorder = (theme.colors as any).outlineVariant ?? theme.colors.outline;
+  const iconBg =
+    tone === 'danger'
+      ? theme.colors.surface
+      : theme.colors.surface;
 
   return (
-    <TouchableRipple onPress={onPress} borderless style={styles.item}>
+    <TouchableRipple
+      onPress={onPress}
+      style={[styles.item, { backgroundColor: itemBg, borderColor: itemBorder }]}
+    >
       <View style={styles.itemInner}>
-        <MaterialCommunityIcons name={icon} size={18} color={iconColor} />
+        <View style={[styles.itemIconWrap, { backgroundColor: iconBg, borderColor: itemBorder }]}>
+          <MaterialCommunityIcons name={icon} size={18} color={iconColor} />
+        </View>
+
         <Text style={[styles.itemText, { color }]} numberOfLines={1}>
           {label}
         </Text>
+
+        <MaterialCommunityIcons name="chevron-right" size={20} color={chevronColor} />
       </View>
     </TouchableRipple>
   );
@@ -168,17 +205,44 @@ const styles = StyleSheet.create({
   backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(15, 23, 42, 0.18)' },
   panelWrap: { position: 'absolute', left: 0, right: 0, top: 0 },
   panel: {
-    borderBottomLeftRadius: 18,
-    borderBottomRightRadius: 18,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
     borderWidth: 1,
     paddingTop: 18,
-    paddingBottom: 14,
+    paddingBottom: 16,
     paddingHorizontal: 16,
   },
-  panelTitle: { fontWeight: '900', fontSize: 16, color: '#111827', marginBottom: 10 },
-  item: { borderRadius: 14, overflow: 'hidden' },
-  itemInner: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 10 },
-  itemText: { fontWeight: '800', fontSize: 15 },
-  divider: { height: StyleSheet.hairlineWidth, marginVertical: 8 },
+  handle: {
+    alignSelf: 'center',
+    width: 40,
+    height: 4,
+    borderRadius: 999,
+    opacity: 0.35,
+    marginBottom: 8,
+  },
+  panelTitle: { fontWeight: '900', fontSize: 16, marginBottom: 10, textAlign: 'left' },
+  item: {
+    borderRadius: 14,
+    overflow: 'hidden',
+    borderWidth: StyleSheet.hairlineWidth,
+    marginBottom: 8,
+  },
+  itemInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    gap: 12,
+  },
+  itemIconWrap: {
+    width: 30,
+    height: 30,
+    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  itemText: { flex: 1, fontWeight: '800', fontSize: 15 },
+  divider: { height: StyleSheet.hairlineWidth, marginVertical: 6 },
 });
 

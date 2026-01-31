@@ -11,6 +11,7 @@ import {
 import {
   ActivityIndicator,
   Avatar,
+  Button,
   FAB,
   Icon,
   Surface,
@@ -151,6 +152,8 @@ export default function PaymentScreen() {
         <View style={styles.loader}>
           <ActivityIndicator size="large" />
         </View>
+      ) : bills.length === 0 ? (
+        <EmptyState onAdd={() => navigation.navigate('PaymentForm')} />
       ) : (
         <FlatList
           data={bills}
@@ -286,6 +289,23 @@ const PaymentCard = ({
 const AvatarDisplay = ({ uri, size }: { uri?: string; size: number }) =>
   uri ? <Avatar.Image size={size} source={{ uri }} /> : <Avatar.Icon size={size} icon="account" />;
 
+/* ---------------- EMPTY ---------------- */
+
+const EmptyState = ({ onAdd }: { onAdd: () => void }) => (
+  <View style={styles.emptyState}>
+    <Avatar.Icon size={72} icon="receipt" style={styles.emptyIcon} />
+    <Text variant="titleMedium" style={styles.emptyTitle}>
+      No payments yet
+    </Text>
+    <Text style={styles.emptySubtitle}>
+      Create your first bill to start tracking rent and collections.
+    </Text>
+    <Button mode="contained" onPress={onAdd}>
+      Add Payment
+    </Button>
+  </View>
+);
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F4F6FA' },
   listContent: { padding: 16, paddingBottom: 120 },
@@ -352,5 +372,20 @@ const styles = StyleSheet.create({
   },
 
   fab: { position: 'absolute', right: 16, bottom: 24 },
+
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  emptyIcon: { marginBottom: 16, backgroundColor: '#E0E0E0' },
+  emptyTitle: { fontWeight: '600', marginBottom: 6, fontSize: 18 },
+  emptySubtitle: {
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 16,
+    fontSize: 14,
+  },
 });
 
