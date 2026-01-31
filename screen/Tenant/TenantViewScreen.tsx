@@ -334,42 +334,45 @@ const DocTile = ({
   shareTone: { bg: string; border: string; icon: string };
 }) => (
   <Surface style={styles.docTile} elevation={1}>
-    {url ? (
-      <IconButton
-        icon={
-          sharing
-            ? () => <ActivityIndicator size={16} color={shareTone.icon} />
-            : 'share-variant'
-        }
-        size={18}
-        onPress={onShare}
-        disabled={sharing}
-        iconColor={shareTone.icon}
-        style={[
-          styles.docShareBtn,
-          styles.docActionPill,
-          { backgroundColor: shareTone.bg, borderColor: shareTone.border },
-        ]}
-      />
-    ) : null}
+    <View style={styles.docTileRow}>
+      <View style={styles.docInfoCol}>
+        <IconButton icon={icon} size={28} style={styles.docIconBtn} />
+        <Text style={styles.docLabel} numberOfLines={1} ellipsizeMode="tail">
+          {label}
+        </Text>
+        {!url ? (
+          <Text style={styles.muted} numberOfLines={1} ellipsizeMode="tail">
+            Not uploaded
+          </Text>
+        ) : null}
+      </View>
 
-    {url ? (
-      <IconButton
-        icon="eye-outline"
-        size={18}
-        onPress={onPress}
-        iconColor={shareTone.icon}
-        style={[
-          styles.docViewBtn,
-          styles.docActionPill,
-          { backgroundColor: shareTone.bg, borderColor: shareTone.border },
-        ]}
-      />
-    ) : null}
-
-    <IconButton icon={icon} size={28} />
-    <Text style={styles.docLabel}>{label}</Text>
-    {!url ? <Text style={styles.muted}>Not uploaded</Text> : null}
+      {url ? (
+        <View style={styles.docActionsCol}>
+          <IconButton
+            icon="eye-outline"
+            size={18}
+            onPress={onPress}
+            iconColor={shareTone.icon}
+            style={[
+              styles.docActionPill,
+              { backgroundColor: shareTone.bg, borderColor: shareTone.border },
+            ]}
+          />
+          <IconButton
+            icon={sharing ? () => <ActivityIndicator size={16} color={shareTone.icon} /> : 'share-variant'}
+            size={18}
+            onPress={onShare}
+            disabled={sharing}
+            iconColor={shareTone.icon}
+            style={[
+              styles.docActionPill,
+              { backgroundColor: shareTone.bg, borderColor: shareTone.border },
+            ]}
+          />
+        </View>
+      ) : null}
+    </View>
   </Surface>
 );
 
@@ -450,19 +453,30 @@ const styles = StyleSheet.create({
     width: '48%',
     borderRadius: 14,
     padding: 12,
-    paddingBottom: 44, // reserve space for view/share buttons
+    minHeight: 120, // keep tile size consistent after layout change
+  },
+  docTileRow: {
+    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
-    position: 'relative',
+    justifyContent: 'space-between',
   },
-  docShareBtn: {
-    position: 'absolute',
-    right: 6,
-    bottom: 6,
+  docInfoCol: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingRight: 8,
   },
-  docViewBtn: {
-    position: 'absolute',
-    left: 6,
-    bottom: 6,
+  docIconBtn: {
+    margin: 0,
+  },
+  docActionsCol: {
+    flexDirection: 'column',
+    gap: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   docActionPill: {
     width: 38,
@@ -474,8 +488,11 @@ const styles = StyleSheet.create({
   },
   docLabel: {
     fontWeight: '600',
-    marginVertical: 6,
+    marginBottom: 2,
     fontSize: 16,
+    maxWidth: '100%',
+    flexShrink: 1,
+    textAlign: 'center',
   },
   muted: {
     color: '#999',
