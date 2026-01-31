@@ -54,9 +54,9 @@ export function TopMenuProvider({
   }, [anim]);
 
   const go = React.useCallback(
-    (name: string) => {
+    (name: string, params?: any) => {
       closeMenu();
-      navigationRef?.navigate?.(name);
+      navigationRef?.navigate?.(name, params);
     },
     [closeMenu, navigationRef],
   );
@@ -99,9 +99,21 @@ export function TopMenuProvider({
               >
                 <Text style={styles.panelTitle}>Menu</Text>
 
-                <MenuItem icon="account-circle-outline" label="Profile" onPress={() => go('Profile')} />
-                <MenuItem icon="lock-reset" label="Change password" onPress={() => go('ChangePassword')} />
-                <MenuItem icon="lifebuoy" label="Support" onPress={() => go('Support')} />
+                <MenuItem
+                  icon="account-circle-outline"
+                  label="Profile"
+                  onPress={() => go('MenuTabs', { screen: 'MenuProfile' })}
+                />
+                <MenuItem
+                  icon="lock-reset"
+                  label="Change password"
+                  onPress={() => go('MenuTabs', { screen: 'MenuChangePassword' })}
+                />
+                <MenuItem
+                  icon="lifebuoy"
+                  label="Support"
+                  onPress={() => go('MenuTabs', { screen: 'MenuSupport' })}
+                />
 
                 <View
                   style={[

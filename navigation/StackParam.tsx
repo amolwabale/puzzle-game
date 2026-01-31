@@ -7,9 +7,7 @@ export type AuthStackParamList = {
 export type RootStackParamList = {
   AuthStack: undefined;
   MainTabs: undefined;
-  Profile: undefined;
-  ChangePassword: undefined;
-  Support: undefined;
+  MenuTabs: { screen?: 'MenuHome' | 'MenuProfile' | 'MenuChangePassword' | 'MenuSupport' } | undefined;
 };
 
 export type TenantStackParamList = {

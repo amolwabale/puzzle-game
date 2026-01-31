@@ -1,11 +1,9 @@
 import React from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { FAB, Icon, Surface, Text, useTheme } from 'react-native-paper';
+import { Icon, Surface, Text, useTheme } from 'react-native-paper';
 
 export default function ProfileScreen() {
   const theme = useTheme();
-  const navigation = useNavigation<any>();
   return (
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content}>
@@ -17,23 +15,19 @@ export default function ProfileScreen() {
           <Text style={styles.sub}>Coming soon.</Text>
         </Surface>
       </ScrollView>
-
-      <FAB
-        icon="home"
-        style={styles.fab}
-        onPress={() => navigation.navigate('MainTabs', { screen: 'Dashboard' })}
-      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  // Keep FAB at same visual position as tab screens (lift above tab bar height).
+  // MainTabs tabBar height is 78, and other FABs use bottom: 24 within tab screens.
+  // Here there is no tab bar, so we offset by (78 + 24).
   screen: { flex: 1, backgroundColor: '#F4F6FA' },
   content: { padding: 16, paddingBottom: 24 },
   card: { borderRadius: 18, padding: 16, backgroundColor: '#FFFFFF' },
   iconWrap: { width: 44, height: 44, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   title: { marginTop: 12, fontWeight: '900', fontSize: 18, color: '#111827' },
   sub: { marginTop: 4, color: '#6B7280', fontWeight: '700' },
-  fab: { position: 'absolute', right: 16, bottom: 24 },
 });
 

@@ -1,0 +1,167 @@
+import React from 'react';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { StackActions, useFocusEffect, useNavigation } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { View } from 'react-native';
+import { ActivityIndicator, Icon, Text, useTheme } from 'react-native-paper';
+
+import ProfileScreen from '../screen/Menu/ProfileScreen';
+import ChangePasswordScreen from '../screen/Menu/ChangePasswordScreen';
+import SupportScreen from '../screen/Menu/SupportScreen';
+import { HeaderTitle } from './HeaderTitle.tsx';
+import { TopMenuButton } from './TopMenuButton.tsx';
+
+const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
+
+function MenuHomeExitScreen() {
+  const navigation = useNavigation<any>();
+  const theme = useTheme();
+
+  useFocusEffect(
+    React.useCallback(() => {
+      // Replace the whole MenuTabs stack with MainTabs, selecting Dashboard tab.
+      const parent = navigation.getParent();
+      parent?.dispatch(StackActions.replace('MainTabs', { screen: 'Dashboard' }));
+    }, [navigation]),
+  );
+
+  return (
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+      <ActivityIndicator />
+      <Text style={{ marginTop: 10, color: theme.colors.onSurfaceVariant, fontWeight: '800' }}>
+        Going home…
+      </Text>
+    </View>
+  );
+}
+
+function MenuProfileStack() {
+  const theme = useTheme();
+  const baseHeader = {
+    headerTitleAlign: 'left' as const,
+    headerStyle: { backgroundColor: theme.colors.background },
+    headerTitleStyle: { fontWeight: '700' as const },
+    headerTintColor: theme.colors.primary,
+    headerRight: () => <TopMenuButton />,
+  };
+
+  return (
+    <Stack.Navigator screenOptions={baseHeader}>
+      <Stack.Screen
+        name="MenuProfileScreen"
+        component={ProfileScreen}
+        options={{
+          headerTitle: () => <HeaderTitle icon="account-circle-outline" title="Profile" />,
+        }}
+      />
+    </Stack.Navigator>
+  );
+}
+
+function MenuChangePasswordStack() {
+  const theme = useTheme();
+  const baseHeader = {
+    headerTitleAlign: 'left' as const,
+    headerStyle: { backgroundColor: theme.colors.background },
+    headerTitleStyle: { fontWeight: '700' as const },
+    headerTintColor: theme.colors.primary,
+    headerRight: () => <TopMenuButton />,
+  };
+
+  return (
+    <Stack.Navigator screenOptions={baseHeader}>
+      <Stack.Screen
+        name="MenuChangePasswordScreen"
+        component={ChangePasswordScreen}
+        options={{
+          headerTitle: () => <HeaderTitle icon="lock-reset" title="Change password" />,
+        }}
+      />
+    </Stack.Navigator>
+  );
+}
+
+function MenuSupportStack() {
+  const theme = useTheme();
+  const baseHeader = {
+    headerTitleAlign: 'left' as const,
+    headerStyle: { backgroundColor: theme.colors.background },
+    headerTitleStyle: { fontWeight: '700' as const },
+    headerTintColor: theme.colors.primary,
+    headerRight: () => <TopMenuButton />,
+  };
+
+  return (
+    <Stack.Navigator screenOptions={baseHeader}>
+      <Stack.Screen
+        name="MenuSupportScreen"
+        component={SupportScreen}
+        options={{
+          headerTitle: () => <HeaderTitle icon="lifebuoy" title="Support" />,
+        }}
+      />
+    </Stack.Navigator>
+  );
+}
+
+export default function MenuTabs() {
+  const theme = useTheme();
+
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        // Match MainTabs: hide the tab header and rely on native-stack headers
+        // so height/padding matches Home and the rest of the app.
+        headerShown: false,
+        tabBarStyle: {
+          paddingTop: 8,
+          paddingBottom: 10,
+          height: 78,
+          backgroundColor: theme.colors.background,
+        },
+        tabBarActiveTintColor: theme.colors.primary,
+        tabBarInactiveTintColor: theme.colors.onSurfaceVariant,
+      }}
+    >
+      <Tab.Screen
+        name="MenuHome"
+        component={MenuHomeExitScreen}
+        options={{
+          tabBarLabel: 'Home',
+          tabBarIcon: ({ color, size }) => <Icon source="home" color={color} size={size} />,
+        }}
+      />
+
+      <Tab.Screen
+        name="MenuProfile"
+        component={MenuProfileStack}
+        options={{
+          tabBarLabel: 'Profile',
+          tabBarIcon: ({ color, size }) => (
+            <Icon source="account-circle-outline" color={color} size={size} />
+          ),
+        }}
+      />
+
+      <Tab.Screen
+        name="MenuChangePassword"
+        component={MenuChangePasswordStack}
+        options={{
+          tabBarLabel: 'Password',
+          tabBarIcon: ({ color, size }) => <Icon source="lock-reset" color={color} size={size} />,
+        }}
+      />
+
+      <Tab.Screen
+        name="MenuSupport"
+        component={MenuSupportStack}
+        options={{
+          tabBarLabel: 'Support',
+          tabBarIcon: ({ color, size }) => <Icon source="lifebuoy" color={color} size={size} />,
+        }}
+      />
+    </Tab.Navigator>
+  );
+}
+

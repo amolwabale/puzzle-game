@@ -9,13 +9,11 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ActivityIndicator, useTheme } from 'react-native-paper';
 
 import MainTabs from '../navigation/MainTabs';
+import MenuTabs from '../navigation/MenuTabs';
 import AuthStack from '../navigation/AuthStack';
 import { RootStackParamList } from '../navigation/StackParam';
 import supabase from '../service/SupabaseClient';
 import { TopMenuProvider } from '../navigation/TopMenuDrawer';
-import ProfileScreen from '../screen/Menu/ProfileScreen';
-import ChangePasswordScreen from '../screen/Menu/ChangePasswordScreen';
-import SupportScreen from '../screen/Menu/SupportScreen';
 import { TopMenuButton } from '../navigation/TopMenuButton.tsx';
 
 const RootStack = createNativeStackNavigator<RootStackParamList>();
@@ -71,43 +69,8 @@ export default function AppNavigator() {
               {/* ✅ User logged in → Main app */}
               <RootStack.Screen name="MainTabs" component={MainTabs} />
 
-              {/* Global menu destinations (presented on top of tabs) */}
-              <RootStack.Screen
-                name="Profile"
-                component={ProfileScreen}
-                options={{
-                  headerShown: true,
-                  title: 'Profile',
-                  headerTitleAlign: 'left',
-                  headerStyle: { backgroundColor: theme.colors.background },
-                  headerTintColor: theme.colors.primary,
-                  headerRight: () => <TopMenuButton />,
-                }}
-              />
-              <RootStack.Screen
-                name="ChangePassword"
-                component={ChangePasswordScreen}
-                options={{
-                  headerShown: true,
-                  title: 'Change password',
-                  headerTitleAlign: 'left',
-                  headerStyle: { backgroundColor: theme.colors.background },
-                  headerTintColor: theme.colors.primary,
-                  headerRight: () => <TopMenuButton />,
-                }}
-              />
-              <RootStack.Screen
-                name="Support"
-                component={SupportScreen}
-                options={{
-                  headerShown: true,
-                  title: 'Support',
-                  headerTitleAlign: 'left',
-                  headerStyle: { backgroundColor: theme.colors.background },
-                  headerTintColor: theme.colors.primary,
-                  headerRight: () => <TopMenuButton />,
-                }}
-              />
+              {/* Menu area with its own bottom navigation */}
+              <RootStack.Screen name="MenuTabs" component={MenuTabs} />
             </>
           ) : (
             // ❌ Not logged in → Auth screens only
