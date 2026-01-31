@@ -126,9 +126,21 @@ export default function TenantViewScreen() {
     );
   }
 
-  const openLink = (url?: string | null) => {
-    if (!url) return;
-    Linking.openURL(url);
+  const openSignedDoc = async (url?: string | null) => {
+    if (!url) {
+      Alert.alert('Not available', 'Document not uploaded');
+      return;
+    }
+    try {
+      const signed = await createSignedUrl(url);
+      if (!signed) {
+        Alert.alert('Open failed', 'Could not generate a secure link. Please try again.');
+        return;
+      }
+      await Linking.openURL(signed);
+    } catch (err: any) {
+      Alert.alert('Open failed', err?.message || 'Could not open document');
+    }
   };
 
   return (
@@ -172,19 +184,19 @@ export default function TenantViewScreen() {
               icon="card-account-details"
               label="Aadhaar"
               url={tenant.adhar_card_url}
-              onPress={() => openLink(tenant.adhar_card_url)}
+              onPress={() => openSignedDoc(tenant.adhar_card_url)}
             />
             <DocTile
               icon="card-bulleted"
               label="PAN"
               url={tenant.pan_card_url}
-              onPress={() => openLink(tenant.pan_card_url)}
+              onPress={() => openSignedDoc(tenant.pan_card_url)}
             />
             <DocTile
               icon="file-document"
               label="Agreement"
               url={tenant.agreement_url}
-              onPress={() => openLink(tenant.agreement_url)}
+              onPress={() => openSignedDoc(tenant.agreement_url)}
             />
           </View>
         </Section>
