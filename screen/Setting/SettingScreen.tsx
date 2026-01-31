@@ -1,6 +1,6 @@
 import React from 'react';
 import { Alert, ScrollView, StyleSheet, View } from 'react-native';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   ActivityIndicator,
   Avatar,
@@ -16,9 +16,7 @@ import {
   TouchableRipple,
   useTheme,
 } from 'react-native-paper';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import supabase from '../../service/SupabaseClient';
-import { RootStackParamList } from '../../navigation/StackParam';
 
 type Errors = Partial<
   Record<
@@ -26,8 +24,6 @@ type Errors = Partial<
     string
   >
 >;
-
-type RootNav = NativeStackNavigationProp<RootStackParamList>;
 
 const scalePaperThemeFonts = (t: any, scale: number) => {
   const s = Number.isFinite(scale) ? scale : 1;
@@ -48,7 +44,6 @@ const scalePaperThemeFonts = (t: any, scale: number) => {
 export default function SettingScreen() {
   const theme = useTheme();
   const scaledTheme = React.useMemo(() => scalePaperThemeFonts(theme, 1.1), [theme]);
-  const navigation = useNavigation<RootNav>();
 
   /* ---------------- FORM STATE ---------------- */
 
@@ -227,29 +222,6 @@ export default function SettingScreen() {
     }
   };
 
-  /* ---------------- LOGOUT ---------------- */
-
-  const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            await supabase.auth.signOut();
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'AuthStack' }],
-            });
-          },
-        },
-      ],
-    );
-  };
-
   if (initialLoading) {
     return (
       <PaperProvider theme={scaledTheme}>
@@ -349,20 +321,6 @@ export default function SettingScreen() {
           style={styles.primaryButton}
         >
           Save Settings
-        </Button>
-      </Surface>
-
-      {/* ---------- ACCOUNT ---------- */}
-      <Surface style={styles.dangerSection} elevation={1}>
-        <SectionTitle title="Account" />
-
-        <Button
-          mode="outlined"
-          textColor="#D32F2F"
-          style={styles.logoutButton}
-          onPress={handleLogout}
-        >
-          Logout
         </Button>
       </Surface>
         </ScrollView>
@@ -528,10 +486,6 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 16,
   },
-  dangerSection: {
-    borderRadius: 16,
-    padding: 16,
-  },
   sectionTitle: {
     fontWeight: '600',
     marginBottom: 12,
@@ -550,9 +504,6 @@ const styles = StyleSheet.create({
 
   primaryButton: {
     marginTop: 8,
-  },
-  logoutButton: {
-    borderColor: '#D32F2F',
   },
 
   loader: {
