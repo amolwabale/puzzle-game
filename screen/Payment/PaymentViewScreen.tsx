@@ -30,7 +30,13 @@ import {
   useTheme,
 } from 'react-native-paper';
 import ViewShot from 'react-native-view-shot';
-import { fetchBillById, fetchLatestSetting, type BillRecord, updateBillPayment } from '../../service/BillService';
+import {
+  deleteBill,
+  fetchBillById,
+  fetchLatestSetting,
+  type BillRecord,
+  updateBillPayment,
+} from '../../service/BillService';
 import { fetchRooms } from '../../service/RoomService';
 import { fetchTenants } from '../../service/tenantService';
 import { supabase } from '../../service/SupabaseClient';
@@ -138,6 +144,7 @@ export default function PaymentViewScreen() {
   const [paymentAmount, setPaymentAmount] = React.useState('');
   const [paymentMethod, setPaymentMethod] = React.useState<'CASH' | 'UPI' | 'BANK'>('UPI');
   const [paymentNote, setPaymentNote] = React.useState('');
+  const [billDeleting, setBillDeleting] = React.useState(false);
   const shareShotRef = React.useRef<ViewShot>(null);
 
   const dialogMaxHeight = React.useMemo(
@@ -658,6 +665,38 @@ export default function PaymentViewScreen() {
     ]);
   };
 
+  const canDeleteBill = status === 'UNPAID' || status === 'PARTIAL';
+
+  const doDeleteBill = async () => {
+    if (billDeleting) return;
+    try {
+      setBillDeleting(true);
+      await deleteBill(bill.id);
+      // Return to list after deletion
+      if (typeof navigation.popToTop === 'function') {
+        navigation.popToTop();
+      } else {
+        navigation.navigate('PaymentList');
+      }
+    } catch (e: any) {
+      Alert.alert('Delete failed', e?.message || 'Could not delete bill');
+    } finally {
+      setBillDeleting(false);
+    }
+  };
+
+  const confirmDeleteBill = () => {
+    if (!canDeleteBill) return;
+    Alert.alert(
+      'Delete Bill',
+      'Are you sure you want to delete this bill? This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: () => void doDeleteBill() },
+      ],
+    );
+  };
+
   return (
     <>
       <PaperProvider theme={scaledTheme}>
@@ -1009,6 +1048,17 @@ export default function PaymentViewScreen() {
         style={styles.fab}
         onPress={openShareSheet}
       />
+
+      {canDeleteBill ? (
+        <FAB
+          icon="trash-can-outline"
+          style={[styles.deleteFab, { backgroundColor: theme.colors.errorContainer }]}
+          color={theme.colors.error}
+          onPress={confirmDeleteBill}
+          loading={billDeleting}
+          disabled={billDeleting}
+        />
+      ) : null}
 
         <Portal>
           <KeyboardAvoidingView
@@ -1495,6 +1545,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 16,
     bottom: 24,
+  },
+  deleteFab: {
+    position: 'absolute',
+    right: 16,
+    bottom: 96, // above share FAB
   },
 
   paymentStrip: {

@@ -183,6 +183,12 @@ export async function updateBillPayment(params: {
   return data as any;
 }
 
+export async function deleteBill(billId: number): Promise<void> {
+  const userId = await getCurrentUserId();
+  const { error } = await supabase.from('bill').delete().eq('user_id', userId).eq('id', billId);
+  if (error) throw error;
+}
+
 export async function fetchLatestSetting(): Promise<{
   water: number;
   electricity_unit: number;
