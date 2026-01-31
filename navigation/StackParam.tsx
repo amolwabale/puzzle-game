@@ -7,6 +7,9 @@ export type AuthStackParamList = {
 export type RootStackParamList = {
   AuthStack: undefined;
   MainTabs: undefined;
+  Profile: undefined;
+  ChangePassword: undefined;
+  Support: undefined;
 };
 
 export type TenantStackParamList = {
