@@ -128,6 +128,22 @@ const uploadSupportFile = async (userId: string, ticketId: string, file: FileInp
   return { path, publicUrl: data.publicUrl };
 };
 
+export async function createSignedUrlFromPublicUrl(fullUrl: string, expiresInSec = 60 * 60) {
+  // Reuse the same approach as TenantView: extract file path from the public URL.
+  // Public URL contains ".../tenant-manager/<path>"
+  const marker = `/${SUPPORT_BUCKET}/`;
+  const idx = fullUrl.indexOf(marker);
+  if (idx === -1) return undefined;
+  const filePath = fullUrl.substring(idx + marker.length);
+
+  const { data, error } = await supabase.storage
+    .from(SUPPORT_BUCKET)
+    .createSignedUrl(filePath, expiresInSec);
+
+  if (error) return undefined;
+  return data.signedUrl;
+}
+
 const getCurrentUserId = async () => {
   const u = await getCurrentAuthUser();
   return u.id;

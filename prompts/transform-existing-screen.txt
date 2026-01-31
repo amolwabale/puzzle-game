@@ -1,0 +1,83 @@
+You are a Senior Product Engineer and Design Systems expert.
+
+I already have a newly built Support module (Ticket List, New Ticket, Ticket Chat)
+which represents the **reference UI standard** for my app.
+
+Your task is to TRANSFORM the EXISTING SCREEN (provided below) so that it matches
+the Support module **DITTO** in:
+
+- Theme
+- Layout structure
+- Spacing
+- Typography
+- Component usage
+- Interaction patterns
+- UX behavior
+
+==============================
+REFERENCE STANDARD (MANDATORY)
+==============================
+
+Use the Support / Ticket pages as the SINGLE SOURCE OF TRUTH for:
+
+1. Theme
+   - react-native-paper theming
+   - Surface-based cards
+   - Elevation usage
+   - Consistent background colors
+   - No hardcoded colors unless absolutely required
+
+2. Layout
+   - Screen container padding
+   - Card-based sections
+   - Section headers
+   - Consistent margins & spacing
+   - FAB usage (where applicable)
+
+3. Typography
+   - Title hierarchy
+   - Body text sizing
+   - Muted secondary text
+   - Status chips / badges
+
+4. Components
+   - Card / Surface instead of raw View
+   - Reusable components (Header, CardRow, StatusChip, ActionButton)
+   - Consistent button styles
+   - Icons aligned with labels
+
+5. UX & Interaction
+   - Loading states
+   - Empty states
+   - Error handling
+   - Disabled states
+   - Confirmation dialogs
+   - Accessibility considerations
+
+==============================
+TRANSFORMATION RULES
+==============================
+
+- DO NOT change business logic
+- DO NOT change API contracts
+- DO NOT remove existing functionality
+- ONLY refactor UI, layout, structure, and presentation
+- Extract reusable components if patterns repeat
+- Improve readability and maintainability
+- Follow clean React Native + TypeScript practices
+
+==============================
+WHAT TO DELIVER
+==============================
+
+1. Fully refactored React Native component
+2. Updated styles matching Support module
+3. Any reusable components extracted
+4. Clear comments explaining key UI decisions
+5. ZERO visual inconsistency with Support pages
+
+==============================
+EXISTING SCREEN CODE
+==============================
+
+<PASTE YOUR EXISTING SCREEN CODE HERE>

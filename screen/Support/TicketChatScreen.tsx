@@ -1,6 +1,13 @@
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import React from 'react';
-import { Alert, FlatList, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
+import {
+  Alert,
+  FlatList,
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  View,
+} from 'react-native';
 import {
   ActivityIndicator,
   Button,
@@ -8,14 +15,25 @@ import {
   Surface,
   Text,
   TextInput,
+  TouchableRipple,
   useTheme,
 } from 'react-native-paper';
 import type { Ticket, TicketChat } from '../../service/ticketTypes';
 import { closeTicket, getTicket, listTicketChat, sendTicketChat } from '../../service/ticketService';
+import { createSignedUrlFromPublicUrl } from '../../service/MenuService';
 import { ChatBubble } from './components/ChatBubble';
 import { StatusChip } from './components/StatusChip';
 
 type RouteParams = { ticketId: string };
+
+const formatDate = (iso?: string | null) =>
+  iso
+    ? new Date(iso).toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      })
+    : '-';
 
 export default function TicketChatScreen() {
   const theme = useTheme();
@@ -29,6 +47,16 @@ export default function TicketChatScreen() {
   const [refreshing, setRefreshing] = React.useState(false);
   const [sending, setSending] = React.useState(false);
   const [input, setInput] = React.useState('');
+  const [detailsOpen, setDetailsOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    // Default to collapsed for long tickets; expanded for short ones.
+    if (!ticket) return;
+    const score = (ticket.title?.length || 0) + (ticket.description?.length || 0);
+    setDetailsOpen(score <= 180);
+    // Only when a new ticket loads.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ticketId]);
 
   const load = React.useCallback(async (isRefresh = false) => {
     try {
@@ -75,6 +103,24 @@ export default function TicketChatScreen() {
   }, [ticket, ticketId]);
 
   const canChat = ticket?.status !== 'CLOSED';
+
+  const openAttachment = React.useCallback(async () => {
+    const url = ticket?.upload_url;
+    if (!url) {
+      Alert.alert('Not available', 'No attachment was uploaded for this ticket.');
+      return;
+    }
+    try {
+      const signed = await createSignedUrlFromPublicUrl(url);
+      if (!signed) {
+        Alert.alert('Open failed', 'Could not generate a secure link. Please try again.');
+        return;
+      }
+      navigation.navigate('SupportDocument', { title: 'Attachment', url: signed });
+    } catch {
+      Alert.alert('Open failed', 'Could not open attachment.');
+    }
+  }, [ticket?.upload_url, navigation]);
 
   const onSend = React.useCallback(async () => {
     if (!canChat) return;
@@ -147,6 +193,57 @@ export default function TicketChatScreen() {
             </Button>
           </View>
         )}
+
+        {/* DETAILS (collapsible) */}
+        <Surface
+          style={[
+            styles.detailsCard,
+            { borderColor: (theme.colors as any).outlineVariant ?? theme.colors.outline },
+          ]}
+          elevation={0}
+        >
+          <TouchableRipple onPress={() => setDetailsOpen((v) => !v)} borderless style={styles.detailsHeader}>
+            <View style={styles.detailsHeaderInner}>
+              <View style={[styles.detailsIcon, { backgroundColor: theme.colors.primaryContainer }]}>
+                <Icon source="information-outline" size={16} color={theme.colors.primary} />
+              </View>
+              <Text style={styles.detailsTitle} numberOfLines={1}>
+                Ticket details
+              </Text>
+              <Icon source={detailsOpen ? 'chevron-up' : 'chevron-down'} size={18} color="#6B7280" />
+            </View>
+          </TouchableRipple>
+
+          {detailsOpen ? (
+            <View style={styles.detailsBody}>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Title</Text>
+                <Text style={styles.detailValue}>{ticket.title || '-'}</Text>
+              </View>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Description</Text>
+                <Text style={styles.detailValue}>{ticket.description || '-'}</Text>
+              </View>
+              <View style={styles.detailMetaRow}>
+                <View style={styles.metaPill}>
+                  <Icon source="calendar" size={14} color="#6B7280" />
+                  <Text style={styles.metaText}>Created {formatDate(ticket.created_at)}</Text>
+                </View>
+
+                {ticket.upload_url ? (
+                  <TouchableRipple onPress={() => void openAttachment()} borderless style={styles.attachPill}>
+                    <View style={styles.attachPillInner}>
+                      <Icon source="paperclip" size={14} color={theme.colors.primary} />
+                      <Text style={[styles.attachText, { color: theme.colors.primary }]} numberOfLines={1}>
+                        View attachment
+                      </Text>
+                    </View>
+                  </TouchableRipple>
+                ) : null}
+              </View>
+            </View>
+          ) : null}
+        </Surface>
       </Surface>
 
       <FlatList
@@ -206,6 +303,44 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   bannerText: { fontWeight: '900', fontSize: 13, flex: 1 },
+
+  detailsCard: {
+    marginTop: 10,
+    borderRadius: 16,
+    borderWidth: 1,
+    backgroundColor: '#FFFFFF',
+    overflow: 'hidden',
+  },
+  detailsHeader: { borderRadius: 16 },
+  detailsHeaderInner: {
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  detailsIcon: { width: 28, height: 28, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  detailsTitle: { flex: 1, fontWeight: '900', fontSize: 13, color: '#111827' },
+  detailsBody: { paddingHorizontal: 12, paddingBottom: 12 },
+  detailRow: { marginTop: 10 },
+  detailLabel: { fontSize: 12, fontWeight: '800', color: '#6B7280', marginBottom: 4 },
+  detailValue: { fontSize: 14, fontWeight: '700', color: '#111827', lineHeight: 20 },
+  detailMetaRow: { marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
+  metaPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: '#FFFFFF',
+  },
+  metaText: { fontSize: 12, fontWeight: '800', color: '#6B7280' },
+  attachPill: { borderRadius: 999, borderWidth: 1, borderColor: '#E5E7EB', backgroundColor: '#FFFFFF' },
+  attachPillInner: { paddingHorizontal: 10, paddingVertical: 6, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  attachText: { fontSize: 12, fontWeight: '900' },
 
   chatContent: { paddingHorizontal: 16, paddingBottom: 88 },
 

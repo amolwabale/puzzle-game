@@ -33,4 +33,5 @@ export type SupportStackParamList = {
   SupportTicketList: undefined;
   SupportNewTicket: undefined;
   SupportTicketChat: { ticketId: string };
+  SupportDocument: { title: string; url: string };
 };

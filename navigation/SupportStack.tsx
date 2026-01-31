@@ -5,6 +5,7 @@ import { SupportStackParamList } from './StackParam';
 import SupportScreen from '../screen/Menu/SupportScreen';
 import AddTicketScreen from '../screen/Support/AddTicketScreen';
 import TicketChatScreen from '../screen/Support/TicketChatScreen';
+import SupportDocumentViewScreen from '../screen/Support/SupportDocumentViewScreen';
 import { TopMenuButton } from './TopMenuButton.tsx';
 import { TopBackButton } from './TopBackButton';
 
@@ -47,6 +48,11 @@ export default function SupportStack() {
         name="SupportTicketChat"
         component={TicketChatScreen}
         options={{ title: 'Ticket' }}
+      />
+      <Stack.Screen
+        name="SupportDocument"
+        component={SupportDocumentViewScreen}
+        options={({ route }) => ({ title: route.params?.title || 'Attachment' })}
       />
     </Stack.Navigator>
   );
