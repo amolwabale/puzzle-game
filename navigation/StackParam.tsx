@@ -13,6 +13,7 @@ export type TenantStackParamList = {
   TenantList: undefined;
   TenantView: { tenantId: number };
   TenantForm: { tenantId?: number; mode: 'add' | 'edit' };
+  TenantDocument: { title: string; url: string };
 };
 
 export type RoomStackParamList = {

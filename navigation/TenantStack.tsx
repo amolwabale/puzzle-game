@@ -5,6 +5,7 @@ import { TenantStackParamList } from './StackParam';
 import TenantScreen from '../screen/Tenant/TenantScreen.tsx';
 import TenantFormScreen from '../screen/Tenant/TenantFormScreen.tsx';
 import TenantViewScreen from '../screen/Tenant/TenantViewScreen.tsx';
+import TenantDocumentViewScreen from '../screen/Tenant/TenantDocumentViewScreen.tsx';
 
 const Stack = createNativeStackNavigator<TenantStackParamList>();
 
@@ -41,6 +42,14 @@ export default function TenantStack() {
           title: 'Tenant Details',
           headerBackTitle: 'Tenants',
         }}
+      />
+      <Stack.Screen
+        name="TenantDocument"
+        component={TenantDocumentViewScreen}
+        options={({ route }) => ({
+          title: route.params?.title || 'Document',
+          headerBackTitle: 'Tenant',
+        })}
       />
     </Stack.Navigator>
   );

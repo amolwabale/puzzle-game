@@ -1,7 +1,7 @@
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React from 'react';
-import { Alert, Linking, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import {
   ActivityIndicator,
   Avatar,
@@ -38,6 +38,7 @@ export default function TenantViewScreen() {
   const [roomName, setRoomName] = React.useState<string>('No room assigned');
   const [joiningDateLine, setJoiningDateLine] = React.useState<string | undefined>();
   const [loading, setLoading] = React.useState(false);
+  const skipNextReloadRef = React.useRef(false);
 
   const createSignedUrl = async (fullUrl?: string | null) => {
     if (!fullUrl) return undefined;
@@ -114,6 +115,10 @@ export default function TenantViewScreen() {
 
   useFocusEffect(
     React.useCallback(() => {
+      if (skipNextReloadRef.current) {
+        skipNextReloadRef.current = false;
+        return;
+      }
       load();
     }, [load]),
   );
@@ -126,7 +131,7 @@ export default function TenantViewScreen() {
     );
   }
 
-  const openSignedDoc = async (url?: string | null) => {
+  const openSignedDoc = async (label: string, url?: string | null) => {
     if (!url) {
       Alert.alert('Not available', 'Document not uploaded');
       return;
@@ -137,7 +142,8 @@ export default function TenantViewScreen() {
         Alert.alert('Open failed', 'Could not generate a secure link. Please try again.');
         return;
       }
-      await Linking.openURL(signed);
+      skipNextReloadRef.current = true;
+      navigation.navigate('TenantDocument', { title: label, url: signed });
     } catch (err: any) {
       Alert.alert('Open failed', err?.message || 'Could not open document');
     }
@@ -184,19 +190,19 @@ export default function TenantViewScreen() {
               icon="card-account-details"
               label="Aadhaar"
               url={tenant.adhar_card_url}
-              onPress={() => openSignedDoc(tenant.adhar_card_url)}
+              onPress={() => openSignedDoc('Aadhaar', tenant.adhar_card_url)}
             />
             <DocTile
               icon="card-bulleted"
               label="PAN"
               url={tenant.pan_card_url}
-              onPress={() => openSignedDoc(tenant.pan_card_url)}
+              onPress={() => openSignedDoc('PAN', tenant.pan_card_url)}
             />
             <DocTile
               icon="file-document"
               label="Agreement"
               url={tenant.agreement_url}
-              onPress={() => openSignedDoc(tenant.agreement_url)}
+              onPress={() => openSignedDoc('Agreement', tenant.agreement_url)}
             />
           </View>
         </Section>
