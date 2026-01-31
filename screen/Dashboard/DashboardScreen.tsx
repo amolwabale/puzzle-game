@@ -39,10 +39,17 @@ const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
 
 const startOfMonth = (d: Date) => new Date(d.getFullYear(), d.getMonth(), 1);
 const startOfNextMonth = (d: Date) => new Date(d.getFullYear(), d.getMonth() + 1, 1);
+const startOfYear = (d: Date) => new Date(d.getFullYear(), 0, 1);
+const startOfNextYear = (d: Date) => new Date(d.getFullYear() + 1, 0, 1);
 
 const getMonthRange = (d: Date): MonthRange => ({
   start: startOfMonth(d),
   end: startOfNextMonth(d),
+});
+
+const getYearRange = (d: Date): MonthRange => ({
+  start: startOfYear(d),
+  end: startOfNextYear(d),
 });
 
 const isInRange = (iso?: string | null, range?: MonthRange) => {
@@ -54,6 +61,7 @@ const isInRange = (iso?: string | null, range?: MonthRange) => {
 
 const getMonthLabel = (d: Date) =>
   d.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+const getYearLabel = (d: Date) => String(d.getFullYear());
 
 const sum = (vals: Array<number | null | undefined>) =>
   vals.reduce<number>((a, b) => a + Number(b || 0), 0);
@@ -152,6 +160,8 @@ export default function DashboardScreen() {
 
   const monthRange = React.useMemo(() => getMonthRange(new Date()), []);
   const monthLabel = React.useMemo(() => getMonthLabel(new Date()), []);
+  const yearRange = React.useMemo(() => getYearRange(new Date()), []);
+  const yearLabel = React.useMemo(() => getYearLabel(new Date()), []);
 
   const openTab = React.useCallback(
     (tabName: 'Tenant' | 'Rooms' | 'Payments' | 'Settings', screen?: string) => {
@@ -218,10 +228,16 @@ export default function DashboardScreen() {
     const occupancyPct = roomCount > 0 ? Math.round((occupiedRooms / roomCount) * 100) : 0;
 
     const billsThisMonth = (bills || []).filter((b) => isInRange(b.created_at, monthRange));
+    const billsThisYear = (bills || []).filter((b) => isInRange(b.created_at, yearRange));
     const expectedThisMonth = sum(billsThisMonth.map((b) => b.total_amount));
     const collectedThisMonth = sum(billsThisMonth.map((b) => b.paid_amount));
     const pendingThisMonth = Math.max(0, expectedThisMonth - collectedThisMonth);
     const collectionPct = expectedThisMonth > 0 ? Math.round((collectedThisMonth / expectedThisMonth) * 100) : 0;
+
+    const expectedThisYear = sum(billsThisYear.map((b) => b.total_amount));
+    const collectedThisYear = sum(billsThisYear.map((b) => b.paid_amount));
+    const pendingThisYear = Math.max(0, expectedThisYear - collectedThisYear);
+    const collectionPctYear = expectedThisYear > 0 ? Math.round((collectedThisYear / expectedThisYear) * 100) : 0;
 
     // Rent billed this month (rent-only, regardless of status/paid).
     const rentBilledThisMonth = sum(billsThisMonth.map((b) => b.rent));
@@ -257,6 +273,11 @@ export default function DashboardScreen() {
     const electricityChargesThisMonth = sum(billsThisMonth.map((b) => b.electricity));
     const waterChargesThisMonth = sum(billsThisMonth.map((b) => b.water));
     const adHocThisMonth = sum(billsThisMonth.map((b) => b.ad_hoc_amount));
+
+    const rentBilledThisYear = sum(billsThisYear.map((b) => b.rent));
+    const electricityChargesThisYear = sum(billsThisYear.map((b) => b.electricity));
+    const waterChargesThisYear = sum(billsThisYear.map((b) => b.water));
+    const adHocThisYear = sum(billsThisYear.map((b) => b.ad_hoc_amount));
 
     // Highest outstanding tenant
     const pendingByTenant: Record<number, number> = {};
@@ -391,6 +412,10 @@ export default function DashboardScreen() {
       collectedThisMonth,
       pendingThisMonth,
       collectionPct,
+      expectedThisYear,
+      collectedThisYear,
+      pendingThisYear,
+      collectionPctYear,
       rentBilledThisMonth,
       allPending,
       prevMonthsPending,
@@ -401,6 +426,10 @@ export default function DashboardScreen() {
       electricityChargesThisMonth,
       waterChargesThisMonth,
       adHocThisMonth,
+      rentBilledThisYear,
+      electricityChargesThisYear,
+      waterChargesThisYear,
+      adHocThisYear,
       tenantsWithDuesCount,
       avgDuePerTenant,
       highestOutstandingTenantName,
@@ -416,7 +445,7 @@ export default function DashboardScreen() {
       agreementAbsentCount,
       adharAbsentCount,
     };
-  }, [rooms, tenants, bills, mappings, setting, monthRange]);
+  }, [rooms, tenants, bills, mappings, setting, monthRange, yearRange]);
 
   if (loading) {
     return (
@@ -513,7 +542,7 @@ export default function DashboardScreen() {
                     <Icon source="cash-multiple" size={18} color={theme.colors.primary} />
                   </View>
                   <Text style={styles.rentStripTitle} numberOfLines={1}>
-                    Total rent
+                    Monthly Rent
                   </Text>
                 </View>
               </View>
@@ -608,10 +637,10 @@ export default function DashboardScreen() {
           </View>
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={styles.utilHeaderTitle} numberOfLines={1}>
-              This month charges
+            Monthly Rent Breakdown
             </Text>
             <Text style={styles.utilHeaderSub} numberOfLines={1}>
-              From bills generated this month
+              Bills generated in {monthLabel}
             </Text>
           </View>
           <TouchableRipple onPress={() => openTab('Settings')} borderless style={styles.utilHeaderCta}>
@@ -789,6 +818,170 @@ export default function DashboardScreen() {
               color={derived.adharAbsentCount > 0 ? theme.colors.error : theme.colors.primary}
               sub={undefined}
               valueIndent="label"
+            />
+          </View>
+        </Surface>
+      </Surface>
+
+      {/* YEARLY CHARGES */}
+      <Surface
+        style={[
+          styles.rentStrip,
+          { marginTop: 14, backgroundColor: theme.colors.primaryContainer, borderColor: theme.colors.primary },
+        ]}
+        elevation={0}
+      >
+        <View style={styles.rentStripHeader}>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <View style={styles.rentStripTitleRow}>
+              <View style={[styles.rentStripIcon, { backgroundColor: theme.colors.surface }]}>
+                <Icon source="cash-multiple" size={18} color={theme.colors.primary} />
+              </View>
+              <Text style={styles.rentStripTitle} numberOfLines={1}>
+                Yearly Rent
+              </Text>
+            </View>
+          </View>
+
+          <Chip
+            icon="calendar"
+            style={[styles.heroChip, { backgroundColor: theme.colors.surface }]}
+            textStyle={{ color: theme.colors.primary, fontWeight: '900' }}
+          >
+            {yearLabel}
+          </Chip>
+        </View>
+
+        <Text
+          style={[styles.rentStripTotal, { color: theme.colors.primary, marginTop: 10 }]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.65}
+        >
+          {formatMoney(derived.expectedThisYear)}
+        </Text>
+
+        <Surface
+          style={[
+            styles.paymentStrip,
+            {
+              backgroundColor: theme.colors.surface,
+              borderColor: (theme.colors as any).outlineVariant ?? theme.colors.outline,
+            },
+          ]}
+          elevation={0}
+        >
+          <View style={styles.paymentStripRow}>
+            <PaymentStat
+              icon="cash"
+              label="Paid"
+              amount={formatMoney(derived.collectedThisYear)}
+              color={theme.colors.primary}
+            />
+            <View
+              style={[
+                styles.paymentStripDivider,
+                { backgroundColor: (theme.colors as any).outlineVariant ?? theme.colors.outline },
+              ]}
+            />
+            <PaymentStat
+              icon="clock-outline"
+              label="Pending"
+              amount={formatMoney(derived.pendingThisYear)}
+              color={derived.pendingThisYear > 0 ? theme.colors.error : theme.colors.primary}
+            />
+          </View>
+          <ProgressBar
+            progress={clamp01(derived.expectedThisYear ? derived.collectedThisYear / derived.expectedThisYear : 0)}
+            color={theme.colors.primary}
+            style={styles.paymentProgress}
+          />
+        </Surface>
+      </Surface>
+
+      <Surface style={[styles.utilStrip, { marginTop: 14 }]} elevation={1}>
+        <View style={styles.utilHeaderRow}>
+          <View style={[styles.utilHeaderIcon, { backgroundColor: theme.colors.primaryContainer }]}>
+            <Icon source="calendar-month" size={18} color={theme.colors.primary} />
+          </View>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={styles.utilHeaderTitle} numberOfLines={1}>
+              Yearly Rent Breakdown
+            </Text>
+            <Text style={styles.utilHeaderSub} numberOfLines={1}>
+              Bills generated in {yearLabel}
+            </Text>
+          </View>
+          <TouchableRipple onPress={() => openTab('Settings')} borderless style={styles.utilHeaderCta}>
+            <View style={styles.utilHeaderCtaInner}>
+              <Icon source="cog-outline" size={16} color={theme.colors.primary} />
+              <Text style={[styles.utilHeaderCtaText, { color: theme.colors.primary }]} numberOfLines={1}>
+                Rates
+              </Text>
+            </View>
+          </TouchableRipple>
+        </View>
+
+        <Surface
+          style={[
+            styles.utilGridCard,
+            {
+              backgroundColor: theme.colors.surface,
+              borderColor: (theme.colors as any).outlineVariant ?? theme.colors.outline,
+            },
+          ]}
+          elevation={0}
+        >
+          <View style={styles.utilRow}>
+            <UtilityStat
+              icon="home-city-outline"
+              label="Rent"
+              value={formatMoney(derived.rentBilledThisYear)}
+              color={theme.colors.primary}
+              sub="Billed (rent only)"
+            />
+            <View
+              style={[
+                styles.utilDividerV,
+                { backgroundColor: (theme.colors as any).outlineVariant ?? theme.colors.outline },
+              ]}
+            />
+            <UtilityStat
+              icon="flash-outline"
+              label="Electricity"
+              value={formatMoney(derived.electricityChargesThisYear)}
+              color={theme.colors.primary}
+              sub={derived.electricityUnitRate > 0 ? `Rate ₹${derived.electricityUnitRate}/unit` : 'Charges'}
+            />
+          </View>
+
+          <View
+            style={[
+              styles.utilDividerH,
+              { backgroundColor: (theme.colors as any).outlineVariant ?? theme.colors.outline },
+            ]}
+          />
+
+          <View style={styles.utilRow}>
+            <UtilityStat
+              icon="water-outline"
+              label="Water"
+              value={formatMoney(derived.waterChargesThisYear)}
+              color={theme.colors.primary}
+              sub="Charges"
+            />
+            <View
+              style={[
+                styles.utilDividerV,
+                { backgroundColor: (theme.colors as any).outlineVariant ?? theme.colors.outline },
+              ]}
+            />
+            <UtilityStat
+              icon="note-text-outline"
+              label="Ad-hoc"
+              value={formatMoney(derived.adHocThisYear)}
+              color={theme.colors.primary}
+              sub="Charges"
             />
           </View>
         </Surface>
