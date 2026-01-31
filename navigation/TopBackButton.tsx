@@ -50,16 +50,6 @@ const styles = StyleSheet.create({
     marginLeft: 0,
     justifyContent: 'center',
   },
-  row: { flexDirection: 'row', alignItems: 'center' },
-  circle: {
-    width: 33,
-    height: 33,
-    borderRadius: 999,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'transparent',
-  },
   labelPill: {
     marginLeft: 0,
     borderRadius: 999,
@@ -78,7 +68,7 @@ const styles = StyleSheet.create({
   iconTextRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4, // RN 0.71+, otherwise use marginRight
+    gap: 2, // RN 0.71+, otherwise use marginRight
   },
 });
 
