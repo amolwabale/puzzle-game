@@ -358,123 +358,264 @@ export default function PaymentViewScreen() {
   };
 
   const buildShareHtml = () => {
-    const issued = formatDate(bill.created_at);
-    const statusText = status || 'PENDING';
+    const propName = settings.property_name || 'Property';
+    const propAddr = settings.property_address || '';
+    const monthShort = formatMonth(new Date(bill.created_at)).toUpperCase();
+    const tName = tenantName || 'Tenant';
+    const rName = roomName || 'Room';
+    const paidAmt = bill.paid_amount || 0;
+    const billStatus = paidAmt >= total ? 'PAID' : paidAmt > 0 ? 'PARTIAL' : 'UNPAID';
+    const issueDate = formatDate(bill.created_at);
+    const prevRead = String(prev);
+    const currRead = String(curr);
+    const adHocNote = bill.ad_hoc_comment?.trim();
+    const payNotes = bill.paid_amount_comment?.trim();
+    const noteLines = payNotes
+      ? payNotes.split('\n').filter((line) => line.trim().length > 0)
+      : [];
+    const electricityLabel = `Electricity (${units} × ${rate})`;
+    const contentWeight =
+      noteLines.length +
+      (adHocNote ? 1 : 0) +
+      (propAddr ? 1 : 0) +
+      (tName.length > 22 ? 1 : 0) +
+      (rName.length > 22 ? 1 : 0) +
+      (electricityLabel.length > 24 ? 1 : 0);
+    const compact =
+      noteLines.length >= 9
+        ? 0.72
+        : noteLines.length >= 7
+          ? 0.78
+          : noteLines.length >= 5
+            ? 0.84
+            : contentWeight >= 6
+              ? 0.88
+              : contentWeight >= 4
+                ? 0.94
+                : 1;
+    const lineHeight = Math.max(1.1, 1.3 * compact);
+    const notesMaxHeight =
+      noteLines.length >= 9
+        ? Math.round(90 * compact)
+        : noteLines.length >= 7
+          ? Math.round(110 * compact)
+          : Math.round(140 * compact);
+    const basePad = Math.round(40 * compact);
+    const innerPad = Math.round(20 * compact);
+    const headerGap = Math.round(15 * compact);
+    const gridGap = Math.round(15 * compact);
+    const dividerGap = Math.round(12 * compact);
+    const sectionGap = Math.round(10 * compact);
+    const tablePad = Math.round(8 * compact);
+    const totalGap = Math.round(15 * compact);
+    const footerGap = Math.round(20 * compact);
+    const textScale = 1.4 * compact;
+    const fontBrand = Math.round(24 * textScale);
+    const fontMeta = Math.round(14 * textScale);
+    const fontLabel = Math.round(11 * textScale);
+    const fontAmount = Math.round(14 * textScale);
+    const fontTotal = Math.round(28 * textScale);
+    const fontFooter = Math.round(11 * textScale);
 
     return `
+      <!DOCTYPE html>
       <html>
         <head>
-          <meta charset="utf-8" />
+          <meta charset="utf-8">
           <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Arial, sans-serif; margin: 0; padding: 0; color: #111827; background: #F8F9FB; }
-            .page { padding: 24px; display: flex; justify-content: center; }
-            .card { width: 520px; background: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 16px; box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06); padding: 20px; }
-            .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid #E5E7EB; padding-bottom: 14px; margin-bottom: 16px; }
-            .brand { font-size: 18px; font-weight: 800; }
-            .sub { color: #6B7280; font-size: 12px; margin-top: 4px; }
-            .badge { border-radius: 999px; padding: 4px 10px; border: 1px solid #E5E7EB; font-size: 11px; font-weight: 800; text-transform: uppercase; }
-            .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; margin-bottom: 14px; }
-            .label { color: #6B7280; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; }
-            .value { font-size: 14px; font-weight: 700; margin-top: 4px; }
-            .section-title { margin-top: 6px; font-size: 12px; font-weight: 800; color: #111827; }
-            table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
-            th, td { padding: 8px; text-align: left; }
-            th { color: #6B7280; font-weight: 700; border-bottom: 1px solid #E5E7EB; }
-            tr:nth-child(even) td { background: #F8FAFC; }
-            .amount { text-align: right; font-variant-numeric: tabular-nums; }
-            .total { margin-top: 10px; border-top: 1px solid #E5E7EB; padding-top: 10px; display: flex; justify-content: space-between; align-items: center; }
-            .total-label { color: #6B7280; font-size: 12px; font-weight: 700; }
-            .total-value { font-size: 22px; font-weight: 900; }
-            .footer { margin-top: 14px; font-size: 11px; color: #6B7280; text-align: center; }
+            @page {
+              size: A4;
+              margin: 0;
+            }
+            html, body {
+              width: 210mm;
+              height: 270mm;
+              margin: 0;
+              padding: 0;
+              overflow: hidden;
+            }
+            body { 
+              font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
+              color: #111827; 
+              background: #FFFFFF; 
+              line-height: ${lineHeight};
+              -webkit-print-color-adjust: exact;
+            }
+            .page-wrapper {
+              width: 210mm;
+              height: 270mm;
+              padding: ${basePad}px; 
+              box-sizing: border-box;
+              display: flex;
+              flex-direction: column;
+              overflow: hidden;
+              position: relative;
+              page-break-before: avoid;
+              page-break-after: avoid;
+              page-break-inside: avoid;
+              break-before: avoid;
+              break-after: avoid;
+              break-inside: avoid;
+            }
+            .content { 
+              flex: 1;
+              display: flex;
+              flex-direction: column;
+              padding: ${innerPad}px; 
+              background: #FFFFFF;
+              max-height: 100%;
+              overflow: hidden;
+              page-break-inside: avoid;
+              break-inside: avoid;
+              position: relative;
+              z-index: 1;
+            }
+            .header { 
+              display: flex; 
+              justify-content: space-between; 
+              align-items: flex-start; 
+              border-bottom: 1px solid #E5E7EB; 
+              padding-bottom: ${headerGap}px; 
+              margin-bottom: ${headerGap}px; 
+              flex-shrink: 0;
+            }
+            .brand { font-size: ${fontBrand}px; font-weight: 800; color: #111827; }
+            .address { font-size: ${Math.round(13 * textScale)}px; color: #6B7280; margin-top: 2px; font-weight: 600; }
+            .status-pill { border: 1px solid #E5E7EB; border-radius: 999px; padding: ${Math.round(6 * compact)}px ${Math.round(16 * compact)}px; background: #F8FAFC; font-size: ${Math.round(14 * textScale)}px; font-weight: 900; color: #111827; letter-spacing: 0.5px; }
+            
+            .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: ${gridGap}px; margin-bottom: ${gridGap}px; flex-shrink: 0; }
+            .meta-item { display: flex; flex-direction: column; }
+            .meta-label { font-size: ${fontLabel}px; font-weight: 700; color: #6B7280; text-transform: uppercase; letter-spacing: 0.3px; margin-bottom: 2px; }
+            .meta-value { font-size: ${fontMeta}px; font-weight: 700; color: #111827; }
+            
+            .divider { height: 1px; background: #D1D5DB; margin: ${dividerGap}px 0; flex-shrink: 0; }
+            
+            .readings-row { display: grid; grid-template-columns: 1fr 1fr; gap: ${gridGap}px; margin-bottom: ${Math.round(10 * compact)}px; flex-shrink: 0; }
+            
+            .section-title { font-size: ${Math.round(13 * textScale)}px; font-weight: 800; color: #111827; margin: ${sectionGap}px 0 ${Math.round(8 * compact)}px 0; flex-shrink: 0; }
+            
+            .table-container { flex: 0 0 auto; min-height: 0; }
+            table { width: 100%; border-collapse: collapse; margin-bottom: ${Math.round(10 * compact)}px; }
+            th { text-align: left; padding: ${tablePad}px ${Math.round(6 * compact)}px; border-bottom: 1px solid #D1D5DB; color: #6B7280; font-size: ${Math.round(12 * textScale)}px; font-weight: 700; }
+            td { padding: ${tablePad}px ${Math.round(6 * compact)}px; font-size: ${Math.round(13 * textScale)}px; color: #111827; border-bottom: 1px solid #D1D5DB; }
+            .alt-row { background-color: #F8FAFC; }
+            .amount-cell { text-align: right; font-family: monospace; font-size: ${fontAmount}px; }
+            
+            .total-section { display: flex; justify-content: space-between; align-items: flex-start; margin-top: ${totalGap}px; flex-shrink: 0; }
+            .ad-hoc-note { font-size: ${Math.round(11 * textScale)}px; color: #6B7280; font-weight: 600; max-width: 60%; }
+            .total-box { text-align: right; }
+            .total-label { font-size: ${Math.round(13 * textScale)}px; font-weight: 700; color: #6B7280; }
+            .total-value { font-size: ${fontTotal}px; font-weight: 900; color: #111827; margin-top: 2px; }
+            
+            .summary-row { display: flex; justify-content: flex-end; gap: ${Math.round(30 * compact)}px; margin-top: ${Math.round(8 * compact)}px; flex-shrink: 0; }
+            
+            .notes-block { margin-top: ${Math.round(15 * compact)}px; padding-top: ${Math.round(10 * compact)}px; border-top: 1px solid #E5E7EB; flex-shrink: 0; overflow: hidden; }
+            .note-line { font-size: ${Math.round(13 * textScale)}px; color: #374151; font-weight: 600; margin-top: ${Math.round(4 * compact)}px; }
+            
+            .footer { margin-top: ${Math.round(12 * compact)}px; padding-top: ${footerGap}px; text-align: center; font-size: ${fontFooter}px; color: #6B7280; flex-shrink: 0; }
           </style>
         </head>
         <body>
-          <div class="page">
-            <div class="card">
+          <div class="page-wrapper">
+            <div class="content">
               <div class="header">
                 <div>
-                  <div class="brand">Tenant Manager</div>
-                  <div class="sub">Property billing</div>
+                  <div class="brand">${propName}</div>
+                  ${propAddr ? `<div class="address">${propAddr}</div>` : ''}
                 </div>
-                <div>
-                  <div class="badge">${statusText}</div>
+                <div class="status-pill">${monthShort}</div>
+              </div>
+
+              <div class="meta-grid">
+                <div class="meta-item">
+                  <div class="meta-label">Billed to</div>
+                  <div class="meta-value">${tName}</div>
+                </div>
+                <div class="meta-item">
+                  <div class="meta-label">Property / Room</div>
+                  <div class="meta-value">${rName}</div>
+                </div>
+                <div class="meta-item">
+                  <div class="meta-label">Payment status</div>
+                  <div class="meta-value">${billStatus}</div>
+                </div>
+                <div class="meta-item">
+                  <div class="meta-label">Issue date</div>
+                  <div class="meta-value">${issueDate}</div>
                 </div>
               </div>
 
-              <div class="meta">
-                <div>
-                  <div class="label">Invoice #</div>
-                  <div class="value">INV-${bill.id}</div>
+              <div class="readings-row">
+                <div class="meta-item">
+                  <div class="meta-label">Prev reading</div>
+                  <div class="meta-value">${prevRead}</div>
                 </div>
-                <div>
-                  <div class="label">Issue date</div>
-                  <div class="value">${issued}</div>
-                </div>
-                <div>
-                  <div class="label">Billing period</div>
-                  <div class="value">${billMonth}</div>
-                </div>
-                <div>
-                  <div class="label">Billed to</div>
-                  <div class="value">${tenantName}</div>
-                </div>
-                <div>
-                  <div class="label">Property / Room</div>
-                  <div class="value">${roomName}</div>
+                <div class="meta-item">
+                  <div class="meta-label">Curr reading</div>
+                  <div class="meta-value">${currRead}</div>
                 </div>
               </div>
+              <div class="divider"></div>
 
               <div class="section-title">Charges</div>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Description</th>
-                    <th>Period</th>
-                    <th class="amount">Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>Rent</td>
-                    <td>${billMonth}</td>
-                    <td class="amount">${formatMoney(bill.rent)}</td>
-                  </tr>
-                  <tr>
-                    <td>Water</td>
-                    <td>${billMonth}</td>
-                    <td class="amount">${formatMoney(bill.water)}</td>
-                  </tr>
-                  <tr>
-                    <td>Electricity (${units} × ${rate})</td>
-                    <td>${billMonth}</td>
-                    <td class="amount">${formatMoney(bill.electricity)}</td>
-                  </tr>
-                  <tr>
-                    <td>Other</td>
-                    <td>${billMonth}</td>
-                    <td class="amount">${formatMoney(bill.ad_hoc_amount)}</td>
-                  </tr>
-                </tbody>
-              </table>
+              <div class="table-container">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Description</th>
+                      <th style="text-align:right">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr class="alt-row">
+                      <td>Rent</td>
+                      <td class="amount-cell">${formatMoney(bill.rent)}</td>
+                    </tr>
+                    <tr>
+                      <td>Water</td>
+                      <td class="amount-cell">${formatMoney(bill.water)}</td>
+                    </tr>
+                    <tr class="alt-row">
+                      <td>${electricityLabel}</td>
+                      <td class="amount-cell">${formatMoney(bill.electricity)}</td>
+                    </tr>
+                    <tr>
+                      <td>Ad hoc</td>
+                      <td class="amount-cell">${formatMoney(bill.ad_hoc_amount)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
 
-              <div class="total">
-                <div>
+              <div class="total-section">
+                <div class="ad-hoc-note">
+                  ${adHocNote ? `Ad-hoc note: ${adHocNote}` : ''}
+                </div>
+                <div class="total-box">
                   <div class="total-label">Total payable</div>
                   <div class="total-value">${formatMoney(total)}</div>
                 </div>
-                <div>
-                  <div class="total-label">Paid</div>
-                  <div class="value">${formatMoney(paid)}</div>
+              </div>
+
+              <div class="summary-row">
+                <div class="meta-item" style="text-align:right">
+                  <div class="meta-label">Paid</div>
+                  <div class="meta-value">${formatMoney(paid)}</div>
                 </div>
-                <div>
-                  <div class="total-label">Pending</div>
-                  <div class="value">${formatMoney(pending)}</div>
+                <div class="meta-item" style="text-align:right">
+                  <div class="meta-label">Pending</div>
+                  <div class="meta-value">${formatMoney(pending)}</div>
                 </div>
               </div>
 
-              <div class="footer">
-                This is a system generated invoice · tenantmanager.app
-              </div>
+              ${payNotes ? `
+                <div class="notes-block">
+                  <div class="section-title">Payment notes</div>
+                  ${payNotes.split('\n').filter(l => l.trim()).map(l => `<div class="note-line">${l}</div>`).join('')}
+                </div>
+              ` : ''}
+
+              <div class="footer">This is a system generated invoice.</div>
             </div>
           </div>
         </body>
