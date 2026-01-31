@@ -1,16 +1,17 @@
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React from 'react';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, ScrollView, Share, StyleSheet, View } from 'react-native';
 import {
   ActivityIndicator,
   Avatar,
-  Button,
   FAB,
   IconButton,
   Surface,
   Text,
+  useTheme,
 } from 'react-native-paper';
+import RNBlobUtil from 'react-native-blob-util';
 import { TenantStackParamList } from '../../navigation/StackParam';
 import { fetchTenantById, TenantRecord } from '../../service/tenantService';
 import { supabase } from '../../service/SupabaseClient'; // ✅ REQUIRED
@@ -32,6 +33,7 @@ export default function TenantViewScreen() {
   const route = useRoute<Props['route']>();
   const navigation = useNavigation<Props['navigation']>();
   const { tenantId } = route.params;
+  const theme = useTheme();
 
   const [tenant, setTenant] = React.useState<TenantRecord | null>(null);
   const [profileSignedUrl, setProfileSignedUrl] = React.useState<string | undefined>();
@@ -39,6 +41,7 @@ export default function TenantViewScreen() {
   const [joiningDateLine, setJoiningDateLine] = React.useState<string | undefined>();
   const [loading, setLoading] = React.useState(false);
   const skipNextReloadRef = React.useRef(false);
+  const [sharingLabel, setSharingLabel] = React.useState<string | null>(null);
 
   const createSignedUrl = async (fullUrl?: string | null) => {
     if (!fullUrl) return undefined;
@@ -149,6 +152,49 @@ export default function TenantViewScreen() {
     }
   };
 
+  const shareSignedDoc = async (label: string, url?: string | null) => {
+    if (!url) {
+      Alert.alert('Not available', 'Document not uploaded');
+      return;
+    }
+    try {
+      setSharingLabel(label);
+      const signed = await createSignedUrl(url);
+      if (!signed) {
+        Alert.alert('Share failed', 'Could not generate a secure link. Please try again.');
+        return;
+      }
+
+      // Download to local temp file so native share sheet can offer:
+      // - Save Image (for images)
+      // - Save to Files (for PDFs)
+      const safeBase = label.toLowerCase().replace(/\s+/g, '_');
+      const extFromUrl = (() => {
+        const cleaned = url.split('?')[0];
+        const dot = cleaned.lastIndexOf('.');
+        if (dot === -1) return '';
+        const ext = cleaned.substring(dot + 1).toLowerCase();
+        return ext.length <= 5 ? ext : '';
+      })();
+      const ext = extFromUrl || 'pdf';
+      const fileName = `${safeBase}_${tenantId}.${ext}`;
+      const destPath = `${RNBlobUtil.fs.dirs.CacheDir}/${fileName}`;
+
+      await RNBlobUtil.config({ path: destPath, fileCache: true }).fetch('GET', signed);
+      const fileUrl = `file://${destPath}`;
+
+      await Share.share({
+        title: label,
+        message: `${label} document`,
+        url: fileUrl,
+      });
+    } catch (err: any) {
+      Alert.alert('Share failed', err?.message || 'Could not share document');
+    } finally {
+      setSharingLabel(null);
+    }
+  };
+
   return (
     <>
       <ScrollView contentContainerStyle={styles.container}>
@@ -191,18 +237,39 @@ export default function TenantViewScreen() {
               label="Aadhaar"
               url={tenant.adhar_card_url}
               onPress={() => openSignedDoc('Aadhaar', tenant.adhar_card_url)}
+              onShare={() => shareSignedDoc('Aadhaar', tenant.adhar_card_url)}
+              sharing={sharingLabel === 'Aadhaar'}
+              shareTone={{
+                bg: theme.colors.primaryContainer,
+                border: theme.colors.primary,
+                icon: theme.colors.primary,
+              }}
             />
             <DocTile
               icon="card-bulleted"
               label="PAN"
               url={tenant.pan_card_url}
               onPress={() => openSignedDoc('PAN', tenant.pan_card_url)}
+              onShare={() => shareSignedDoc('PAN', tenant.pan_card_url)}
+              sharing={sharingLabel === 'PAN'}
+              shareTone={{
+                bg: theme.colors.primaryContainer,
+                border: theme.colors.primary,
+                icon: theme.colors.primary,
+              }}
             />
             <DocTile
               icon="file-document"
               label="Agreement"
               url={tenant.agreement_url}
               onPress={() => openSignedDoc('Agreement', tenant.agreement_url)}
+              onShare={() => shareSignedDoc('Agreement', tenant.agreement_url)}
+              sharing={sharingLabel === 'Agreement'}
+              shareTone={{
+                bg: theme.colors.primaryContainer,
+                border: theme.colors.primary,
+                icon: theme.colors.primary,
+              }}
             />
           </View>
         </Section>
@@ -254,22 +321,55 @@ const DocTile = ({
   label,
   url,
   onPress,
+  onShare,
+  sharing,
+  shareTone,
 }: {
   icon: string;
   label: string;
   url?: string | null;
   onPress: () => void;
+  onShare: () => void;
+  sharing: boolean;
+  shareTone: { bg: string; border: string; icon: string };
 }) => (
   <Surface style={styles.docTile} elevation={1}>
+    {url ? (
+      <IconButton
+        icon={
+          sharing
+            ? () => <ActivityIndicator size={16} color={shareTone.icon} />
+            : 'share-variant'
+        }
+        size={18}
+        onPress={onShare}
+        disabled={sharing}
+        iconColor={shareTone.icon}
+        style={[
+          styles.docShareBtn,
+          styles.docActionPill,
+          { backgroundColor: shareTone.bg, borderColor: shareTone.border },
+        ]}
+      />
+    ) : null}
+
+    {url ? (
+      <IconButton
+        icon="eye-outline"
+        size={18}
+        onPress={onPress}
+        iconColor={shareTone.icon}
+        style={[
+          styles.docViewBtn,
+          styles.docActionPill,
+          { backgroundColor: shareTone.bg, borderColor: shareTone.border },
+        ]}
+      />
+    ) : null}
+
     <IconButton icon={icon} size={28} />
     <Text style={styles.docLabel}>{label}</Text>
-    {url ? (
-      <Button mode="text" onPress={onPress} labelStyle={styles.docButtonLabel}>
-        View
-      </Button>
-    ) : (
-      <Text style={styles.muted}>Not uploaded</Text>
-    )}
+    {!url ? <Text style={styles.muted}>Not uploaded</Text> : null}
   </Surface>
 );
 
@@ -350,15 +450,32 @@ const styles = StyleSheet.create({
     width: '48%',
     borderRadius: 14,
     padding: 12,
+    paddingBottom: 44, // reserve space for view/share buttons
+    alignItems: 'center',
+    position: 'relative',
+  },
+  docShareBtn: {
+    position: 'absolute',
+    right: 6,
+    bottom: 6,
+  },
+  docViewBtn: {
+    position: 'absolute',
+    left: 6,
+    bottom: 6,
+  },
+  docActionPill: {
+    width: 38,
+    height: 38,
+    borderRadius: 999,
+    borderWidth: 1,
+    justifyContent: 'center',
     alignItems: 'center',
   },
   docLabel: {
     fontWeight: '600',
     marginVertical: 6,
     fontSize: 16,
-  },
-  docButtonLabel: {
-    fontSize: 15,
   },
   muted: {
     color: '#999',
