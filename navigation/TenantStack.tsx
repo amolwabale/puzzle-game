@@ -7,6 +7,7 @@ import TenantFormScreen from '../screen/Tenant/TenantFormScreen.tsx';
 import TenantViewScreen from '../screen/Tenant/TenantViewScreen.tsx';
 import TenantDocumentViewScreen from '../screen/Tenant/TenantDocumentViewScreen.tsx';
 import { TopMenuButton } from './TopMenuButton.tsx';
+import { TopBackButton } from './TopBackButton';
 
 const Stack = createNativeStackNavigator<TenantStackParamList>();
 
@@ -21,7 +22,20 @@ export default function TenantStack() {
   };
 
   return (
-    <Stack.Navigator screenOptions={baseHeader}>
+    <Stack.Navigator
+      screenOptions={({ navigation, route }) => {
+        const showBack = route.name !== 'TenantList';
+        const backLabel = route.name === 'TenantDocument' ? 'Tenant' : 'Tenants';
+        return {
+          ...baseHeader,
+          // Hide default back (arrow + label) so only our styled button shows.
+          headerBackVisible: false,
+          headerBackTitleVisible: false,
+          headerLeft: () =>
+            showBack ? <TopBackButton label={backLabel} onPress={() => navigation.goBack()} /> : null,
+        };
+      }}
+    >
       <Stack.Screen
         name="TenantList"
         component={TenantScreen}

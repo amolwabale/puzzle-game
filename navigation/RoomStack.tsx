@@ -6,6 +6,7 @@ import RoomFormScreen from '../screen/Room/RoomFormScreen';
 import { RoomStackParamList } from './StackParam';
 import RoomViewScreen from '../screen/Room/RoomViewScreen';
 import { TopMenuButton } from './TopMenuButton.tsx';
+import { TopBackButton } from './TopBackButton';
 
 
 const Stack = createNativeStackNavigator<RoomStackParamList>();
@@ -21,7 +22,18 @@ export function RoomStack() {
   };
 
   return (
-    <Stack.Navigator screenOptions={baseHeader}>
+    <Stack.Navigator
+      screenOptions={({ navigation, route }) => {
+        const showBack = route.name !== 'RoomList';
+        return {
+          ...baseHeader,
+          headerBackVisible: false,
+          headerBackTitleVisible: false,
+          headerLeft: () =>
+            showBack ? <TopBackButton label="Rooms" onPress={() => navigation.goBack()} /> : null,
+        };
+      }}
+    >
       <Stack.Screen
         name="RoomList"
         component={RoomScreen}
