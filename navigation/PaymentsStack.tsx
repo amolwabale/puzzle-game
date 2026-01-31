@@ -5,7 +5,6 @@ import PaymentScreen from '../screen/Payment/PaymentScreen';
 import PaymentFormScreen from '../screen/Payment/PaymentFormScreen';
 import PaymentViewScreen from '../screen/Payment/PaymentViewScreen';
 import { PaymentStackParamList } from './StackParam';
-import { HeaderTitle } from './HeaderTitle';
 import { TopMenuButton } from './TopMenuButton.tsx';
 
 const Stack = createNativeStackNavigator<PaymentStackParamList>();
@@ -27,7 +26,6 @@ export default function PaymentsStack() {
         component={PaymentScreen}
         options={{
           title: 'Payments',
-          headerTitle: () => <HeaderTitle icon="cash-multiple" title="Payments" />,
         }}
       />
       <Stack.Screen
@@ -35,7 +33,6 @@ export default function PaymentsStack() {
         component={PaymentViewScreen}
         options={{
           title: 'Payment Details',
-          headerTitle: () => <HeaderTitle icon="receipt-text-outline" title="Payment Details" />,
           headerBackTitle: 'Payments',
         }}
       />
@@ -44,12 +41,6 @@ export default function PaymentsStack() {
         component={PaymentFormScreen}
         options={({ route }: any) => ({
           title: route?.params?.billId ? 'Edit Payment' : 'Add Payment',
-          headerTitle: () => (
-            <HeaderTitle
-              icon={route?.params?.billId ? 'pencil-outline' : 'cash-plus'}
-              title={route?.params?.billId ? 'Edit Payment' : 'Add Payment'}
-            />
-          ),
           headerBackTitle: 'Payments',
         })}
       />

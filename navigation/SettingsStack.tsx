@@ -2,7 +2,6 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTheme } from 'react-native-paper';
 import SettingScreen from '../screen/Setting/SettingScreen';
-import { HeaderTitle } from './HeaderTitle';
 import { TopMenuButton } from './TopMenuButton.tsx';
 
 const Stack = createNativeStackNavigator();
@@ -24,7 +23,6 @@ export default function SettingsStack() {
         component={SettingScreen}
         options={{
           title: 'Settings',
-          headerTitle: () => <HeaderTitle icon="cog-outline" title="Settings" />,
         }}
       />
     </Stack.Navigator>

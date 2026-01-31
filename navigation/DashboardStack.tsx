@@ -2,7 +2,6 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTheme } from 'react-native-paper';
 import DashboardScreen from '../screen/Dashboard/DashboardScreen';
-import { HeaderTitle } from './HeaderTitle';
 import { TopMenuButton } from './TopMenuButton.tsx';
 
 const Stack = createNativeStackNavigator();
@@ -23,8 +22,7 @@ export default function DashboardStack() {
         name="DashboardScreen"
         component={DashboardScreen}
         options={{
-          title: 'Home',
-          headerTitle: () => <HeaderTitle icon="home-outline" title="Home" />,
+          title: 'Dashboard',
         }}
       />
     </Stack.Navigator>

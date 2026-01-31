@@ -8,7 +8,6 @@ import { ActivityIndicator, Icon, Text, useTheme } from 'react-native-paper';
 import ProfileScreen from '../screen/Menu/ProfileScreen';
 import ChangePasswordScreen from '../screen/Menu/ChangePasswordScreen';
 import SupportScreen from '../screen/Menu/SupportScreen';
-import { HeaderTitle } from './HeaderTitle.tsx';
 import { TopMenuButton } from './TopMenuButton.tsx';
 
 const Tab = createBottomTabNavigator();
@@ -52,7 +51,7 @@ function MenuProfileStack() {
         name="MenuProfileScreen"
         component={ProfileScreen}
         options={{
-          headerTitle: () => <HeaderTitle icon="account-circle-outline" title="Profile" />,
+          title: 'Profile',
         }}
       />
     </Stack.Navigator>
@@ -75,7 +74,7 @@ function MenuChangePasswordStack() {
         name="MenuChangePasswordScreen"
         component={ChangePasswordScreen}
         options={{
-          headerTitle: () => <HeaderTitle icon="lock-reset" title="Change password" />,
+          title: 'Change password',
         }}
       />
     </Stack.Navigator>
@@ -98,7 +97,7 @@ function MenuSupportStack() {
         name="MenuSupportScreen"
         component={SupportScreen}
         options={{
-          headerTitle: () => <HeaderTitle icon="lifebuoy" title="Support" />,
+          title: 'Support',
         }}
       />
     </Stack.Navigator>
