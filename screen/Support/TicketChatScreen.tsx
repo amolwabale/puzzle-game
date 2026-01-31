@@ -14,7 +14,6 @@ import {
   Icon,
   Surface,
   Text,
-  TextInput,
   TouchableRipple,
   useTheme,
 } from 'react-native-paper';
@@ -23,6 +22,7 @@ import { closeTicket, getTicket, listTicketChat, sendTicketChat } from '../../se
 import { createSignedUrlFromPublicUrl } from '../../service/MenuService';
 import { ChatBubble } from './components/ChatBubble';
 import { StatusChip } from './components/StatusChip';
+import { SmartTextInput } from '../../ui/SmartTextInput';
 
 type RouteParams = { ticketId: string };
 
@@ -258,15 +258,16 @@ export default function TicketChatScreen() {
       />
 
       <Surface style={styles.inputBar} elevation={2}>
-        <TextInput
-          mode="outlined"
+        <SmartTextInput
+          label={undefined}
           placeholder={canChat ? 'Type a message…' : 'Ticket closed'}
           value={input}
           onChangeText={setInput}
           editable={canChat && !sending}
-          dense
-          style={{ flex: 1 }}
-          contentStyle={styles.inputContent}
+          disabled={!canChat || sending}
+          multiline
+          maxLines={4}
+          style={styles.chatInput}
         />
         <Button
           mode="contained"
@@ -356,7 +357,7 @@ const styles = StyleSheet.create({
     gap: 10,
     backgroundColor: '#FFFFFF',
   },
-  inputContent: { paddingVertical: 8 },
+  chatInput: { flex: 1, minHeight: 48 },
   sendBtn: { borderRadius: 12 },
 });
 

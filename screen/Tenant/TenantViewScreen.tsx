@@ -393,41 +393,50 @@ const styles = StyleSheet.create({
   },
 
   hero: {
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: 18,
+    padding: 14,
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 16,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
   heroText: {
     flex: 1,
     marginLeft: 16,
   },
   tenantName: {
-    fontWeight: '700',
-    fontSize: 25, // +~5% more
+    fontWeight: '900',
+    fontSize: 18,
+    color: '#111827',
   },
   subText: {
-    color: '#666',
-    marginTop: 4,
-    fontSize: 16,
+    color: '#6B7280',
+    marginTop: 2,
+    fontSize: 13,
+    fontWeight: '800',
   },
   subSubText: {
-    color: '#888',
+    color: '#6B7280',
     marginTop: 2,
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 12,
+    fontWeight: '800',
   },
 
   section: {
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
+    borderRadius: 18,
+    padding: 14,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
   },
   sectionTitle: {
-    fontWeight: '600',
+    fontWeight: '900',
     marginBottom: 12,
-    fontSize: 19,
+    fontSize: 15,
+    color: '#111827',
   },
 
   infoRow: {
@@ -436,12 +445,15 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   infoLabel: {
-    fontSize: 14,
-    color: '#888',
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#6B7280',
   },
   infoValue: {
-    fontSize: 18,
-    fontWeight: '500',
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#111827',
+    marginTop: 2,
   },
 
   docGrid: {
@@ -454,6 +466,9 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 12,
     minHeight: 120, // keep tile size consistent after layout change
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
   docTileRow: {
     flex: 1,
@@ -495,8 +510,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   muted: {
-    color: '#999',
-    fontSize: 14,
+    color: '#6B7280',
+    fontSize: 12,
+    fontWeight: '800',
   },
 
   fab: {

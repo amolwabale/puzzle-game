@@ -15,6 +15,7 @@ import {
   FAB,
   Surface,
   Text,
+  useTheme,
 } from 'react-native-paper';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { TenantStackParamList } from '../../navigation/StackParam';
@@ -197,38 +198,41 @@ const TenantCard = ({
   onView: () => void;
   onEdit: () => void;
   onDelete: () => void;
-}) => (
-  <Surface style={styles.card} elevation={2}>
-    <View style={styles.cardClip}>
-      <TouchableOpacity style={styles.cardContent} activeOpacity={0.85} onPress={onView}>
-        <AvatarDisplay uri={photoUrl} size={AVATAR_SIZE} />
+}) => {
+  const theme = useTheme();
+  const outline = (theme.colors as any).outlineVariant ?? theme.colors.outline;
+  return (
+    <Surface style={[styles.card, { borderColor: outline }]} elevation={1}>
+      <View style={styles.cardClip}>
+        <TouchableOpacity style={styles.cardContent} activeOpacity={0.85} onPress={onView}>
+          <AvatarDisplay uri={photoUrl} size={AVATAR_SIZE} />
 
-        <View style={styles.cardBody}>
-          <Text variant="titleMedium" style={styles.cardTitle}>
-            {item.name || '-'}
-          </Text>
-          <Text style={styles.cardSubtitle} numberOfLines={1}>
-            Room: {assignment?.roomName ? assignment.roomName : 'Not assigned'}
-          </Text>
-          <Text style={styles.cardCaption} numberOfLines={1}>
-            Joined on:{' '}
-            {assignment?.joiningDate ? formatDate(assignment.joiningDate) : 'Not assigned'}
-          </Text>
+          <View style={styles.cardBody}>
+            <Text style={styles.cardTitle} numberOfLines={1}>
+              {item.name || '-'}
+            </Text>
+            <Text style={styles.cardSubtitle} numberOfLines={1}>
+              Room: {assignment?.roomName ? assignment.roomName : 'Not assigned'}
+            </Text>
+            <Text style={styles.cardCaption} numberOfLines={1}>
+              Joined {assignment?.joiningDate ? formatDate(assignment.joiningDate) : '—'}
+            </Text>
+          </View>
+        </TouchableOpacity>
+
+        {/* ACTION RAIL (Support-style: subtle, not loud) */}
+        <View style={[styles.actionRail, { borderLeftColor: outline }]}>
+          <TouchableOpacity style={styles.editAction} onPress={onEdit}>
+            <Text style={[styles.editText, { color: theme.colors.primary }]}>Edit</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.deleteAction} onPress={onDelete}>
+            <Text style={[styles.deleteText, { color: theme.colors.error }]}>Delete</Text>
+          </TouchableOpacity>
         </View>
-      </TouchableOpacity>
-
-      {/* ACTION RAIL */}
-      <View style={styles.actionRail}>
-        <TouchableOpacity style={styles.editAction} onPress={onEdit}>
-          <Text style={styles.editText}>Edit</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.deleteAction} onPress={onDelete}>
-          <Text style={styles.deleteText}>Delete</Text>
-        </TouchableOpacity>
       </View>
-    </View>
-  </Surface>
-);
+    </Surface>
+  );
+};
 
 const AvatarDisplay = ({ uri, size }: { uri?: string; size: number }) =>
   uri ? <Avatar.Image size={size} source={{ uri }} /> : <Avatar.Icon size={size} icon="account" />;
@@ -260,6 +264,8 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 16,
     marginBottom: 12,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
   },
 
   // Keep shadows on Surface; clip inside wrapper instead.
@@ -272,21 +278,22 @@ const styles = StyleSheet.create({
   cardContent: {
     flex: 1,
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
     alignItems: 'center',
   },
 
   cardBody: { flex: 1, paddingLeft: 14 },
-  // ~10% typography bump for readability
-  cardTitle: { fontWeight: '700', fontSize: 18 },
-  cardSubtitle: { color: '#555', marginTop: 4, fontWeight: '600', fontSize: 15 },
-  cardCaption: { color: '#777', fontSize: 13, marginTop: 4, lineHeight: 18 },
+  // Support-module typography
+  cardTitle: { fontWeight: '900', fontSize: 16, color: '#111827' },
+  cardSubtitle: { color: '#6B7280', marginTop: 2, fontWeight: '800', fontSize: 13 },
+  cardCaption: { color: '#6B7280', fontSize: 12, marginTop: 6, fontWeight: '800' },
 
   /* ACTION RAIL */
   actionRail: {
     width: 72,
-    backgroundColor: '#EEF2FF',
+    backgroundColor: '#FFFFFF',
+    borderLeftWidth: StyleSheet.hairlineWidth,
     justifyContent: 'space-between',
   },
 
@@ -300,19 +307,16 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FDECEA',
   },
 
   editText: {
-    fontWeight: '600',
-    fontSize: 14,
-    color: '#1A73E8',
+    fontWeight: '900',
+    fontSize: 13,
   },
 
   deleteText: {
-    fontWeight: '600',
-    fontSize: 14,
-    color: '#D32F2F',
+    fontWeight: '900',
+    fontSize: 13,
   },
 
   fab: { position: 'absolute', right: 16, bottom: 24 },

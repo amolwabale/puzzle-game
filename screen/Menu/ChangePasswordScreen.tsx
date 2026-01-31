@@ -6,10 +6,10 @@ import {
   HelperText,
   Surface,
   Text,
-  TextInput,
   useTheme,
 } from 'react-native-paper';
 import { changePasswordAndLogout } from '../../service/MenuService';
+import { SmartTextInput } from '../../ui/SmartTextInput';
 
 export default function ChangePasswordScreen() {
   const theme = useTheme();
@@ -73,21 +73,17 @@ export default function ChangePasswordScreen() {
 
           <View style={styles.field}>
             {/* As requested: show typed characters (not masked) */}
-            <TextInput
+            <SmartTextInput
               label="New password"
-              mode="outlined"
               value={password}
               onChangeText={(t) => {
                 setPassword(t);
                 setErrors((p) => ({ ...p, password: undefined }));
               }}
-              autoCapitalize="none"
-              autoCorrect={false}
               secureTextEntry={false}
-              dense
-              contentStyle={styles.inputContent}
               returnKeyType="next"
               error={!!errors.password}
+              style={styles.input}
             />
             {errors.password ? (
               <HelperText type="error" visible style={styles.helper}>
@@ -98,22 +94,18 @@ export default function ChangePasswordScreen() {
 
           <View style={styles.field}>
             {/* As requested: show as stars */}
-            <TextInput
+            <SmartTextInput
               label="Confirm password"
-              mode="outlined"
               value={confirmPassword}
               onChangeText={(t) => {
                 setConfirmPassword(t);
                 setErrors((p) => ({ ...p, confirmPassword: undefined }));
               }}
-              autoCapitalize="none"
-              autoCorrect={false}
               secureTextEntry
-              dense
-              contentStyle={styles.inputContent}
               returnKeyType="done"
               onSubmitEditing={() => void onSave()}
               error={!!errors.confirmPassword}
+              style={styles.input}
             />
             {errors.confirmPassword ? (
               <HelperText type="error" visible style={styles.helper}>
@@ -156,7 +148,10 @@ const styles = StyleSheet.create({
   section: { borderRadius: 16, padding: 12, backgroundColor: '#FFFFFF' },
   sectionTitle: { fontWeight: '800', marginBottom: 8, fontSize: 16, color: '#111827' },
   field: { marginBottom: 8 },
-  inputContent: { paddingVertical: 8 },
+  // Critical: keep fontSize/lineHeight consistent so the outlined container always contains the glyphs.
+  // This prevents rare blur/layout reflows where text can wrap and visually paint outside the outline.
+  input: { minHeight: 48 },
+  inputContent: { paddingVertical: 8, fontSize: 16, lineHeight: 20 },
   helper: { marginTop: 0, paddingVertical: 2 },
   primaryButton: { marginTop: 4 },
 });

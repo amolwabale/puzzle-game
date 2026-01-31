@@ -8,12 +8,12 @@ import {
   IconButton,
   Surface,
   Text,
-  TextInput,
   useTheme,
 } from 'react-native-paper';
 import { createTicket } from '../../service/ticketService';
 import type { FileInput, Ticket } from '../../service/ticketTypes';
 import { useNavigation } from '@react-navigation/native';
+import { SmartTextInput } from '../../ui/SmartTextInput';
 
 export default function AddTicketScreen() {
   const theme = useTheme();
@@ -85,17 +85,15 @@ export default function AddTicketScreen() {
         </View>
 
         <View style={styles.field}>
-          <TextInput
+          <SmartTextInput
             label="Title *"
-            mode="outlined"
             value={title}
             onChangeText={(t) => {
               setTitle(t);
               setErrors((p) => ({ ...p, title: undefined }));
             }}
-            dense
-            contentStyle={styles.inputContent}
             error={!!errors.title}
+            style={styles.inputSingle}
           />
           {errors.title ? (
             <HelperText type="error" visible style={styles.helper}>
@@ -105,18 +103,17 @@ export default function AddTicketScreen() {
         </View>
 
         <View style={styles.field}>
-          <TextInput
+          <SmartTextInput
             label="Description *"
-            mode="outlined"
             value={description}
             onChangeText={(t) => {
               setDescription(t);
               setErrors((p) => ({ ...p, description: undefined }));
             }}
             multiline
-            numberOfLines={5}
-            style={styles.multiline}
+            maxLines={8}
             error={!!errors.description}
+            style={styles.multiline}
           />
           {errors.description ? (
             <HelperText type="error" visible style={styles.helper}>
@@ -165,7 +162,7 @@ const styles = StyleSheet.create({
   sectionSub: { marginTop: 2, color: '#6B7280', fontWeight: '800', fontSize: 13 },
 
   field: { marginBottom: 10 },
-  inputContent: { paddingVertical: 8 },
+  inputSingle: { minHeight: 48 },
   helper: { marginTop: 0, paddingVertical: 2 },
   multiline: { minHeight: 120 },
 
