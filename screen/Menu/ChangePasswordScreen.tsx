@@ -1,18 +1,136 @@
-import React from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
-import { Icon, Surface, Text, useTheme } from 'react-native-paper';
+  import React from 'react';
+import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import {
+  Avatar,
+  Button,
+  HelperText,
+  Surface,
+  Text,
+  TextInput,
+  useTheme,
+} from 'react-native-paper';
+import { changePasswordAndLogout } from '../../service/MenuService';
 
 export default function ChangePasswordScreen() {
   const theme = useTheme();
+  const [password, setPassword] = React.useState('');
+  const [confirmPassword, setConfirmPassword] = React.useState('');
+  const [saving, setSaving] = React.useState(false);
+  const [errors, setErrors] = React.useState<{ password?: string; confirmPassword?: string }>({});
+
+  const validate = React.useCallback(() => {
+    const next: { password?: string; confirmPassword?: string } = {};
+    if (!password) next.password = 'Required';
+    else if (password.length < 6) next.password = 'Minimum 6 characters required';
+    if (!confirmPassword) next.confirmPassword = 'Required';
+    else if (password !== confirmPassword) next.confirmPassword = 'Passwords do not match';
+    setErrors(next);
+    return Object.keys(next).length === 0;
+  }, [password, confirmPassword]);
+
+  const onSave = React.useCallback(async () => {
+    if (!validate()) return;
+    try {
+      setSaving(true);
+      await changePasswordAndLogout(password);
+      Alert.alert('Password changed', 'Please login again with your new password.');
+      // AppNavigator will redirect to AuthStack after signOut.
+    } catch (e: any) {
+      Alert.alert('Failed', e?.message || 'Could not change password.');
+    } finally {
+      setSaving(false);
+    }
+  }, [password, validate]);
+
   return (
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Surface style={styles.card} elevation={1}>
-          <View style={[styles.iconWrap, { backgroundColor: theme.colors.primaryContainer }]}>
-            <Icon source="lock-reset" size={24} color={theme.colors.primary} />
+        {/* HERO */}
+        <Surface style={styles.hero} elevation={2}>
+          <View style={[styles.heroIconWrap, { backgroundColor: theme.colors.primaryContainer }]}>
+            <Avatar.Icon
+              size={46}
+              icon="lock-reset"
+              style={{ backgroundColor: 'transparent' }}
+              color={theme.colors.primary}
+            />
           </View>
-          <Text style={styles.title}>Change password</Text>
-          <Text style={styles.sub}>Coming soon.</Text>
+          <View style={styles.heroText}>
+            <Text variant="titleLarge" style={styles.heroTitle}>
+              Change password
+            </Text>
+            <Text style={styles.heroSubtitle} numberOfLines={1}>
+              Update password and sign out securely
+            </Text>
+          </View>
+        </Surface>
+
+        {/* FORM */}
+        <Surface style={styles.section} elevation={2}>
+          <Text variant="titleMedium" style={styles.sectionTitle}>
+            New password
+          </Text>
+
+          <View style={styles.field}>
+            {/* As requested: show typed characters (not masked) */}
+            <TextInput
+              label="New password"
+              mode="outlined"
+              value={password}
+              onChangeText={(t) => {
+                setPassword(t);
+                setErrors((p) => ({ ...p, password: undefined }));
+              }}
+              autoCapitalize="none"
+              autoCorrect={false}
+              secureTextEntry={false}
+              dense
+              contentStyle={styles.inputContent}
+              returnKeyType="next"
+              error={!!errors.password}
+            />
+            {errors.password ? (
+              <HelperText type="error" visible style={styles.helper}>
+                {errors.password}
+              </HelperText>
+            ) : null}
+          </View>
+
+          <View style={styles.field}>
+            {/* As requested: show as stars */}
+            <TextInput
+              label="Confirm password"
+              mode="outlined"
+              value={confirmPassword}
+              onChangeText={(t) => {
+                setConfirmPassword(t);
+                setErrors((p) => ({ ...p, confirmPassword: undefined }));
+              }}
+              autoCapitalize="none"
+              autoCorrect={false}
+              secureTextEntry
+              dense
+              contentStyle={styles.inputContent}
+              returnKeyType="done"
+              onSubmitEditing={() => void onSave()}
+              error={!!errors.confirmPassword}
+            />
+            {errors.confirmPassword ? (
+              <HelperText type="error" visible style={styles.helper}>
+                {errors.confirmPassword}
+              </HelperText>
+            ) : null}
+          </View>
+
+          <Button
+            mode="contained"
+            onPress={() => void onSave()}
+            disabled={saving}
+            loading={saving}
+            style={styles.primaryButton}
+          >
+            Change password
+          </Button>
         </Surface>
       </ScrollView>
     </View>
@@ -21,10 +139,25 @@ export default function ChangePasswordScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#F4F6FA' },
-  content: { padding: 16, paddingBottom: 24 },
-  card: { borderRadius: 18, padding: 16, backgroundColor: '#FFFFFF' },
-  iconWrap: { width: 44, height: 44, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  title: { marginTop: 12, fontWeight: '900', fontSize: 18, color: '#111827' },
-  sub: { marginTop: 4, color: '#6B7280', fontWeight: '700' },
+  content: { padding: 12, paddingBottom: 20 },
+  hero: {
+    borderRadius: 16,
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    backgroundColor: '#FFFFFF',
+  },
+  heroIconWrap: { borderRadius: 14, overflow: 'hidden' },
+  heroText: { flex: 1, marginLeft: 12, minWidth: 0 },
+  heroTitle: { fontWeight: '800', fontSize: 20, color: '#111827' },
+  heroSubtitle: { color: '#6B7280', marginTop: 2, fontSize: 13, fontWeight: '700' },
+
+  section: { borderRadius: 16, padding: 12, backgroundColor: '#FFFFFF' },
+  sectionTitle: { fontWeight: '800', marginBottom: 8, fontSize: 16, color: '#111827' },
+  field: { marginBottom: 8 },
+  inputContent: { paddingVertical: 8 },
+  helper: { marginTop: 0, paddingVertical: 2 },
+  primaryButton: { marginTop: 4 },
 });
 
