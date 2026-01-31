@@ -218,6 +218,18 @@ export default function DashboardScreen() {
   );
 
   const derived = React.useMemo(() => {
+    const billTotal = (b: BillRecord) => {
+      // Back-compat: some older rows may have null total_amount
+      const t = b.total_amount;
+      if (t != null && Number.isFinite(Number(t))) return Number(t);
+      return (
+        Number(b.rent || 0) +
+        Number(b.water || 0) +
+        Number(b.electricity || 0) +
+        Number(b.ad_hoc_amount || 0)
+      );
+    };
+
     const roomCount = rooms.length;
     const tenantCount = tenants.length;
 
@@ -229,12 +241,12 @@ export default function DashboardScreen() {
 
     const billsThisMonth = (bills || []).filter((b) => isInRange(b.created_at, monthRange));
     const billsThisYear = (bills || []).filter((b) => isInRange(b.created_at, yearRange));
-    const expectedThisMonth = sum(billsThisMonth.map((b) => b.total_amount));
+    const expectedThisMonth = sum(billsThisMonth.map((b) => billTotal(b)));
     const collectedThisMonth = sum(billsThisMonth.map((b) => b.paid_amount));
     const pendingThisMonth = Math.max(0, expectedThisMonth - collectedThisMonth);
     const collectionPct = expectedThisMonth > 0 ? Math.round((collectedThisMonth / expectedThisMonth) * 100) : 0;
 
-    const expectedThisYear = sum(billsThisYear.map((b) => b.total_amount));
+    const expectedThisYear = sum(billsThisYear.map((b) => billTotal(b)));
     const collectedThisYear = sum(billsThisYear.map((b) => b.paid_amount));
     const pendingThisYear = Math.max(0, expectedThisYear - collectedThisYear);
     const collectionPctYear = expectedThisYear > 0 ? Math.round((collectedThisYear / expectedThisYear) * 100) : 0;
@@ -242,18 +254,18 @@ export default function DashboardScreen() {
     // Rent billed this month (rent-only, regardless of status/paid).
     const rentBilledThisMonth = sum(billsThisMonth.map((b) => b.rent));
 
-    const allPending = sum((bills || []).map((b) => Math.max(0, Number(b.total_amount || 0) - Number(b.paid_amount || 0))));
+    const allPending = sum((bills || []).map((b) => Math.max(0, billTotal(b) - Number(b.paid_amount || 0))));
     const prevMonthsPending = sum(
       (bills || [])
         .filter((b) => {
           const dt = new Date(b.created_at);
           return !Number.isNaN(dt.getTime()) && dt < monthRange.start;
         })
-        .map((b) => Math.max(0, Number(b.total_amount || 0) - Number(b.paid_amount || 0))),
+        .map((b) => Math.max(0, billTotal(b) - Number(b.paid_amount || 0))),
     );
     const overdueBillsCount = (bills || []).filter((b) => {
       const dt = new Date(b.created_at);
-      const pending = Math.max(0, Number(b.total_amount || 0) - Number(b.paid_amount || 0));
+      const pending = Math.max(0, billTotal(b) - Number(b.paid_amount || 0));
       const status = String(b.status || '').toUpperCase();
       return !Number.isNaN(dt.getTime()) && dt < monthRange.start && pending > 0 && status !== 'PAID';
     }).length;
@@ -284,7 +296,7 @@ export default function DashboardScreen() {
     (bills || []).forEach((b) => {
       const tid = b.tenant_id;
       if (tid == null) return;
-      const pending = Math.max(0, Number(b.total_amount || 0) - Number(b.paid_amount || 0));
+      const pending = Math.max(0, billTotal(b) - Number(b.paid_amount || 0));
       if (!pending) return;
       pendingByTenant[tid] = (pendingByTenant[tid] || 0) + pending;
     });
@@ -391,7 +403,7 @@ export default function DashboardScreen() {
 
     const billsUnpaidAfterDueDayCount = afterDueGate
       ? billsInCycle.filter((b) => {
-          const total = Number(b.total_amount || 0);
+          const total = billTotal(b);
           const paid = Number(b.paid_amount || 0);
           const pending = Math.max(0, total - paid);
           const status = String(b.status || '').toUpperCase();
@@ -837,29 +849,26 @@ export default function DashboardScreen() {
               <View style={[styles.rentStripIcon, { backgroundColor: theme.colors.surface }]}>
                 <Icon source="cash-multiple" size={18} color={theme.colors.primary} />
               </View>
-              <Text style={styles.rentStripTitle} numberOfLines={1}>
-                Yearly Rent
-              </Text>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={styles.rentStripTitle} numberOfLines={1}>
+                  Yearly Rent
+                </Text>
+                <Text style={styles.yearlyRentSub} numberOfLines={1}>
+                  Bills generated in {yearLabel}
+                </Text>
+              </View>
             </View>
           </View>
 
-          <Chip
-            icon="calendar"
-            style={[styles.heroChip, { backgroundColor: theme.colors.surface }]}
-            textStyle={{ color: theme.colors.primary, fontWeight: '900' }}
+          <Text
+            style={[styles.yearlyRentHeaderAmount, { color: theme.colors.primary }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.65}
           >
-            {yearLabel}
-          </Chip>
+            {formatMoney(derived.expectedThisYear)}
+          </Text>
         </View>
-
-        <Text
-          style={[styles.rentStripTotal, { color: theme.colors.primary, marginTop: 10 }]}
-          numberOfLines={1}
-          adjustsFontSizeToFit
-          minimumFontScale={0.65}
-        >
-          {formatMoney(derived.expectedThisYear)}
-        </Text>
 
         <Surface
           style={[
@@ -1029,12 +1038,20 @@ const styles = StyleSheet.create({
   rentStripTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   rentStripIcon: { width: 34, height: 34, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   rentStripTitle: { color: '#111827', fontWeight: '900', fontSize: 15, flex: 1 },
+  yearlyRentSub: { marginTop: 2, color: '#6B7280', fontWeight: '800', fontSize: 13 },
   rentStripTotal: {
     fontWeight: '900',
     fontSize: 24,
     fontVariant: ['tabular-nums'],
     textAlign: 'right',
     maxWidth: 180,
+  },
+  yearlyRentHeaderAmount: {
+    fontWeight: '900',
+    fontSize: 24,
+    fontVariant: ['tabular-nums'],
+    textAlign: 'right',
+    maxWidth: 200,
   },
 
   paymentStrip: { marginTop: 12, borderRadius: 16, borderWidth: 1, padding: 10 },
