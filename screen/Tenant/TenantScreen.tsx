@@ -118,6 +118,14 @@ export default function TenantScreen() {
   );
 
   const handleDelete = (id: number) => {
+    const assignment = assignmentByTenant[id];
+    if (assignment) {
+      Alert.alert(
+        'Cannot delete tenant',
+        `This tenant is assigned to ${assignment.roomName || 'a room'}. Remove the tenant from the room before deleting.`,
+      );
+      return;
+    }
     Alert.alert('Delete Tenant', 'Are you sure?', [
       { text: 'Cancel', style: 'cancel' },
       {

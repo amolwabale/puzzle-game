@@ -26,6 +26,7 @@ import { launchImageLibrary } from 'react-native-image-picker';
 import { TenantStackParamList } from '../../navigation/StackParam';
 import {
   fetchTenantById,
+  fetchTenants,
   FileInput,
   saveTenant,
   TenantRecord,
@@ -127,6 +128,7 @@ export default function TenantFormScreen() {
   const validate = () => {
     const e: Record<string, string> = {};
     if (!name.trim()) e.name = 'Required';
+    if (!address.trim()) e.address = 'Required';
     if (!isMobile(mobile)) e.mobile = 'Invalid mobile';
     if (alternateMobile && !isNumeric(alternateMobile)) e.alternateMobile = 'Numbers only';
     if (familyMembers && !isNumeric(familyMembers)) e.familyMembers = 'Numbers only';
@@ -168,6 +170,21 @@ export default function TenantFormScreen() {
 
     try {
       setSaving(true);
+
+      // Name uniqueness (case-insensitive, trimmed)
+      const normalized = name.trim().toLowerCase();
+      const existing = await fetchTenants();
+      const duplicate = (existing || []).find((t: any) => {
+        const tn = String(t?.name || '').trim().toLowerCase();
+        if (!tn) return false;
+        if (mode === 'edit' && tenantId != null && t?.id === tenantId) return false;
+        return tn === normalized;
+      });
+      if (duplicate) {
+        setErrors((prev) => ({ ...prev, name: 'Tenant with same name already exists' }));
+        return;
+      }
+
       await saveTenant({
         id: mode === 'edit' ? tenantId : undefined,
         name,
@@ -225,7 +242,13 @@ export default function TenantFormScreen() {
 
           {/* ADDRESS */}
           <Section title="Address & Work">
-            <Input label="Address" value={address} onChange={setAddress} multiline />
+            <Input
+              label="Address *"
+              value={address}
+              onChange={setAddress}
+              error={errors.address}
+              multiline
+            />
             <Input label="Company Name" value={company} onChange={setCompany} />
           </Section>
 

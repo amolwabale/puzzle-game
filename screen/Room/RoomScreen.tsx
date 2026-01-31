@@ -22,6 +22,7 @@ import { RoomStackParamList } from '../../navigation/StackParam';
 import { deleteRoom, fetchRooms, RoomRecord } from '../../service/RoomService';
 import {
   fetchActiveTenantsForRooms,
+  hasAnyTenantMappingForRoom,
   TenantRoomRecord,
 } from '../../service/TenantRoomService';
 import supabase from '../../service/SupabaseClient';
@@ -134,7 +135,21 @@ export default function RoomScreen() {
     }, [loadRooms]),
   );
 
-  const handleDelete = (id: number) => {
+  const handleDelete = async (id: number) => {
+    try {
+      const hasMapping = await hasAnyTenantMappingForRoom(id);
+      if (hasMapping) {
+        Alert.alert(
+          'Cannot delete room',
+          'This room has tenant assignment history. Remove/clear tenant mapping before deleting the room.',
+        );
+        return;
+      }
+    } catch (err: any) {
+      Alert.alert('Delete check failed', err?.message || 'Could not validate room occupancy');
+      return;
+    }
+
     Alert.alert('Delete Room', 'Are you sure you want to delete this room?', [
       { text: 'Cancel', style: 'cancel' },
       {
@@ -168,7 +183,7 @@ export default function RoomScreen() {
       onEdit={() =>
         navigation.navigate('RoomForm', { roomId: item.id, mode: 'edit' })
       }
-      onDelete={() => handleDelete(item.id)}
+      onDelete={() => void handleDelete(item.id)}
     />
   );
 

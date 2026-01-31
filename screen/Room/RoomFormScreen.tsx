@@ -26,7 +26,7 @@ import {
 import { DatePickerModal } from 'react-native-paper-dates';
 
 import { RoomStackParamList } from '../../navigation/StackParam';
-import { fetchRoomById, saveRoom } from '../../service/RoomService';
+import { fetchRoomById, fetchRooms, saveRoom } from '../../service/RoomService';
 import {
   addTenantToRoom,
   fetchActiveTenantForRoom,
@@ -195,7 +195,8 @@ export default function RoomFormScreen() {
     const e: Record<string, string> = {};
     if (!name.trim()) e.name = 'Required';
     if (!type.trim()) e.type = 'Required';
-    if (!/^\d+$/.test(rent)) e.rent = 'Numbers only';
+    if (!rent.trim()) e.rent = 'Required';
+    else if (!/^\d+$/.test(rent.trim())) e.rent = 'Numbers only';
     if (!/^\d+$/.test(deposit)) e.deposit = 'Numbers only';
 
     if (selectedTenant && !joiningDate) {
@@ -221,6 +222,20 @@ export default function RoomFormScreen() {
 
     try {
       setSaving(true);
+
+      // Room name uniqueness (case-insensitive, trimmed)
+      const normalized = name.trim().toLowerCase();
+      const existing = await fetchRooms();
+      const duplicate = (existing || []).find((r: any) => {
+        const rn = String(r?.name || '').trim().toLowerCase();
+        if (!rn) return false;
+        if (mode === 'edit' && roomId != null && r?.id === roomId) return false;
+        return rn === normalized;
+      });
+      if (duplicate) {
+        setErrors((prev) => ({ ...prev, name: 'Room with same name already exists' }));
+        return;
+      }
 
       const savedRoom = await saveRoom({
         id: mode === 'edit' ? roomId : undefined,

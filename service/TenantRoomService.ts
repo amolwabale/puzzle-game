@@ -134,6 +134,22 @@ const fetchActiveRoomForTenants = async (tenantIds: number[]) => {
   return map;
 };
 
+/* ===================== GUARDS ===================== */
+
+const hasAnyTenantMappingForRoom = async (roomId: number) => {
+  const userId = await getCurrentUserId();
+  const { data, error } = await supabase
+    .from('tenant_room_mapping')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('room_id', roomId)
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+  return !!data?.id;
+};
+
 /* ===================== TENANT HISTORY ===================== */
 
 const fetchTenantHistoryForRoom = async (roomId: number) => {
@@ -221,6 +237,7 @@ export {
   fetchActiveTenantForRoom,
   fetchActiveTenantsForRooms,
   fetchActiveRoomForTenants,
+  hasAnyTenantMappingForRoom,
   fetchTenantHistoryForRoom,
   addTenantToRoom,
   vacateRoom,
