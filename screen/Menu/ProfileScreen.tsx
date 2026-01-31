@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import React from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import {
   ActivityIndicator,
+  Button,
   Icon,
   IconButton,
   Avatar,
@@ -13,23 +15,29 @@ import { fetchUserProfile, UserProfile } from '../../service/MenuService';
 
 export default function ProfileScreen() {
   const theme = useTheme();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = React.useState<UserProfile | null>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
 
-  useEffect(() => {
-    loadProfile();
-  }, []);
-
-  const loadProfile = async () => {
+  const loadProfile = React.useCallback(async () => {
     try {
+      setError(null);
+      setLoading(true);
       const data = await fetchUserProfile();
       setProfile(data);
     } catch (e) {
       console.error('Failed to load profile', e);
+      setError((e as any)?.message || 'Could not load profile');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      void loadProfile();
+    }, [loadProfile]),
+  );
 
   if (loading) {
     return (
@@ -41,7 +49,14 @@ export default function ProfileScreen() {
 
   const fullName = [profile?.first_name, profile?.last_name].filter(Boolean).join(' ').trim();
   const primaryTitle = fullName || 'Your Profile';
-  const subtitleLine = profile?.email || profile?.mobile || '';
+  const subtitleLine = profile?.email || profile?.mobile || '-';
+  const createdLine = profile?.created_at
+    ? `Registered ${new Date(profile.created_at).toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      })}`
+    : 'Registered -';
 
   return (
     <ScrollView
@@ -49,33 +64,73 @@ export default function ProfileScreen() {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
-      {/* HERO (match TenantView style) */}
-      <Surface style={styles.hero} elevation={2}>
-        <View style={[styles.avatarWrap, { backgroundColor: theme.colors.primaryContainer }]}>
-          <Avatar.Icon
-            size={88}
-            icon="account-circle-outline"
-            style={{ backgroundColor: 'transparent' }}
-            color={theme.colors.primary}
-          />
-        </View>
-        <View style={styles.heroText}>
-          <Text variant="titleLarge" style={styles.heroTitle} numberOfLines={1}>
-            {primaryTitle}
-          </Text>
-          {!!subtitleLine && (
+      {/* 
+        ✅ Support-module standard: single top card with icon + hierarchy + meta pill.
+        Business logic unchanged; only presentation refactor.
+      */}
+      <Surface style={styles.heroCard} elevation={2}>
+        <View style={styles.heroTopRow}>
+          <View style={[styles.heroIcon, { backgroundColor: theme.colors.primaryContainer }]}>
+            <Icon source="account-circle-outline" size={18} color={theme.colors.primary} />
+          </View>
+
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={styles.heroKicker} numberOfLines={1}>
+              Profile
+            </Text>
+            <Text style={styles.heroTitle} numberOfLines={1}>
+              {primaryTitle}
+            </Text>
             <Text style={styles.heroSub} numberOfLines={1}>
               {subtitleLine}
             </Text>
-          )}
-          <Text style={styles.heroMeta} numberOfLines={1}>
-            Registered on{' '}
-            {profile?.created_at ? new Date(profile.created_at).toLocaleDateString() : '-'}
-          </Text>
+          </View>
+
+          <Avatar.Text
+            size={44}
+            label={(fullName || 'U')
+              .trim()
+              .split(/\s+/)
+              .filter(Boolean)
+              .slice(0, 2)
+              .map((p) => p[0]?.toUpperCase())
+              .join('')}
+            style={{ backgroundColor: theme.colors.primaryContainer }}
+            color={theme.colors.primary}
+          />
+        </View>
+
+        <View style={styles.heroMetaRow}>
+          <View style={styles.metaPill}>
+            <Icon source="calendar" size={14} color="#6B7280" />
+            <Text style={styles.metaText} numberOfLines={1}>
+              {createdLine}
+            </Text>
+          </View>
+          <Button mode="text" onPress={() => void loadProfile()} icon="refresh" compact>
+            Refresh
+          </Button>
         </View>
       </Surface>
 
-      <Section title="Basic Information">
+      {error ? (
+        <Surface style={styles.noticeCard} elevation={1}>
+          <View style={styles.noticeRow}>
+            <View style={[styles.noticeIcon, { backgroundColor: theme.colors.primaryContainer }]}>
+              <Icon source="alert-circle-outline" size={18} color={theme.colors.primary} />
+            </View>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={styles.noticeTitle}>Could not load profile</Text>
+              <Text style={styles.noticeSub} numberOfLines={2}>
+                {error}
+              </Text>
+            </View>
+            <IconButton icon="refresh" onPress={() => void loadProfile()} />
+          </View>
+        </Surface>
+      ) : null}
+
+      <Section title="Basic information">
         <InfoRow icon="account-outline" label="First name" value={profile?.first_name} />
         <InfoRow icon="account-outline" label="Last name" value={profile?.last_name} />
       </Section>
@@ -92,7 +147,7 @@ export default function ProfileScreen() {
   );
 }
 
-/* ---------------- UI COMPONENTS (match TenantView) ---------------- */
+/* ---------------- UI COMPONENTS (Support-module standard) ---------------- */
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <Surface style={styles.section} elevation={2}>
@@ -127,27 +182,38 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#F4F6FA' },
   content: { padding: 16, paddingBottom: 24 },
 
-  hero: {
-    borderRadius: 16,
-    padding: 16,
+  heroCard: { borderRadius: 18, padding: 14, marginBottom: 14, backgroundColor: '#FFFFFF' },
+  heroTopRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  heroIcon: { width: 36, height: 36, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  heroKicker: { fontWeight: '900', fontSize: 12, color: '#6B7280', letterSpacing: 0.6 },
+  heroTitle: { marginTop: 2, fontWeight: '900', fontSize: 18, color: '#111827' },
+  heroSub: { marginTop: 2, fontWeight: '800', fontSize: 13, color: '#6B7280' },
+  heroMetaRow: { marginTop: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  metaPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    gap: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    backgroundColor: '#FFFFFF',
+    maxWidth: '72%',
   },
-  avatarWrap: {
-    borderRadius: 20,
-    overflow: 'hidden',
-  },
-  heroText: { flex: 1, marginLeft: 16 },
-  heroTitle: { fontWeight: '700', fontSize: 25 },
-  heroSub: { color: '#666', marginTop: 4, fontSize: 16 },
-  heroMeta: { color: '#888', marginTop: 2, fontSize: 14, fontWeight: '500' },
+  metaText: { fontSize: 12, fontWeight: '800', color: '#6B7280' },
 
-  section: { borderRadius: 16, padding: 16, marginBottom: 16 },
-  sectionTitle: { fontWeight: '600', marginBottom: 12, fontSize: 19 },
+  noticeCard: { borderRadius: 18, padding: 14, marginBottom: 14, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5E7EB' },
+  noticeRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  noticeIcon: { width: 36, height: 36, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  noticeTitle: { fontWeight: '900', fontSize: 15, color: '#111827' },
+  noticeSub: { marginTop: 2, fontWeight: '800', fontSize: 13, color: '#6B7280' },
+
+  section: { borderRadius: 18, padding: 14, marginBottom: 14, borderWidth: 1, borderColor: '#E5E7EB', backgroundColor: '#FFFFFF' },
+  sectionTitle: { fontWeight: '900', marginBottom: 12, fontSize: 15, color: '#111827' },
   infoRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  infoLabel: { fontSize: 14, color: '#888' },
-  infoValue: { fontSize: 18, fontWeight: '500' },
+  infoLabel: { fontSize: 12, fontWeight: '800', color: '#6B7280' },
+  infoValue: { fontSize: 15, fontWeight: '800', color: '#111827', marginTop: 2 },
 
   loader: {
     flex: 1,

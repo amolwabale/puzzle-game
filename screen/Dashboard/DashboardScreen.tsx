@@ -526,9 +526,15 @@ export default function DashboardScreen() {
       {/* HERO */}
       <Surface style={styles.hero} elevation={2}>
         <View style={styles.heroTopRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.heroTitle} numberOfLines={1}>
+          <View style={[styles.heroHeaderIcon, { backgroundColor: theme.colors.primaryContainer }]}>
+            <Icon source="view-dashboard-outline" size={18} color={theme.colors.primary} />
+          </View>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={styles.heroHeaderTitle} numberOfLines={1}>
               Dashboard
+            </Text>
+            <Text style={styles.heroHeaderSub} numberOfLines={1}>
+              Quick overview
             </Text>
           </View>
           <Chip
@@ -589,7 +595,10 @@ export default function DashboardScreen() {
           <Surface
             style={[
               styles.rentStrip,
-              { backgroundColor: theme.colors.primaryContainer, borderColor: theme.colors.primary },
+              {
+                backgroundColor: '#FFFFFF',
+                borderColor: (theme.colors as any).outlineVariant ?? theme.colors.outline,
+              },
             ]}
             elevation={0}
           >
@@ -849,7 +858,11 @@ export default function DashboardScreen() {
       <Surface
         style={[
           styles.rentStrip,
-          { marginTop: 14, backgroundColor: theme.colors.primaryContainer, borderColor: theme.colors.primary },
+          {
+            marginTop: 14,
+            backgroundColor: '#FFFFFF',
+            borderColor: (theme.colors as any).outlineVariant ?? theme.colors.outline,
+          },
         ]}
         elevation={0}
       >
@@ -1016,15 +1029,18 @@ const styles = StyleSheet.create({
   content: { padding: 16, paddingBottom: 24 },
   loaderWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F4F6FA' },
 
-  hero: { borderRadius: 18, padding: 16, marginBottom: 14 },
+  // Support-module standard: white Surface, subtle border, compact header.
+  hero: { borderRadius: 18, padding: 14, marginBottom: 14, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5E7EB' },
   heroTopRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  heroTitle: { fontWeight: '900', fontSize: 29, color: '#111827' },
+  heroHeaderIcon: { width: 36, height: 36, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  heroHeaderTitle: { fontWeight: '900', fontSize: 16, color: '#111827' },
+  heroHeaderSub: { marginTop: 2, color: '#6B7280', fontWeight: '800', fontSize: 12 },
   heroChip: { borderRadius: 999 },
   heroGrid: { marginTop: 14, flexDirection: 'column', gap: 12 },
   heroStatLabel: { color: '#6B7280', fontWeight: '900', fontSize: 12, letterSpacing: 0.6 },
   heroStatValue: { fontWeight: '900', fontSize: 24, marginTop: 6, color: '#111827' },
   heroStatSub: { marginTop: 2, color: '#6B7280', fontWeight: '800', fontSize: 13 },
-  heroOccWide: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 12 },
+  heroOccWide: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 12, borderWidth: 1, borderColor: '#E5E7EB' },
   heroOccRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   heroOccLeft: { flex: 1, minWidth: 0 },
   heroOccValue: { fontWeight: '900', fontSize: 29, marginTop: 4, color: '#111827', fontVariant: ['tabular-nums'] },
@@ -1043,7 +1059,7 @@ const styles = StyleSheet.create({
   heroOccBadgeText: { flex: 1, minWidth: 0 },
   heroOccBadgeValue: { fontWeight: '900', fontSize: 17, fontVariant: ['tabular-nums'] },
   heroOccBadgeLabel: { fontWeight: '900', fontSize: 12, opacity: 0.95 },
-  rentStrip: { borderRadius: 16, borderWidth: 1, padding: 12 },
+  rentStrip: { borderRadius: 18, borderWidth: 1, padding: 12, backgroundColor: '#FFFFFF' },
   rentStripHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   rentStripTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   rentStripIcon: { width: 34, height: 34, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
