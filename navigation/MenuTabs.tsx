@@ -7,7 +7,7 @@ import { ActivityIndicator, Icon, Text, useTheme } from 'react-native-paper';
 
 import ProfileScreen from '../screen/Menu/ProfileScreen';
 import ChangePasswordScreen from '../screen/Menu/ChangePasswordScreen';
-import SupportScreen from '../screen/Menu/SupportScreen';
+import SupportStack from './SupportStack';
 import { TopMenuButton } from './TopMenuButton.tsx';
 
 const Tab = createBottomTabNavigator();
@@ -82,26 +82,7 @@ function MenuChangePasswordStack() {
 }
 
 function MenuSupportStack() {
-  const theme = useTheme();
-  const baseHeader = {
-    headerTitleAlign: 'left' as const,
-    headerStyle: { backgroundColor: theme.colors.background },
-    headerTitleStyle: { fontWeight: '700' as const },
-    headerTintColor: theme.colors.primary,
-    headerRight: () => <TopMenuButton />,
-  };
-
-  return (
-    <Stack.Navigator screenOptions={baseHeader}>
-      <Stack.Screen
-        name="MenuSupportScreen"
-        component={SupportScreen}
-        options={{
-          title: 'Support',
-        }}
-      />
-    </Stack.Navigator>
-  );
+  return <SupportStack />;
 }
 
 export default function MenuTabs() {

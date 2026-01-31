@@ -28,3 +28,9 @@ export type PaymentStackParamList = {
   PaymentView: { billId: number; openRecordPayment?: boolean };
   PaymentForm: { billId?: number } | undefined;
 };
+
+export type SupportStackParamList = {
+  SupportTicketList: undefined;
+  SupportNewTicket: undefined;
+  SupportTicketChat: { ticketId: string };
+};
