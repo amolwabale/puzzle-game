@@ -54,6 +54,13 @@ const formatDate = (d?: string | null) =>
       })
     : '-';
 
+const formatMonthYear = (d?: string | null) =>
+  d
+    ? new Date(d)
+        .toLocaleDateString('en-GB', { month: 'short', year: 'numeric' })
+        .toUpperCase()
+    : '-';
+
 const AVATAR_SIZE = 58;
 
 export default function PaymentScreen() {
@@ -421,9 +428,9 @@ const PaymentCard = ({
                     </Text>
                   </View>
                   <View style={styles.issuedRow}>
-                    <Icon source="calendar" size={14} color="#6B7280" />
+                    <Icon source="calendar-month-outline" size={14} color="#6B7280" />
                     <Text style={styles.dateText} numberOfLines={1}>
-                      {formatDate(item.created_at)}
+                      {formatMonthYear(item.billing_month ?? item.created_at)}
                     </Text>
                   </View>
                 </View>

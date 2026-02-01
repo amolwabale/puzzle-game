@@ -12,6 +12,11 @@ import {
   useTheme,
 } from 'react-native-paper';
 import {
+  BillingMonthPickerDialog,
+  formatBillingMonthLabel,
+  normalizeBillingMonthDate,
+} from '../../components/BillingMonthPicker';
+import {
   BillRecord,
   fetchBills,
   fetchLatestSetting,
@@ -69,6 +74,8 @@ const isInRange = (iso?: string | null, range?: MonthRange) => {
   if (Number.isNaN(dt.getTime())) return false;
   return dt >= range.start && dt < range.end;
 };
+
+const billMonthIso = (b: BillRecord) => (b as any).billing_month ?? b.created_at;
 
 const getMonthLabel = (d: Date) =>
   d.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
@@ -172,10 +179,27 @@ export default function DashboardScreen() {
     rent_due_date: number;
   } | null>(null);
 
-  const monthRange = React.useMemo(() => getMonthRange(new Date()), []);
-  const monthLabel = React.useMemo(() => getMonthLabel(new Date()), []);
-  const yearRange = React.useMemo(() => getYearRange(new Date()), []);
-  const yearLabel = React.useMemo(() => getYearLabel(new Date()), []);
+  const [selectedBillingMonth, setSelectedBillingMonth] = React.useState<Date>(() =>
+    normalizeBillingMonthDate(new Date()),
+  );
+  const [billingPickerOpen, setBillingPickerOpen] = React.useState(false);
+
+  const monthRange = React.useMemo(
+    () => getMonthRange(selectedBillingMonth),
+    [selectedBillingMonth],
+  );
+  const monthLabel = React.useMemo(
+    () => formatBillingMonthLabel(selectedBillingMonth),
+    [selectedBillingMonth],
+  );
+  const yearRange = React.useMemo(
+    () => getYearRange(selectedBillingMonth),
+    [selectedBillingMonth],
+  );
+  const yearLabel = React.useMemo(
+    () => getYearLabel(selectedBillingMonth),
+    [selectedBillingMonth],
+  );
 
   const openTab = React.useCallback(
     (
@@ -258,11 +282,12 @@ export default function DashboardScreen() {
     const occupancyPct =
       roomCount > 0 ? Math.round((occupiedRooms / roomCount) * 100) : 0;
 
+    // Monthly/yearly grouping must use billing_month (fallback created_at for older rows).
     const billsThisMonth = (bills || []).filter(b =>
-      isInRange(b.created_at, monthRange),
+      isInRange(billMonthIso(b), monthRange),
     );
     const billsThisYear = (bills || []).filter(b =>
-      isInRange(b.created_at, yearRange),
+      isInRange(billMonthIso(b), yearRange),
     );
     const expectedThisMonth = sum(billsThisMonth.map(b => billTotal(b)));
     const collectedThisMonth = sum(billsThisMonth.map(b => b.paid_amount));
@@ -294,13 +319,13 @@ export default function DashboardScreen() {
     const prevMonthsPending = sum(
       (bills || [])
         .filter(b => {
-          const dt = new Date(b.created_at);
+          const dt = new Date(billMonthIso(b));
           return !Number.isNaN(dt.getTime()) && dt < monthRange.start;
         })
         .map(b => Math.max(0, billTotal(b) - Number(b.paid_amount || 0))),
     );
     const overdueBillsCount = (bills || []).filter(b => {
-      const dt = new Date(b.created_at);
+      const dt = new Date(billMonthIso(b));
       const pending = Math.max(0, billTotal(b) - Number(b.paid_amount || 0));
       const status = String(b.status || '').toUpperCase();
       return (
@@ -378,7 +403,15 @@ export default function DashboardScreen() {
     ).length;
 
     // Attention needed: occupied tenants with bill not generated after rent day / due day.
-    const now = new Date();
+    const realNow = new Date();
+    // If viewing a past/future month, anchor "now" into the selected month window
+    // so gating logic behaves predictably for that period.
+    const now =
+      realNow < monthRange.start
+        ? monthRange.start
+        : realNow >= monthRange.end
+        ? new Date(monthRange.end.getTime() - 1)
+        : realNow;
     const rentDay = Number(setting?.rent_date || 0);
     const dueDay = Number(setting?.rent_due_date || 0);
     const isValidDay = (d: number) => Number.isFinite(d) && d >= 1 && d <= 31;
@@ -389,10 +422,8 @@ export default function DashboardScreen() {
       return new Date(y, m, dd);
     };
 
-    const y = now.getFullYear();
-    const m = now.getMonth();
-    const prevMonth = m === 0 ? 11 : m - 1;
-    const prevYear = m === 0 ? y - 1 : y;
+    const y = monthRange.start.getFullYear();
+    const m = monthRange.start.getMonth();
 
     const rentDateThisMonth = isValidDay(rentDay)
       ? clampDayToMonth(y, m, rentDay)
@@ -401,24 +432,10 @@ export default function DashboardScreen() {
       rentDateThisMonth && now >= rentDateThisMonth,
     );
 
-    // Current rent cycle is anchored to the most recent rent date <= now.
+    // For a selected month, the cycle is anchored to that month's rent day.
+    // Bills are grouped by billing_month, so we use billsThisMonth as the cycle's bill set.
     const cycleStart =
-      rentDateThisMonth && now >= rentDateThisMonth
-        ? rentDateThisMonth
-        : isValidDay(rentDay)
-        ? clampDayToMonth(prevYear, prevMonth, rentDay)
-        : null;
-
-    const cycleEnd =
-      cycleStart && isValidDay(rentDay)
-        ? clampDayToMonth(
-            cycleStart.getMonth() === 11
-              ? cycleStart.getFullYear() + 1
-              : cycleStart.getFullYear(),
-            cycleStart.getMonth() === 11 ? 0 : cycleStart.getMonth() + 1,
-            rentDay,
-          )
-        : null;
+      rentDateThisMonth && isValidDay(rentDay) ? rentDateThisMonth : null;
 
     const dueDate =
       cycleStart && isValidDay(rentDay) && isValidDay(dueDay)
@@ -438,12 +455,7 @@ export default function DashboardScreen() {
         : null;
     const afterDueGate = Boolean(dueDate && now >= dueDate);
 
-    const billsInCycle = (bills || []).filter(b => {
-      if (!cycleStart || !cycleEnd) return false;
-      const dt = new Date(b.created_at);
-      if (Number.isNaN(dt.getTime())) return false;
-      return dt >= cycleStart && dt < cycleEnd;
-    });
+    const billsInCycle = billsThisMonth;
 
     const billKeySet = new Set(
       billsInCycle
@@ -555,143 +567,154 @@ export default function DashboardScreen() {
   // If nothing is configured yet, show only a single "No data yet" card.
   if (!hasAnyData) {
     return (
+      <>
+        <ScrollView
+          style={styles.screen}
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={() => load(true)} />
+          }
+        >
+          <Surface style={styles.emptyCard} elevation={1}>
+            <View style={styles.emptyTop}>
+              <View
+                style={[
+                  styles.emptyIcon,
+                  { backgroundColor: theme.colors.primaryContainer },
+                ]}
+              >
+                <Icon
+                  source="home-city-outline"
+                  size={22}
+                  color={theme.colors.primary}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.emptyTitle}>No data yet</Text>
+                <Text style={styles.emptySub}>
+                  Add rooms, tenants, or a bill to start tracking occupancy, dues,
+                  and utilities.
+                </Text>
+              </View>
+            </View>
+            <View style={styles.emptyActions}>
+              <TouchableRipple
+                onPress={() => openTab('Rooms', 'RoomList')}
+                style={styles.emptyBtn}
+                borderless
+              >
+                <View style={styles.emptyBtnInner}>
+                  <Icon
+                    source="home-city-outline"
+                    size={16}
+                    color={theme.colors.primary}
+                  />
+                  <Text
+                    style={[styles.emptyBtnText, { color: theme.colors.primary }]}
+                  >
+                    Rooms
+                  </Text>
+                </View>
+              </TouchableRipple>
+              <TouchableRipple
+                onPress={() => openTab('Tenant', 'TenantList')}
+                style={styles.emptyBtn}
+                borderless
+              >
+                <View style={styles.emptyBtnInner}>
+                  <Icon
+                    source="account-group"
+                    size={16}
+                    color={theme.colors.primary}
+                  />
+                  <Text
+                    style={[styles.emptyBtnText, { color: theme.colors.primary }]}
+                  >
+                    Tenants
+                  </Text>
+                </View>
+              </TouchableRipple>
+              <TouchableRipple
+                onPress={() => openTab('Payments', 'PaymentList')}
+                style={styles.emptyBtn}
+                borderless
+              >
+                <View style={styles.emptyBtnInner}>
+                  <Icon
+                    source="credit-card-outline"
+                    size={16}
+                    color={theme.colors.primary}
+                  />
+                  <Text
+                    style={[styles.emptyBtnText, { color: theme.colors.primary }]}
+                  >
+                    Payments
+                  </Text>
+                </View>
+              </TouchableRipple>
+            </View>
+          </Surface>
+        </ScrollView>
+
+        <BillingMonthPickerDialog
+          visible={billingPickerOpen}
+          value={selectedBillingMonth}
+          onDismiss={() => setBillingPickerOpen(false)}
+          onConfirm={(d) => {
+            setSelectedBillingMonth(d);
+            setBillingPickerOpen(false);
+          }}
+        />
+      </>
+    );
+  }
+
+  return (
+    <>
       <ScrollView
         style={styles.screen}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={() => load(true)}
-          />
+          <RefreshControl refreshing={refreshing} onRefresh={() => load(true)} />
         }
       >
-        <Surface style={styles.emptyCard} elevation={1}>
-          <View style={styles.emptyTop}>
+        {/* HERO */}
+        <Surface style={styles.hero} elevation={2}>
+          <View style={styles.heroTopRow}>
             <View
               style={[
-                styles.emptyIcon,
+                styles.heroHeaderIcon,
                 { backgroundColor: theme.colors.primaryContainer },
               ]}
             >
               <Icon
-                source="home-city-outline"
-                size={22}
+                source="view-dashboard-outline"
+                size={18}
                 color={theme.colors.primary}
               />
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.emptyTitle}>No data yet</Text>
-              <Text style={styles.emptySub}>
-                Add rooms, tenants, or a bill to start tracking occupancy, dues,
-                and utilities.
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={styles.heroHeaderTitle} numberOfLines={1}>
+                Dashboard
+              </Text>
+              <Text style={styles.heroHeaderSub} numberOfLines={1}>
+                Quick overview
               </Text>
             </View>
-          </View>
-          <View style={styles.emptyActions}>
-            <TouchableRipple
-              onPress={() => openTab('Rooms', 'RoomList')}
-              style={styles.emptyBtn}
-              borderless
+            <Chip
+              icon="calendar-month"
+              onPress={() => setBillingPickerOpen(true)}
+              style={[
+                styles.heroChip,
+                { backgroundColor: theme.colors.primaryContainer },
+              ]}
+              textStyle={{ color: theme.colors.primary, fontWeight: '900' }}
             >
-              <View style={styles.emptyBtnInner}>
-                <Icon
-                  source="home-city-outline"
-                  size={16}
-                  color={theme.colors.primary}
-                />
-                <Text
-                  style={[styles.emptyBtnText, { color: theme.colors.primary }]}
-                >
-                  Rooms
-                </Text>
-              </View>
-            </TouchableRipple>
-            <TouchableRipple
-              onPress={() => openTab('Tenant', 'TenantList')}
-              style={styles.emptyBtn}
-              borderless
-            >
-              <View style={styles.emptyBtnInner}>
-                <Icon
-                  source="account-group"
-                  size={16}
-                  color={theme.colors.primary}
-                />
-                <Text
-                  style={[styles.emptyBtnText, { color: theme.colors.primary }]}
-                >
-                  Tenants
-                </Text>
-              </View>
-            </TouchableRipple>
-            <TouchableRipple
-              onPress={() => openTab('Payments', 'PaymentList')}
-              style={styles.emptyBtn}
-              borderless
-            >
-              <View style={styles.emptyBtnInner}>
-                <Icon
-                  source="credit-card-outline"
-                  size={16}
-                  color={theme.colors.primary}
-                />
-                <Text
-                  style={[styles.emptyBtnText, { color: theme.colors.primary }]}
-                >
-                  Payments
-                </Text>
-              </View>
-            </TouchableRipple>
+              {monthLabel}
+            </Chip>
           </View>
-        </Surface>
-      </ScrollView>
-    );
-  }
-
-  return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={() => load(true)} />
-      }
-    >
-      {/* HERO */}
-      <Surface style={styles.hero} elevation={2}>
-        <View style={styles.heroTopRow}>
-          <View
-            style={[
-              styles.heroHeaderIcon,
-              { backgroundColor: theme.colors.primaryContainer },
-            ]}
-          >
-            <Icon
-              source="view-dashboard-outline"
-              size={18}
-              color={theme.colors.primary}
-            />
-          </View>
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={styles.heroHeaderTitle} numberOfLines={1}>
-              Dashboard
-            </Text>
-            <Text style={styles.heroHeaderSub} numberOfLines={1}>
-              Quick overview
-            </Text>
-          </View>
-          <Chip
-            icon="calendar-month"
-            style={[
-              styles.heroChip,
-              { backgroundColor: theme.colors.primaryContainer },
-            ]}
-            textStyle={{ color: theme.colors.primary, fontWeight: '900' }}
-          >
-            {monthLabel}
-          </Chip>
-        </View>
 
         <View style={styles.heroGrid}>
           <View style={styles.heroOccWide}>
@@ -1373,8 +1396,19 @@ export default function DashboardScreen() {
         </Surface>
       </Surface>
 
-      <View style={{ height: 24 }} />
-    </ScrollView>
+        <View style={{ height: 24 }} />
+      </ScrollView>
+
+      <BillingMonthPickerDialog
+        visible={billingPickerOpen}
+        value={selectedBillingMonth}
+        onDismiss={() => setBillingPickerOpen(false)}
+        onConfirm={(d) => {
+          setSelectedBillingMonth(d);
+          setBillingPickerOpen(false);
+        }}
+      />
+    </>
   );
 }
 
