@@ -94,6 +94,7 @@ export default function RoomScreen() {
   const [refreshing, setRefreshing] = React.useState(false);
   const [rooms, setRooms] = React.useState<RoomRecord[]>([]);
   const [query, setQuery] = React.useState('');
+  const [roomFilter, setRoomFilter] = React.useState<'ALL' | 'OCCUPIED' | 'VACANT'>('ALL');
   const [activeByRoom, setActiveByRoom] = React.useState<
     Record<number, TenantRoomRecord | null>
   >({});
@@ -194,7 +195,7 @@ export default function RoomScreen() {
     />
   );
 
-  const filteredRooms = React.useMemo(() => {
+  const baseRooms = React.useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return rooms;
     return (rooms || []).filter(r =>
@@ -205,12 +206,18 @@ export default function RoomScreen() {
   }, [rooms, query]);
 
   const occupiedCount = React.useMemo(() => {
-    return (filteredRooms || []).reduce(
+    return (baseRooms || []).reduce(
       (acc, r) => (activeByRoom[r.id] ? acc + 1 : acc),
       0,
     );
-  }, [filteredRooms, activeByRoom]);
-  const vacantCount = (filteredRooms?.length || 0) - occupiedCount;
+  }, [baseRooms, activeByRoom]);
+  const vacantCount = (baseRooms?.length || 0) - occupiedCount;
+
+  const visibleRooms = React.useMemo(() => {
+    if (roomFilter === 'ALL') return baseRooms;
+    if (roomFilter === 'OCCUPIED') return (baseRooms || []).filter((r) => !!activeByRoom[r.id]);
+    return (baseRooms || []).filter((r) => !activeByRoom[r.id]);
+  }, [baseRooms, roomFilter, activeByRoom]);
 
   return (
     <View style={styles.container}>
@@ -224,7 +231,7 @@ export default function RoomScreen() {
         />
       ) : (
         <FlatList
-          data={filteredRooms}
+          data={visibleRooms}
           renderItem={renderItem}
           keyExtractor={item => item.id.toString()}
           contentContainerStyle={styles.listContent}
@@ -239,32 +246,66 @@ export default function RoomScreen() {
               />
               <View style={styles.pillRow}>
                 <Chip
-                  icon="account-off-outline"
-                  style={[
-                    styles.pill,
-                    { backgroundColor: '#F3F4F6', borderColor: '#E5E7EB' },
-                  ]}
-                  textStyle={styles.pillText}
-                >
-                  Vacant {vacantCount}
-                </Chip>
-                <Chip
-                  icon="account-check-outline"
+                  selected={roomFilter === 'ALL'}
+                  onPress={() => setRoomFilter('ALL')}
+                  icon="apps"
                   style={[
                     styles.pill,
                     {
-                      backgroundColor: theme.colors.secondaryContainer,
-                      borderColor: theme.colors.secondary,
+                      backgroundColor: roomFilter === 'ALL' ? theme.colors.primaryContainer : '#FFFFFF',
+                      borderColor: roomFilter === 'ALL' ? theme.colors.primary : '#E5E7EB',
                     },
                   ]}
                   textStyle={[
                     styles.pillText,
-                    { color: theme.colors.secondary },
+                    { color: roomFilter === 'ALL' ? theme.colors.primary : '#6B7280' },
+                  ]}
+                >
+                  All {baseRooms.length}
+                </Chip>
+                <Chip
+                  selected={roomFilter === 'OCCUPIED'}
+                  onPress={() => setRoomFilter('OCCUPIED')}
+                  icon="account-check-outline"
+                  style={[
+                    styles.pill,
+                    {
+                      backgroundColor:
+                        roomFilter === 'OCCUPIED' ? theme.colors.secondaryContainer : '#FFFFFF',
+                      borderColor: roomFilter === 'OCCUPIED' ? theme.colors.secondary : '#E5E7EB',
+                    },
+                  ]}
+                  textStyle={[
+                    styles.pillText,
+                    { color: roomFilter === 'OCCUPIED' ? theme.colors.secondary : '#6B7280' },
                   ]}
                 >
                   Occupied {occupiedCount}
                 </Chip>
+                <Chip
+                  selected={roomFilter === 'VACANT'}
+                  onPress={() => setRoomFilter('VACANT')}
+                  icon="account-off-outline"
+                  style={[
+                    styles.pill,
+                    {
+                      backgroundColor: roomFilter === 'VACANT' ? '#F3F4F6' : '#FFFFFF',
+                      borderColor: '#E5E7EB',
+                    },
+                  ]}
+                  textStyle={[
+                    styles.pillText,
+                    { color: roomFilter === 'VACANT' ? '#111827' : '#6B7280' },
+                  ]}
+                >
+                  Vacant {vacantCount}
+                </Chip>
               </View>
+            </View>
+          }
+          ListEmptyComponent={
+            <View style={styles.noResults}>
+              <Text style={styles.noResultsText}>No rooms match your search/filter.</Text>
             </View>
           }
           refreshControl={
@@ -448,9 +489,11 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
   },
   searchInput: { fontSize: 15, fontWeight: '800' },
-  pillRow: { flexDirection: 'row', gap: 10, marginTop: 10 },
+  pillRow: { flexDirection: 'row', gap: 10, marginTop: 10, flexWrap: 'wrap' },
   pill: { borderRadius: 999, borderWidth: 1 },
   pillText: { fontWeight: '900', fontSize: 13 },
+  noResults: { paddingVertical: 18, alignItems: 'center' },
+  noResultsText: { color: '#6B7280', fontWeight: '800' },
 
   card: {
     borderRadius: 16,
