@@ -16,6 +16,7 @@ import { createTicket } from '../../service/ticketService';
 import type { FileInput, Ticket } from '../../service/ticketTypes';
 import { useNavigation } from '@react-navigation/native';
 import { SmartTextInput } from '../../ui/SmartTextInput';
+import { FormInput } from '../../components/FormInput';
 
 export default function AddTicketScreen() {
   const theme = useTheme();
@@ -104,42 +105,27 @@ export default function AddTicketScreen() {
           </View>
         </View>
 
-        <View style={styles.field}>
-          <SmartTextInput
+        <View>
+          <FormInput
             label="Title *"
             value={title}
-            onChangeText={t => {
+            error={errors.title}
+            onChange={(t: any) => {
               setTitle(t);
-              setErrors(p => ({ ...p, title: undefined }));
             }}
-            error={!!errors.title}
-            style={styles.inputSingle}
           />
-          {errors.title ? (
-            <HelperText type="error" visible style={styles.helper}>
-              {errors.title}
-            </HelperText>
-          ) : null}
         </View>
 
-        <View style={styles.field}>
-          <SmartTextInput
+        <View>
+          <FormInput
             label="Description *"
             value={description}
-            onChangeText={t => {
+            error={errors.description}
+            onChange={(t: any) => {
               setDescription(t);
-              setErrors(p => ({ ...p, description: undefined }));
             }}
-            multiline
-            maxLines={8}
-            error={!!errors.description}
-            style={styles.multiline}
+            multiline={true}
           />
-          {errors.description ? (
-            <HelperText type="error" visible style={styles.helper}>
-              {errors.description}
-            </HelperText>
-          ) : null}
         </View>
 
         <View style={styles.attachRow}>

@@ -3,13 +3,25 @@ import { StyleSheet, View } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
 import type { TicketChat } from '../../../service/ticketTypes';
 
-const formatTime = (iso?: string | null) =>
-  iso
-    ? new Date(iso).toLocaleTimeString('en-GB', {
-        hour: '2-digit',
-        minute: '2-digit',
-      })
-    : '';
+const formatDateTime = (iso?: string | null) => {
+  if (!iso) return '';
+
+  const d = new Date(iso);
+
+  const datePart = d.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+
+  const timePart = d.toLocaleTimeString('en-GB', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  });
+
+  return `${datePart}, ${timePart.toUpperCase()}`;
+};
 
 export function ChatBubble({ msg, isMe }: { msg: TicketChat; isMe: boolean }) {
   const theme = useTheme();
@@ -32,7 +44,7 @@ export function ChatBubble({ msg, isMe }: { msg: TicketChat; isMe: boolean }) {
         ]}
       >
         <Text style={[styles.chatText, { color: textColor }]}>{msg.chat}</Text>
-        <Text style={styles.timeText}>{formatTime(msg.created_at)}</Text>
+        <Text style={styles.timeText}>{formatDateTime(msg.created_at)}</Text>
       </View>
     </View>
   );

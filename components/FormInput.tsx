@@ -20,6 +20,8 @@ type Props = {
   style?: StyleProp<ViewStyle>;
   /** Optional: pass a style used for the TextInput content */
   contentStyle?: StyleProp<TextStyle>;
+  /** Optional: pass a placeholder for the TextInput */
+  placeholder?: string;
 };
 
 /**
@@ -37,6 +39,7 @@ export function FormInput({
   multiline,
   style,
   contentStyle,
+  placeholder,
 }: Props) {
   const theme = useTheme();
 
@@ -91,6 +94,7 @@ export function FormInput({
           keyboardType={keyboard}
           dense={!multiline}
           multiline={!multiline}
+          placeholder={placeholder}
           {...(multiline
             ? {
                 numberOfLines: 4,

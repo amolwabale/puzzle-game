@@ -22,6 +22,7 @@ import {
   TouchableRipple,
   useTheme,
 } from 'react-native-paper';
+
 import type { Ticket, TicketChat } from '../../service/ticketTypes';
 import {
   closeTicket,
@@ -58,15 +59,13 @@ export default function TicketChatScreen() {
   const [input, setInput] = React.useState('');
   const [detailsOpen, setDetailsOpen] = React.useState(false);
 
-  React.useEffect(() => {
-    // Default to collapsed for long tickets; expanded for short ones.
-    if (!ticket) return;
-    const score =
-      (ticket.title?.length || 0) + (ticket.description?.length || 0);
-    setDetailsOpen(score <= 180);
-    // Only when a new ticket loads.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ticketId]);
+  const listRef = React.useRef<FlatList<TicketChat>>(null);
+
+  const scrollToLatest = React.useCallback((animated = true) => {
+    requestAnimationFrame(() => {
+      listRef.current?.scrollToEnd({ animated });
+    });
+  }, []);
 
   const load = React.useCallback(
     async (isRefresh = false) => {
@@ -76,16 +75,18 @@ export default function TicketChatScreen() {
           getTicket(ticketId),
           listTicketChat(ticketId),
         ]);
+
         if (!t) {
           Alert.alert('Not found', 'Ticket could not be loaded.', [
             { text: 'OK', onPress: () => navigation.goBack() },
           ]);
           return;
         }
+
         setTicket(t);
         setMessages(chat || []);
       } catch (e: any) {
-        Alert.alert('Load Failed', e?.message || 'Could not load ticket');
+        Alert.alert('Load failed', e?.message || 'Could not load ticket');
       } finally {
         isRefresh ? setRefreshing(false) : setLoading(false);
       }
@@ -93,14 +94,9 @@ export default function TicketChatScreen() {
     [ticketId, navigation],
   );
 
-  useFocusEffect(
-    React.useCallback(() => {
-      load(false);
-    }, [load]),
-  );
-
   const onCloseTicket = React.useCallback(() => {
     if (!ticket || ticket.status === 'CLOSED') return;
+
     Alert.alert('Close ticket', 'Mark this ticket as CLOSED?', [
       { text: 'Cancel', style: 'cancel' },
       {
@@ -118,36 +114,21 @@ export default function TicketChatScreen() {
     ]);
   }, [ticket, ticketId]);
 
+  useFocusEffect(
+    React.useCallback(() => {
+      load(false);
+    }, [load]),
+  );
+
+  React.useEffect(() => {
+    if (!loading && messages.length) {
+      scrollToLatest(false);
+    }
+  }, [loading, messages.length, scrollToLatest]);
+
   const canChat = ticket?.status !== 'CLOSED';
 
-  const openAttachment = React.useCallback(async () => {
-    const url = ticket?.upload_url;
-    if (!url) {
-      Alert.alert(
-        'Not available',
-        'No attachment was uploaded for this ticket.',
-      );
-      return;
-    }
-    try {
-      const signed = await createSignedUrlFromPublicUrl(url);
-      if (!signed) {
-        Alert.alert(
-          'Open failed',
-          'Could not generate a secure link. Please try again.',
-        );
-        return;
-      }
-      navigation.navigate('SupportDocument', {
-        title: 'Attachment',
-        url: signed,
-      });
-    } catch {
-      Alert.alert('Open failed', 'Could not open attachment.');
-    }
-  }, [ticket?.upload_url, navigation]);
-
-  const onSend = React.useCallback(async () => {
+  const onSend = async () => {
     if (!canChat) return;
     const text = input.trim();
     if (!text) return;
@@ -164,19 +145,19 @@ export default function TicketChatScreen() {
     setInput('');
     setSending(true);
     setMessages(prev => [...prev, temp]);
+    scrollToLatest(true);
 
     try {
       const saved = await sendTicketChat({ ticketId, chat: text });
       setMessages(prev => prev.map(m => (m.id === temp.id ? saved : m)));
     } catch (e: any) {
-      // rollback optimistic message
       setMessages(prev => prev.filter(m => m.id !== temp.id));
-      Alert.alert('Send failed', e?.message || 'Could not send message');
       setInput(text);
+      Alert.alert('Send failed', e?.message || 'Could not send message');
     } finally {
       setSending(false);
     }
-  }, [canChat, input, ticketId]);
+  };
 
   if (loading || !ticket) {
     return (
@@ -189,153 +170,88 @@ export default function TicketChatScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.screen}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
     >
-      <Surface style={styles.hero} elevation={2}>
-        <View style={styles.heroTop}>
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={styles.heroTitle} numberOfLines={1}>
+      {/* 🔒 PINNED HEADER */}
+      <Surface style={styles.pinnedHeader} elevation={3}>
+        <TouchableRipple onPress={() => setDetailsOpen(v => !v)} borderless>
+          <View style={styles.headerRow}>
+            <Text style={styles.headerTitle} numberOfLines={1}>
               {ticket.title}
             </Text>
-            <Text style={styles.heroSub} numberOfLines={1}>
-              Ticket conversation
-            </Text>
-          </View>
-          <StatusChip status={ticket.status} />
-        </View>
-
-        {ticket.status === 'CLOSED' ? (
-          <View
-            style={[
-              styles.banner,
-              { backgroundColor: theme.colors.primaryContainer },
-            ]}
-          >
+            <StatusChip status={ticket.status} />
             <Icon
-              source="lock-outline"
-              size={16}
-              color={theme.colors.primary}
+              source={detailsOpen ? 'chevron-up' : 'chevron-down'}
+              size={20}
             />
-            <Text style={[styles.bannerText, { color: theme.colors.primary }]}>
-              This ticket is closed. Chat is disabled.
-            </Text>
           </View>
-        ) : (
-          <View style={styles.heroActions}>
-            <Button
-              mode="outlined"
-              onPress={onCloseTicket}
-              icon="check-circle-outline"
-            >
-              Mark as Closed
-            </Button>
-            <Button mode="text" onPress={() => void load(true)} icon="refresh">
-              Refresh
-            </Button>
+        </TouchableRipple>
+
+        {detailsOpen && (
+          <View style={styles.details}>
+            {/* FULL TITLE */}
+            <Text style={styles.detailLabel}>Title</Text>
+            <Text style={styles.detailValue}>{ticket.title || '-'}</Text>
+
+            {/* DESCRIPTION */}
+            <Text style={[styles.detailLabel, { marginTop: 10 }]}>
+              Description
+            </Text>
+            <Text style={styles.detailValue}>{ticket.description || '-'}</Text>
+
+            {/* META */}
+            <Text style={styles.metaText}>
+              Created {formatDate(ticket.created_at)}
+            </Text>
+
+            {/* ATTACHMENT */}
+            {ticket.upload_url && (
+              <TouchableRipple
+                onPress={async () => {
+                  const signed = await createSignedUrlFromPublicUrl(
+                    ticket.upload_url!,
+                  );
+                  navigation.navigate('SupportDocument', {
+                    title: 'Attachment',
+                    url: signed,
+                  });
+                }}
+              >
+                <Text style={styles.attachText}>View attachment</Text>
+              </TouchableRipple>
+            )}
+            {/* MARK AS CLOSED */}
+            {ticket.status !== 'CLOSED' && (
+              <View style={styles.closeAction}>
+                <Button
+                  mode="outlined"
+                  icon="check-circle-outline"
+                  onPress={onCloseTicket}
+                >
+                  Mark as Closed
+                </Button>
+              </View>
+            )}
           </View>
         )}
-
-        {/* DETAILS (collapsible) */}
-        <Surface
-          style={[
-            styles.detailsCard,
-            {
-              borderColor:
-                (theme.colors as any).outlineVariant ?? theme.colors.outline,
-            },
-          ]}
-          elevation={0}
-        >
-          <TouchableRipple
-            onPress={() => setDetailsOpen(v => !v)}
-            borderless
-            style={styles.detailsHeader}
-          >
-            <View style={styles.detailsHeaderInner}>
-              <View
-                style={[
-                  styles.detailsIcon,
-                  { backgroundColor: theme.colors.primaryContainer },
-                ]}
-              >
-                <Icon
-                  source="information-outline"
-                  size={16}
-                  color={theme.colors.primary}
-                />
-              </View>
-              <Text style={styles.detailsTitle} numberOfLines={1}>
-                Ticket details
-              </Text>
-              <Icon
-                source={detailsOpen ? 'chevron-up' : 'chevron-down'}
-                size={18}
-                color="#6B7280"
-              />
-            </View>
-          </TouchableRipple>
-
-          {detailsOpen ? (
-            <View style={styles.detailsBody}>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Title</Text>
-                <Text style={styles.detailValue}>{ticket.title || '-'}</Text>
-              </View>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Description</Text>
-                <Text style={styles.detailValue}>
-                  {ticket.description || '-'}
-                </Text>
-              </View>
-              <View style={styles.detailMetaRow}>
-                <View style={styles.metaPill}>
-                  <Icon source="calendar" size={14} color="#6B7280" />
-                  <Text style={styles.metaText}>
-                    Created {formatDate(ticket.created_at)}
-                  </Text>
-                </View>
-
-                {ticket.upload_url ? (
-                  <TouchableRipple
-                    onPress={() => void openAttachment()}
-                    borderless
-                    style={styles.attachPill}
-                  >
-                    <View style={styles.attachPillInner}>
-                      <Icon
-                        source="paperclip"
-                        size={14}
-                        color={theme.colors.primary}
-                      />
-                      <Text
-                        style={[
-                          styles.attachText,
-                          { color: theme.colors.primary },
-                        ]}
-                        numberOfLines={1}
-                      >
-                        View attachment
-                      </Text>
-                    </View>
-                  </TouchableRipple>
-                ) : null}
-              </View>
-            </View>
-          ) : null}
-        </Surface>
       </Surface>
 
+      {/* 💬 CHAT LIST */}
       <FlatList
+        ref={listRef}
         data={messages}
         keyExtractor={m => m.id}
-        contentContainerStyle={styles.chatContent}
         renderItem={({ item }) => (
           <ChatBubble msg={item} isMe={item.user_role === 'USER'} />
         )}
-        onRefresh={() => load(true)}
+        contentContainerStyle={styles.chatContent}
         refreshing={refreshing}
+        onRefresh={() => load(true)}
+        onContentSizeChange={() => scrollToLatest(false)}
       />
 
+      {/* ⌨️ INPUT BAR */}
       <Surface style={styles.inputBar} elevation={2}>
         <TextInput
           mode="outlined"
@@ -345,15 +261,12 @@ export default function TicketChatScreen() {
           editable={canChat && !sending}
           dense
           style={{ flex: 1 }}
-          contentStyle={styles.inputContent}
         />
         <Button
           mode="contained"
-          onPress={() => void onSend()}
+          onPress={onSend}
           disabled={!canChat || sending || !input.trim()}
           loading={sending}
-          style={styles.sendBtn}
-          compact
         >
           Send
         </Button>
@@ -362,128 +275,73 @@ export default function TicketChatScreen() {
   );
 }
 
+/* ---------------- STYLES ---------------- */
+
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#F4F6FA' },
-  loader: {
+  loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+
+  pinnedHeader: {
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderColor: '#E5E7EB',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  headerTitle: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F4F6FA',
+    fontWeight: '900',
+    fontSize: 15,
+    color: '#111827',
   },
 
-  hero: {
-    borderRadius: 18,
-    padding: 14,
-    margin: 16,
-    marginBottom: 10,
-    backgroundColor: '#FFFFFF',
-  },
-  heroTop: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  heroTitle: { fontWeight: '900', fontSize: 16, color: '#111827' },
-  heroSub: { marginTop: 2, color: '#6B7280', fontWeight: '800', fontSize: 12 },
-  heroActions: {
+  details: {
     marginTop: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
   },
-
-  banner: {
-    marginTop: 10,
-    borderRadius: 14,
-    paddingHorizontal: 10,
-    paddingVertical: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  bannerText: { fontWeight: '900', fontSize: 13, flex: 1 },
-
-  detailsCard: {
-    marginTop: 10,
-    borderRadius: 16,
-    borderWidth: 1,
-    backgroundColor: '#FFFFFF',
-    overflow: 'hidden',
-  },
-  detailsHeader: { borderRadius: 16 },
-  detailsHeaderInner: {
-    paddingHorizontal: 10,
-    paddingVertical: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  detailsIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  detailsTitle: { flex: 1, fontWeight: '900', fontSize: 13, color: '#111827' },
-  detailsBody: { paddingHorizontal: 12, paddingBottom: 12 },
-  detailRow: { marginTop: 10 },
   detailLabel: {
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: '700',
     color: '#6B7280',
-    marginBottom: 4,
   },
   detailValue: {
+    marginTop: 4,
     fontSize: 14,
     fontWeight: '700',
-    color: '#111827',
-    lineHeight: 20,
   },
-  detailMetaRow: {
-    marginTop: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    flexWrap: 'wrap',
+  metaText: {
+    marginTop: 8,
+    fontSize: 12,
+    color: '#6B7280',
   },
-  metaPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    backgroundColor: '#FFFFFF',
+  attachText: {
+    marginTop: 6,
+    fontSize: 13,
+    fontWeight: '800',
+    color: '#2563EB',
   },
-  metaText: { fontSize: 12, fontWeight: '800', color: '#6B7280' },
-  attachPill: {
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#FFFFFF',
-  },
-  attachPillInner: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  attachText: { fontSize: 12, fontWeight: '900' },
 
-  chatContent: { paddingHorizontal: 16, paddingBottom: 88 },
+  chatContent: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
 
   inputBar: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderColor: '#E5E7EB',
   },
-  inputContent: { paddingVertical: 8 },
-  sendBtn: { borderRadius: 12 },
+  closeAction: {
+    marginTop: 14,
+    alignItems: 'flex-end',
+  },
 });
