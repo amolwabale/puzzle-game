@@ -5,7 +5,6 @@ import {
   FlatList,
   RefreshControl,
   StyleSheet,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import {
@@ -13,8 +12,10 @@ import {
   Avatar,
   Button,
   FAB,
+  Icon,
   Surface,
   Text,
+  TouchableRipple,
   useTheme,
 } from 'react-native-paper';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -220,43 +221,46 @@ const TenantCard = ({
   return (
     <Surface style={[styles.card, { borderColor: outline }]} elevation={1}>
       <View style={styles.cardClip}>
-        <TouchableOpacity
-          style={styles.cardContent}
-          activeOpacity={0.85}
-          onPress={onView}
-        >
-          <AvatarDisplay uri={photoUrl} size={AVATAR_SIZE} />
+        <TouchableRipple onPress={onView} style={styles.cardContent} borderless>
+          {/* TouchableRipple expects exactly one child element */}
+          <View style={styles.cardContentInner}>
+            <AvatarDisplay uri={photoUrl} size={AVATAR_SIZE} />
 
-          <View style={styles.cardBody}>
-            <Text style={styles.cardTitle} numberOfLines={1}>
-              {item.name || '-'}
-            </Text>
-            <Text style={styles.cardSubtitle} numberOfLines={1}>
-              Room:{' '}
-              {assignment?.roomName ? assignment.roomName : 'Not assigned'}
-            </Text>
-            <Text style={styles.cardCaption} numberOfLines={1}>
-              Joined{' '}
-              {assignment?.joiningDate
-                ? formatDate(assignment.joiningDate)
-                : '—'}
-            </Text>
+            <View style={styles.cardBody}>
+              <Text style={styles.cardTitle} numberOfLines={1}>
+                {item.name || '-'}
+              </Text>
+              <Text style={styles.cardSubtitle} numberOfLines={1}>
+                Room: {assignment?.roomName ? assignment.roomName : 'Not assigned'}
+              </Text>
+              <Text style={styles.cardCaption} numberOfLines={1}>
+                Joined {assignment?.joiningDate ? formatDate(assignment.joiningDate) : '—'}
+              </Text>
+            </View>
+
+            {/* Right-side vertical icons (no divider line) */}
+            <View style={styles.rightIconCol}>
+              <TouchableRipple
+                onPress={onEdit}
+                borderless
+                style={[
+                  styles.iconPill,
+                  { backgroundColor: theme.colors.primaryContainer, borderColor: theme.colors.primary },
+                ]}
+              >
+                <Icon source="pencil-outline" size={16} color={theme.colors.primary} />
+              </TouchableRipple>
+
+              <TouchableRipple
+                onPress={onDelete}
+                borderless
+                style={[styles.iconPill, { backgroundColor: '#FEF2F2', borderColor: '#FCA5A5' }]}
+              >
+                <Icon source="trash-can-outline" size={16} color={theme.colors.error} />
+              </TouchableRipple>
+            </View>
           </View>
-        </TouchableOpacity>
-
-        {/* ACTION RAIL (Support-style: subtle, not loud) */}
-        <View style={[styles.actionRail, { borderLeftColor: outline }]}>
-          <TouchableOpacity style={styles.editAction} onPress={onEdit}>
-            <Text style={[styles.editText, { color: theme.colors.primary }]}>
-              Edit
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.deleteAction} onPress={onDelete}>
-            <Text style={[styles.deleteText, { color: theme.colors.error }]}>
-              Delete
-            </Text>
-          </TouchableOpacity>
-        </View>
+        </TouchableRipple>
       </View>
     </Surface>
   );
@@ -306,18 +310,16 @@ const styles = StyleSheet.create({
 
   // Keep shadows on Surface; clip inside wrapper instead.
   cardClip: {
-    flexDirection: 'row',
     borderRadius: 16,
     overflow: 'hidden',
   },
 
   cardContent: {
     flex: 1,
-    flexDirection: 'row',
     paddingHorizontal: 14,
     paddingVertical: 14,
-    alignItems: 'center',
   },
+  cardContentInner: { flex: 1, flexDirection: 'row', alignItems: 'center' },
 
   cardBody: { flex: 1, paddingLeft: 14 },
   // Support-module typography
@@ -335,34 +337,21 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
 
-  /* ACTION RAIL */
-  actionRail: {
-    width: 72,
-    backgroundColor: '#FFFFFF',
-    borderLeftWidth: StyleSheet.hairlineWidth,
-    justifyContent: 'space-between',
+  rightIconCol: {
+    width: 44,
+    marginLeft: 10,
+    alignSelf: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
   },
-
-  editAction: {
-    flex: 1,
+  iconPill: {
+    width: 34,
+    height: 34,
+    borderRadius: 999,
+    borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-
-  deleteAction: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  editText: {
-    fontWeight: '900',
-    fontSize: 13,
-  },
-
-  deleteText: {
-    fontWeight: '900',
-    fontSize: 13,
   },
 
   fab: { position: 'absolute', right: 16, bottom: 24 },

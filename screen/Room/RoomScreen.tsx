@@ -5,7 +5,6 @@ import {
   FlatList,
   RefreshControl,
   StyleSheet,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import {
@@ -13,8 +12,10 @@ import {
   Avatar,
   Button,
   FAB,
+  Icon,
   Surface,
   Text,
+  TouchableRipple,
   useTheme,
 } from 'react-native-paper';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -29,9 +30,7 @@ import supabase from '../../service/SupabaseClient';
 
 type Nav = NativeStackNavigationProp<RoomStackParamList, 'RoomList'>;
 
-const ICON_SIZE = 48;
-const DIVIDER_HEIGHT = ICON_SIZE;
-// Slightly smaller than the home icon (48) to keep breathing room.
+// Avatar size for occupant (active tenant)
 const OCCUPANT_AVATAR_SIZE = 44;
 
 const formatDate = (d?: string | null) =>
@@ -251,118 +250,97 @@ const RoomCard = ({
 }) => (
   <Surface style={styles.card} elevation={2}>
     <View style={styles.cardClip}>
-      <TouchableOpacity
-        style={styles.cardContent}
-        activeOpacity={0.85}
-        onPress={onView}
-      >
-        <View style={styles.leadingColumn}>
-          <View
-            style={[
-              styles.leadingIcon,
-              { backgroundColor: themeColors.primaryContainer },
-            ]}
-          >
-            <Avatar.Icon
-              size={ICON_SIZE}
-              icon="home-outline"
-              style={{ backgroundColor: 'transparent' }}
-              color={themeColors.primary}
-            />
+      <TouchableRipple onPress={onView} style={styles.cardContent} borderless>
+        {/* TouchableRipple expects exactly one child element */}
+        <View style={styles.cardContentInner}>
+          <View style={styles.leadingColumn}>
+            <View style={styles.occupantAvatarWrap}>
+              {occupant ? (
+                occupantPhotoUrl ? (
+                  <Avatar.Image size={OCCUPANT_AVATAR_SIZE} source={{ uri: occupantPhotoUrl }} />
+                ) : (
+                  <Avatar.Text
+                    size={OCCUPANT_AVATAR_SIZE}
+                    label={getInitials(occupant.tenant?.name)}
+                    style={{ backgroundColor: themeColors.secondaryContainer }}
+                    color={themeColors.secondary}
+                  />
+                )
+              ) : (
+                <Avatar.Icon
+                  size={OCCUPANT_AVATAR_SIZE}
+                  icon="account-off-outline"
+                  style={{ backgroundColor: '#F3F4F6' }}
+                  color="#6B7280"
+                />
+              )}
+            </View>
           </View>
 
-          <View style={styles.occupantAvatarWrap}>
+          <View style={styles.cardBody}>
+            <View style={styles.titleRow}>
+              <Text
+                variant="titleMedium"
+                style={styles.cardTitle}
+                numberOfLines={1}
+              >
+                {item.name || '-'}
+              </Text>
+            </View>
+
+            <View style={styles.metaBlock}>
+              <Text style={styles.cardSubtitle} numberOfLines={1}>
+                Rent: {formatMoney(item.rent)} | Deposit:{' '}
+                {formatMoneyCompact(item.deposit)}
+              </Text>
+            </View>
+
             {occupant ? (
-              occupantPhotoUrl ? (
-                <Avatar.Image
-                  size={OCCUPANT_AVATAR_SIZE}
-                  source={{ uri: occupantPhotoUrl }}
-                />
-              ) : (
-                <Avatar.Text
-                  size={OCCUPANT_AVATAR_SIZE}
-                  label={getInitials(occupant.tenant?.name)}
-                  style={{ backgroundColor: themeColors.secondaryContainer }}
-                  color={themeColors.secondary}
-                />
-              )
+              <View style={styles.occupantBlock}>
+                <Text style={styles.occupantName} numberOfLines={1}>
+                  {occupant.tenant?.name || 'Tenant'}
+                </Text>
+                <Text style={styles.occupantMeta} numberOfLines={1}>
+                  Joined on {formatDate(occupant.joining_date)}
+                </Text>
+              </View>
             ) : (
-              <Avatar.Icon
-                size={OCCUPANT_AVATAR_SIZE}
-                icon="account-off-outline"
-                style={{ backgroundColor: '#EDEFF5' }}
-                color="#5B6475"
-              />
+              <View style={styles.occupantBlock}>
+                <Text style={styles.occupantMeta} numberOfLines={1}>
+                  No tenant assigned
+                </Text>
+              </View>
             )}
           </View>
-        </View>
 
-        <View style={styles.cardBody}>
-          <View style={styles.titleRow}>
-            <Text
-              variant="titleMedium"
-              style={styles.cardTitle}
-              numberOfLines={1}
-            >
-              {item.name || '-'}
-            </Text>
-
-            <View
+          {/* Right-side vertical actions (top→bottom): occupancy, edit, delete */}
+          <View style={styles.rightIconCol}>
+            <TouchableRipple
+              onPress={onEdit}
+              borderless
               style={[
-                styles.statusPill,
-                {
-                  backgroundColor: occupant
-                    ? themeColors.secondaryContainer
-                    : '#EDEFF5',
-                },
+                styles.iconPill,
+                styles.iconPillSm,
+                { backgroundColor: themeColors.primaryContainer, borderColor: themeColors.primary },
               ]}
             >
-              <Text
-                style={[
-                  styles.statusText,
-                  { color: occupant ? themeColors.secondary : '#5B6475' },
-                ]}
-              >
-                {occupant ? 'Occupied' : 'Vacant'}
-              </Text>
-            </View>
-          </View>
+              <Icon source="pencil-outline" size={16} color={themeColors.primary} />
+            </TouchableRipple>
 
-          <View style={styles.metaBlock}>
-            <Text style={styles.cardSubtitle} numberOfLines={1}>
-              Rent: {formatMoney(item.rent)} | Deposit:{' '}
-              {formatMoneyCompact(item.deposit)}
-            </Text>
+            <TouchableRipple
+              onPress={onDelete}
+              borderless
+              style={[
+                styles.iconPill,
+                styles.iconPillSm,
+                { backgroundColor: '#FEF2F2', borderColor: '#FCA5A5' },
+              ]}
+            >
+              <Icon source="trash-can-outline" size={16} color="#EF4444" />
+            </TouchableRipple>
           </View>
-
-          {occupant ? (
-            <View style={styles.occupantBlock}>
-              <Text style={styles.occupantName} numberOfLines={1}>
-                {occupant.tenant?.name || 'Tenant'}
-              </Text>
-              <Text style={styles.occupantMeta} numberOfLines={1}>
-                Joined on {formatDate(occupant.joining_date)}
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.occupantBlock}>
-              <Text style={styles.occupantMeta} numberOfLines={1}>
-                No tenant assigned
-              </Text>
-            </View>
-          )}
         </View>
-      </TouchableOpacity>
-
-      {/* ACTION RAIL */}
-      <View style={styles.actionRail}>
-        <TouchableOpacity style={styles.editAction} onPress={onEdit}>
-          <Text style={styles.editText}>Edit</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.deleteAction} onPress={onDelete}>
-          <Text style={styles.deleteText}>Delete</Text>
-        </TouchableOpacity>
-      </View>
+      </TouchableRipple>
     </View>
   </Surface>
 );
@@ -394,6 +372,9 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 16,
     marginBottom: 12,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
 
   // Keep shadows on Surface; clip inside wrapper instead.
@@ -405,53 +386,58 @@ const styles = StyleSheet.create({
 
   cardContent: {
     flex: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+  },
+  cardContentInner: {
+    flex: 1,
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    alignItems: 'flex-start',
+    alignItems: 'center',
   },
 
   leadingColumn: {
     alignItems: 'center',
     marginRight: 12,
   },
-  leadingIcon: {
-    borderRadius: 14,
-    overflow: 'hidden',
-  },
   occupantAvatarWrap: {
-    marginTop: 8,
     borderRadius: 999,
     padding: 1,
     backgroundColor: '#FFFFFF',
-    // subtle outline effect without hard border
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 1,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
 
-  cardBody: { flex: 1, paddingTop: 2 },
+  cardBody: { flex: 1, paddingTop: 0 },
   titleRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
     gap: 10,
   },
-  // ~10% typography bump for readability
-  cardTitle: { fontWeight: '700', flex: 1, fontSize: 18 },
-  metaBlock: { marginTop: 6, gap: 2 },
-  cardSubtitle: { color: '#555', fontSize: 14, fontWeight: '600' },
+  cardTitle: { fontWeight: '900', flex: 1, fontSize: 16, color: '#111827' },
+  metaBlock: { marginTop: 4 },
+  cardSubtitle: { color: '#6B7280', fontSize: 13, fontWeight: '800' },
 
-  statusPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 999,
+  rightIconCol: {
+    width: 44,
+    marginLeft: 10,
+    alignSelf: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    paddingVertical: 0,
   },
-  statusText: {
-    fontSize: 13,
-    fontWeight: '800',
+  iconPill: {
+    width: 38,
+    height: 38,
+    borderRadius: 999,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  iconPillSm: {
+    width: 34,
+    height: 34,
   },
 
   occupantRow: {
@@ -469,51 +455,21 @@ const styles = StyleSheet.create({
   },
 
   occupantBlock: {
-    marginTop: 10,
+    marginTop: 8,
   },
   occupantName: {
-    fontWeight: '700',
-    color: '#1F2937',
-    fontSize: 16,
+    fontWeight: '900',
+    color: '#111827',
+    fontSize: 14,
   },
   occupantMeta: {
-    color: '#666',
+    color: '#6B7280',
     marginTop: 2,
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '800',
   },
 
-  /* ACTION RAIL */
-  actionRail: {
-    width: 72,
-    backgroundColor: '#EEF2FF',
-    justifyContent: 'space-between',
-  },
-
-  editAction: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  deleteAction: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#FDECEA',
-  },
-
-  editText: {
-    fontWeight: '600',
-    color: '#1A73E8',
-    fontSize: 14,
-  },
-
-  deleteText: {
-    fontWeight: '600',
-    color: '#D32F2F',
-    fontSize: 14,
-  },
+  // Action rail removed in favor of compact icon buttons on the right.
 
   fab: { position: 'absolute', right: 16, bottom: 24 },
 
@@ -524,11 +480,12 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   emptyIcon: { marginBottom: 16, backgroundColor: '#E0E0E0' },
-  emptyTitle: { fontWeight: '600', marginBottom: 6, fontSize: 18 },
+  emptyTitle: { fontWeight: '900', marginBottom: 6, fontSize: 16, color: '#111827' },
   emptySubtitle: {
-    color: '#666',
+    color: '#6B7280',
     textAlign: 'center',
     marginBottom: 16,
-    fontSize: 14,
+    fontSize: 13,
+    fontWeight: '800',
   },
 });
