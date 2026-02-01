@@ -127,5 +127,5 @@ const styles = StyleSheet.create({
   input: { marginBottom: 0 },
   marginBottom: { marginBottom: 12 },
   content: { fontSize: 16, lineHeight: 20, paddingVertical: 8 },
-  helper: { fontSize: 12, paddingVertical: 2, marginTop: 0 },
+  helper: { fontSize: 12, paddingVertical: 2, marginBottom: -12 },
 });
