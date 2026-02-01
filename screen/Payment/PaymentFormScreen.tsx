@@ -43,6 +43,7 @@ import {
 import { fetchRooms, RoomRecord } from '../../service/RoomService';
 import { fetchTenants, TenantRecord } from '../../service/tenantService';
 import { fetchActiveTenantsForRooms } from '../../service/TenantRoomService';
+import { FormInput } from '../../components/FormInput';
 
 const formatMoney = (n: number) => `₹${Math.round(n)}`;
 
@@ -513,47 +514,38 @@ export default function PaymentFormScreen() {
                   </View>
                 </Surface>
 
-                <TextInput
-                  label="Current Meter Reading *"
+                <FormInput
+                label="Current Meter Reading *"
                   value={currentMeter}
-                  onChangeText={t => {
+                  onChange={(t) => {
                     const next = t.replace(/[^\d]/g, '');
                     setCurrentMeter(next);
-                    setErrors(p => ({ ...p, currentMeter: '' }));
                   }}
-                  mode="outlined"
-                  keyboardType="number-pad"
-                  left={<TextInput.Icon icon="counter" />}
-                  error={!!errors.currentMeter}
-                />
-                <HelperText type="error" visible={!!errors.currentMeter}>
-                  {errors.currentMeter || ' '}
-                </HelperText>
+                error={errors.currentMeter}
+                maxLength={10}
+                keyboard="number-pad"
+              />
+                
 
-                <TextInput
-                  label="Ad-hoc Amount"
+                <FormInput
+                label="Ad-hoc Amount"
                   value={adHocAmount}
-                  onChangeText={t => {
+                  onChange={(t) => {
                     const next = t.replace(/[^\d]/g, '');
                     setAdHocAmount(next);
-                    setErrors(p => ({ ...p, adHocAmount: '' }));
                   }}
-                  mode="outlined"
-                  keyboardType="number-pad"
-                  left={<TextInput.Icon icon="cash-plus" />}
-                  error={!!errors.adHocAmount}
-                />
-                <HelperText type="error" visible={!!errors.adHocAmount}>
-                  {errors.adHocAmount || ' '}
-                </HelperText>
+                error={errors.adHocAmount}
+                maxLength={10}
+                keyboard="number-pad"
+              />
+                
 
-                <TextInput
-                  label="Ad-hoc Comment"
+                <FormInput
+                label="Ad-hoc Comment"
                   value={adHocComment}
-                  onChangeText={setAdHocComment}
-                  mode="outlined"
-                  multiline
-                  left={<TextInput.Icon icon="comment-text-outline" />}
+                  onChange={setAdHocComment}
+                  error={errors.adHocComment}
+                  maxLength={100}
                 />
               </Surface>
 

@@ -25,11 +25,9 @@ import {
   Icon,
   IconButton,
   ProgressBar,
-  Provider as PaperProvider,
   Portal,
   Surface,
   Text,
-  TextInput,
   TouchableRipple,
   useTheme,
 } from 'react-native-paper';
@@ -44,6 +42,7 @@ import {
 import { fetchRooms } from '../../service/RoomService';
 import { fetchTenants } from '../../service/tenantService';
 import { supabase } from '../../service/SupabaseClient';
+import { FormInput } from '../../components/FormInput';
 
 const PDFModule =
   NativeModules?.HtmlToPdf ||
@@ -114,31 +113,9 @@ function appendPaymentComment(
   return base.length ? `${base}\n${line}` : line;
 }
 
-const scalePaperThemeFonts = (t: any, scale: number) => {
-  const s = Number.isFinite(scale) ? scale : 1;
-  const fonts = t?.fonts ?? {};
-  const nextFonts: Record<string, any> = { ...fonts };
-  Object.keys(nextFonts).forEach(k => {
-    const v = nextFonts[k];
-    if (!v || typeof v !== 'object') return;
-    const nv: any = { ...v };
-    if (typeof nv.fontSize === 'number')
-      nv.fontSize = Math.round(nv.fontSize * s);
-    if (typeof nv.lineHeight === 'number')
-      nv.lineHeight = Math.round(nv.lineHeight * s);
-    if (typeof nv.letterSpacing === 'number')
-      nv.letterSpacing = Number((nv.letterSpacing * s).toFixed(2));
-    nextFonts[k] = nv;
-  });
-  return { ...t, fonts: nextFonts };
-};
-
 export default function PaymentViewScreen() {
   const theme = useTheme();
-  const scaledTheme = React.useMemo(
-    () => scalePaperThemeFonts(theme, 1.15),
-    [theme],
-  );
+  const outline = (theme.colors as any).outlineVariant ?? theme.colors.outline;
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const billId: number | undefined = route.params?.billId;
@@ -281,35 +258,28 @@ export default function PaymentViewScreen() {
 
   if (loading) {
     return (
-      <PaperProvider theme={scaledTheme}>
-        <View style={styles.loader}>
-          <ActivityIndicator size="large" />
-        </View>
-      </PaperProvider>
+      <View style={styles.loader}>
+        <ActivityIndicator size="large" />
+      </View>
     );
   }
 
   if (!bill) {
     return (
-      <PaperProvider theme={scaledTheme}>
-        <View style={styles.emptyWrap}>
-          <Avatar.Icon
-            size={56}
-            icon="file-document-outline"
-            style={{ backgroundColor: theme.colors.primaryContainer }}
-            color={theme.colors.primary}
-          />
-          <Text
-            variant="titleMedium"
-            style={{ fontWeight: '800', marginTop: 12 }}
-          >
-            Bill not found
-          </Text>
-          <Text style={{ color: '#666', marginTop: 4 }}>
-            This bill may have been deleted or you don’t have access.
-          </Text>
-        </View>
-      </PaperProvider>
+      <View style={styles.emptyWrap}>
+        <Avatar.Icon
+          size={56}
+          icon="file-document-outline"
+          style={{ backgroundColor: theme.colors.primaryContainer }}
+          color={theme.colors.primary}
+        />
+        <Text variant="titleMedium" style={{ fontWeight: '800', marginTop: 12 }}>
+          Bill not found
+        </Text>
+        <Text style={{ color: '#666', marginTop: 4 }}>
+          This bill may have been deleted or you don’t have access.
+        </Text>
+      </View>
     );
   }
 
@@ -798,14 +768,13 @@ export default function PaymentViewScreen() {
 
   return (
     <>
-      <PaperProvider theme={scaledTheme}>
-        <ScrollView
-          contentContainerStyle={styles.container}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
+      <ScrollView
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
           {/* HERO */}
-          <Surface style={styles.hero} elevation={2}>
+          <Surface style={[styles.hero, { borderColor: outline }]} elevation={2}>
             <View
               style={[
                 styles.heroPhotoWrap,
@@ -1080,12 +1049,14 @@ export default function PaymentViewScreen() {
           </View>
 
           {/* BILL PREVIEW (no-scroll layout) */}
-          <Surface style={styles.billCard} elevation={2}>
+          <Surface style={[styles.billCard, { borderColor: outline }]} elevation={2}>
             <View style={styles.billCardClip}>
               <Surface
                 style={[
                   styles.billTop,
-                  { backgroundColor: theme.colors.primaryContainer },
+                  // Align with RoomView: keep surfaces mostly white, use primaryContainer
+                  // only for small accents (not a full-width block).
+                  { backgroundColor: theme.colors.surface },
                 ]}
                 elevation={0}
               >
@@ -1212,46 +1183,102 @@ export default function PaymentViewScreen() {
                 </Surface>
               </Surface>
 
-              <View style={styles.tileGrid}>
-                <BreakdownTile
+              {/* Charges & meters (RoomView-style: flat rows + dividers, no tiny tiles) */}
+              <Surface
+                style={[
+                  styles.breakdownList,
+                  {
+                    borderColor:
+                      (theme.colors as any).outlineVariant ?? theme.colors.outline,
+                    backgroundColor: theme.colors.surface,
+                  },
+                ]}
+                elevation={0}
+              >
+                <BreakdownRow
                   icon="home-city-outline"
                   label="Rent"
                   value={formatMoney(rent)}
                 />
-                <BreakdownTile
+                <View
+                  style={[
+                    styles.breakdownDivider,
+                    {
+                      backgroundColor:
+                        (theme.colors as any).outlineVariant ?? theme.colors.outline,
+                    },
+                  ]}
+                />
+                <BreakdownRow
                   icon="water-outline"
                   label="Water"
                   value={formatMoney(water)}
                 />
-                <BreakdownTile
+                <View
+                  style={[
+                    styles.breakdownDivider,
+                    {
+                      backgroundColor:
+                        (theme.colors as any).outlineVariant ?? theme.colors.outline,
+                    },
+                  ]}
+                />
+                <BreakdownRow
                   icon="flash-outline"
                   label="Electricity"
-                  value={formatMoney(electricity)}
                   sub={`${units} × ${rate}`}
+                  value={formatMoney(electricity)}
                 />
-                <BreakdownTile
+                <View
+                  style={[
+                    styles.breakdownDivider,
+                    {
+                      backgroundColor:
+                        (theme.colors as any).outlineVariant ?? theme.colors.outline,
+                    },
+                  ]}
+                />
+                <BreakdownRow
                   icon="cash-plus"
                   label="Ad-hoc"
-                  value={formatMoney(adHoc)}
                   sub={
                     bill.ad_hoc_comment?.trim()
                       ? bill.ad_hoc_comment.trim()
                       : undefined
                   }
+                  value={formatMoney(adHoc)}
                 />
-                <BreakdownTile
+                <View
+                  style={[
+                    styles.breakdownDivider,
+                    {
+                      backgroundColor:
+                        (theme.colors as any).outlineVariant ?? theme.colors.outline,
+                    },
+                  ]}
+                />
+                <BreakdownRow
                   icon="counter"
                   label="Prev meter"
-                  value={String(prev)}
                   sub={prevLabel}
+                  value={String(prev)}
                 />
-                <BreakdownTile
+                <View
+                  style={[
+                    styles.breakdownDivider,
+                    {
+                      backgroundColor:
+                        (theme.colors as any).outlineVariant ?? theme.colors.outline,
+                    },
+                  ]}
+                />
+                <BreakdownRow
                   icon="counter"
                   label="Curr meter"
-                  value={String(curr)}
                   sub={currLabel}
+                  value={String(curr)}
                 />
-              </View>
+              </Surface>
 
               <View style={styles.notesSection}>
                 {!!bill.paid_amount_comment?.trim() && (
@@ -1274,7 +1301,7 @@ export default function PaymentViewScreen() {
               </View>
             </View>
           </Surface>
-        </ScrollView>
+      </ScrollView>
 
         <FAB icon="share-variant" style={styles.fab} onPress={openShareSheet} />
 
@@ -1301,26 +1328,28 @@ export default function PaymentViewScreen() {
             <Dialog
               visible={paymentDialogOpen}
               onDismiss={() => setPaymentDialogOpen(false)}
-              style={[styles.payDialog, { maxHeight: dialogMaxHeight }]}
+              style={[
+                styles.payDialog,
+                {
+                  maxHeight: dialogMaxHeight,
+                  borderColor: outline,
+                  borderWidth: 1,
+                },
+              ]}
             >
-              <View style={styles.payDialogHeader}>
+              <View style={[styles.payDialogHeader, { borderBottomColor: outline }]}>
                 <View style={styles.payDialogHeaderRow}>
-                  <Surface
+                  <View
                     style={[
                       styles.payDialogIconWrap,
                       { backgroundColor: theme.colors.primaryContainer },
                     ]}
-                    elevation={0}
                   >
-                    <Icon
-                      source="cash-plus"
-                      size={22}
-                      color={theme.colors.primary}
-                    />
-                  </Surface>
+                    <Icon source="cash-plus" size={20} color={theme.colors.primary} />
+                  </View>
 
-                  <View style={{ flex: 1 }}>
-                    <Text variant="titleMedium" style={styles.payDialogTitle}>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={styles.payDialogTitle} numberOfLines={1}>
                       Record payment
                     </Text>
                     <Text style={styles.payDialogSub} numberOfLines={1}>
@@ -1337,12 +1366,7 @@ export default function PaymentViewScreen() {
                       },
                     ]}
                   >
-                    <Text
-                      style={[
-                        styles.statusPillText,
-                        { color: statusTone.text },
-                      ]}
-                    >
+                    <Text style={[styles.statusPillText, { color: statusTone.text }]} numberOfLines={1}>
                       {status}
                     </Text>
                   </View>
@@ -1355,52 +1379,94 @@ export default function PaymentViewScreen() {
                   keyboardShouldPersistTaps="handled"
                   contentContainerStyle={styles.dialogContent}
                 >
-                  <TextInput
+                  <FormInput
                     label="Amount received"
-                    mode="outlined"
-                    keyboardType="number-pad"
                     value={paymentAmount}
-                    onChangeText={t =>
-                      setPaymentAmount(t.replace(/[^\d]/g, ''))
+                    onChange={(t) =>
+                      setPaymentAmount(String(t ?? '').replace(/[^\d]/g, ''))
                     }
-                    left={<TextInput.Icon icon="currency-inr" />}
-                    error={paymentAmount.trim().length > 0 && !isAmountValid}
+                    keyboard="number-pad"
+                    error={
+                      paymentAmount.trim().length > 0 && !isAmountValid
+                        ? `Enter an amount between 1 and ${Math.round(pending)}`
+                        : undefined
+                    }
                   />
+
                   <View style={styles.quickRow}>
                     <Text style={styles.quickLabel}>Quick fill</Text>
                     <View style={styles.quickChipsRow}>
-                      <Button
-                        mode="outlined"
-                        compact
+                      <TouchableRipple
                         onPress={() =>
                           setPaymentAmount(
                             String(Math.max(1, Math.round(pending * 0.25))),
                           )
                         }
                         disabled={pending <= 0}
+                        borderless
+                        style={[
+                          styles.quickPill,
+                          {
+                            backgroundColor: theme.colors.surface,
+                            borderColor: outline,
+                            opacity: pending > 0 ? 1 : 0.5,
+                          },
+                        ]}
                       >
-                        25%
-                      </Button>
-                      <Button
-                        mode="outlined"
-                        compact
+                        <View style={styles.quickPillInner}>
+                          <Text style={styles.quickPillText}>25%</Text>
+                        </View>
+                      </TouchableRipple>
+
+                      <TouchableRipple
                         onPress={() =>
                           setPaymentAmount(
                             String(Math.max(1, Math.round(pending * 0.5))),
                           )
                         }
                         disabled={pending <= 0}
+                        borderless
+                        style={[
+                          styles.quickPill,
+                          {
+                            backgroundColor: theme.colors.surface,
+                            borderColor: outline,
+                            opacity: pending > 0 ? 1 : 0.5,
+                          },
+                        ]}
                       >
-                        50%
-                      </Button>
-                      <Button
-                        mode="contained-tonal"
-                        compact
+                        <View style={styles.quickPillInner}>
+                          <Text style={styles.quickPillText}>50%</Text>
+                        </View>
+                      </TouchableRipple>
+
+                      <TouchableRipple
                         onPress={() => setPaymentAmount(String(pending))}
                         disabled={pending <= 0}
+                        borderless
+                        style={[
+                          styles.quickPill,
+                          {
+                            backgroundColor: theme.colors.primaryContainer,
+                            borderColor: theme.colors.primary,
+                            opacity: pending > 0 ? 1 : 0.5,
+                          },
+                        ]}
                       >
-                        Full {formatMoney(pending)}
-                      </Button>
+                        <View style={styles.quickPillInner}>
+                          <Icon
+                            source="check-circle-outline"
+                            size={16}
+                            color={theme.colors.primary}
+                          />
+                          <Text
+                            style={[styles.quickPillText, { color: theme.colors.primary }]}
+                            numberOfLines={1}
+                          >
+                            Full {formatMoney(pending)}
+                          </Text>
+                        </View>
+                      </TouchableRipple>
                     </View>
                   </View>
 
@@ -1428,8 +1494,7 @@ export default function PaymentViewScreen() {
                                   : theme.colors.surface,
                                 borderColor: selected
                                   ? theme.colors.primary
-                                  : (theme.colors as any).outlineVariant ??
-                                    theme.colors.outline,
+                                  : outline,
                               },
                             ]}
                           >
@@ -1437,17 +1502,13 @@ export default function PaymentViewScreen() {
                               <Icon
                                 source={m.icon}
                                 size={16}
-                                color={
-                                  selected ? theme.colors.primary : '#6B7280'
-                                }
+                                color={selected ? theme.colors.primary : '#6B7280'}
                               />
                               <Text
                                 style={[
                                   styles.methodChipText,
                                   {
-                                    color: selected
-                                      ? theme.colors.primary
-                                      : '#6B7280',
+                                    color: selected ? theme.colors.primary : '#6B7280',
                                   },
                                 ]}
                                 numberOfLines={1}
@@ -1461,32 +1522,22 @@ export default function PaymentViewScreen() {
                     </View>
                   </View>
 
-                  <TextInput
-                    label="Note (will be saved in bill notes)"
-                    mode="outlined"
+                  <FormInput
+                    label="Note (saved in bill notes)"
                     value={paymentNote}
-                    onChangeText={setPaymentNote}
-                    left={<TextInput.Icon icon="note-text-outline" />}
-                    multiline
-                    style={{ marginTop: 10 }}
+                    onChange={setPaymentNote}
+                    maxLength={100}
                   />
 
                   <Surface
                     style={[
                       styles.previewBox,
-                      {
-                        backgroundColor: theme.colors.surface,
-                        borderColor:
-                          (theme.colors as any).outlineVariant ??
-                          theme.colors.outline,
-                      },
+                      { backgroundColor: theme.colors.surface, borderColor: outline },
                     ]}
                     elevation={0}
                   >
                     <View style={styles.previewHeaderRow}>
-                      <Text style={styles.previewHeaderText}>
-                        Payment Summary
-                      </Text>
+                      <Text style={styles.previewHeaderText}>Payment Summary</Text>
                       <View
                         style={[
                           styles.statusPill,
@@ -1496,27 +1547,18 @@ export default function PaymentViewScreen() {
                           },
                         ]}
                       >
-                        <Text
-                          style={[
-                            styles.statusPillText,
-                            { color: nextStatusTone.text },
-                          ]}
-                        >
+                        <Text style={[styles.statusPillText, { color: nextStatusTone.text }]} numberOfLines={1}>
                           {nextStatus}
                         </Text>
                       </View>
                     </View>
                     <View style={styles.previewRow}>
                       <Text style={styles.previewLabel}>Paid</Text>
-                      <Text style={styles.previewValue}>
-                        {formatMoney(nextPaid)}
-                      </Text>
+                      <Text style={styles.previewValue}>{formatMoney(nextPaid)}</Text>
                     </View>
                     <View style={styles.previewRow}>
                       <Text style={styles.previewLabel}>Pending</Text>
-                      <Text style={styles.previewValue}>
-                        {formatMoney(nextPending)}
-                      </Text>
+                      <Text style={styles.previewValue}>{formatMoney(nextPending)}</Text>
                     </View>
                     <ProgressBar
                       progress={nextProgress}
@@ -1524,13 +1566,7 @@ export default function PaymentViewScreen() {
                       style={styles.previewProgress}
                     />
                     {!isAmountValid && paymentAmount.trim().length > 0 && (
-                      <Text
-                        style={{
-                          marginTop: 8,
-                          color: theme.colors.error,
-                          fontWeight: '700',
-                        }}
-                      >
+                      <Text style={[styles.amountHint, { color: theme.colors.error }]}>
                         Enter an amount between 1 and {Math.round(pending)}.
                       </Text>
                     )}
@@ -1542,6 +1578,8 @@ export default function PaymentViewScreen() {
                 <Button
                   onPress={() => setPaymentDialogOpen(false)}
                   disabled={paymentSaving}
+                  style={styles.dialogActionBtn}
+                  contentStyle={styles.dialogActionBtnContent}
                 >
                   Cancel
                 </Button>
@@ -1550,6 +1588,8 @@ export default function PaymentViewScreen() {
                   onPress={savePayment}
                   loading={paymentSaving}
                   disabled={!isAmountValid}
+                  style={styles.dialogActionBtn}
+                  contentStyle={styles.dialogActionBtnContent}
                 >
                   Save
                 </Button>
@@ -1557,7 +1597,6 @@ export default function PaymentViewScreen() {
             </Dialog>
           </KeyboardAvoidingView>
         </Portal>
-      </PaperProvider>
     </>
   );
 }
@@ -1572,51 +1611,105 @@ const BreakdownTile = ({
   label: string;
   value: string;
   sub?: string;
-}) => (
-  <Surface style={styles.tile} elevation={0}>
-    <View style={styles.tileInner}>
-      <View style={styles.tileTop}>
-        <Icon source={icon} size={20} color="#1A73E8" />
-        <Text style={styles.tileLabel} numberOfLines={1}>
-          {label}
+}) => {
+  const theme = useTheme();
+  return (
+    <Surface style={styles.tile} elevation={0}>
+      <View style={styles.tileInner}>
+        <View style={styles.tileTop}>
+          <Icon source={icon} size={20} color={theme.colors.primary} />
+          <Text style={styles.tileLabel} numberOfLines={1}>
+            {label}
+          </Text>
+        </View>
+        <Text style={styles.tileValue} numberOfLines={1}>
+          {value}
+        </Text>
+        <Text
+          style={[styles.tileSub, !sub && styles.tileSubPlaceholder]}
+          numberOfLines={1}
+        >
+          {sub || ' '}
         </Text>
       </View>
-      <Text style={styles.tileValue} numberOfLines={1}>
+    </Surface>
+  );
+};
+
+const BreakdownRow = ({
+  icon,
+  label,
+  sub,
+  value,
+}: {
+  icon: string;
+  label: string;
+  sub?: string;
+  value: string;
+}) => {
+  const theme = useTheme();
+  const outline = (theme.colors as any).outlineVariant ?? theme.colors.outline;
+  const badgeBg = (theme.colors as any).surfaceVariant ?? theme.colors.surface;
+  return (
+    <View style={styles.breakdownRow}>
+      <View
+        style={[
+          styles.breakdownIconBadge,
+          { borderColor: outline, backgroundColor: badgeBg },
+        ]}
+      >
+        <Icon source={icon} size={16} color="#6B7280" />
+      </View>
+
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text style={styles.breakdownLabel} numberOfLines={1}>
+          {label}
+        </Text>
+        {sub ? (
+          <Text style={styles.breakdownSub} numberOfLines={1}>
+            {sub}
+          </Text>
+        ) : null}
+      </View>
+
+      <Text
+        style={styles.breakdownValue}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.85}
+      >
         {value}
       </Text>
-      <Text
-        style={[styles.tileSub, !sub && styles.tileSubPlaceholder]}
-        numberOfLines={1}
-      >
-        {sub || ' '}
-      </Text>
     </View>
-  </Surface>
-);
+  );
+};
 
 const MetaPill = ({
   icon,
   label,
-  color = '#1A73E8',
-  backgroundColor = '#EEF2FF',
-  borderColor = '#1A73E8',
+  color,
+  backgroundColor,
+  borderColor,
 }: {
   icon: string;
   label: string;
   color?: string;
   backgroundColor?: string;
   borderColor?: string;
-}) => (
-  <Surface
-    style={[styles.metaPill, { backgroundColor, borderColor }]}
-    elevation={0}
-  >
-    <Icon source={icon} size={16} color={color} />
-    <Text style={[styles.metaPillText, { color }]} numberOfLines={1}>
-      {label}
-    </Text>
-  </Surface>
-);
+}) => {
+  const theme = useTheme();
+  const c = color ?? theme.colors.primary;
+  const bg = backgroundColor ?? theme.colors.primaryContainer;
+  const bc = borderColor ?? theme.colors.primary;
+  return (
+    <Surface style={[styles.metaPill, { backgroundColor: bg, borderColor: bc }]} elevation={0}>
+      <Icon source={icon} size={16} color={c} />
+      <Text style={[styles.metaPillText, { color: c }]} numberOfLines={1}>
+        {label}
+      </Text>
+    </Surface>
+  );
+};
 
 const PaymentStat = ({
   icon,
@@ -1651,7 +1744,8 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     padding: 16,
-    paddingBottom: 24,
+    // Keep space for FAB(s) like Room/Tenant screens
+    paddingBottom: 120,
     backgroundColor: '#F4F6FA',
   },
   loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
@@ -1665,24 +1759,28 @@ const styles = StyleSheet.create({
 
   hero: {
     borderRadius: 18,
-    padding: 18,
+    padding: 14,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    // Keep vertical rhythm consistent: bill card will use marginTop
+    marginBottom: 0,
     position: 'relative',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
   heroEditBtn: {
     position: 'absolute',
-    right: 18,
-    bottom: 18,
+    right: 14,
+    bottom: 14,
     margin: 0,
     borderWidth: 1,
     zIndex: 10,
     elevation: 10,
   },
   heroPhotoWrap: {
-    width: 76,
-    height: 76,
+    width: 58,
+    height: 58,
     borderRadius: 999,
     overflow: 'hidden',
     borderWidth: 1,
@@ -1701,8 +1799,8 @@ const styles = StyleSheet.create({
   heroKicker: {
     color: '#6B7280',
     fontWeight: '900',
-    letterSpacing: 1.2,
-    fontSize: 13,
+    letterSpacing: 0.6,
+    fontSize: 12,
     flex: 1,
   },
   heroMonthPill: {
@@ -1740,17 +1838,21 @@ const styles = StyleSheet.create({
   },
   heroMetaText: {
     color: '#6B7280',
-    fontWeight: '700',
-    fontSize: 14,
+    fontWeight: '800',
+    fontSize: 13,
     flex: 1,
   },
 
   billCard: {
-    borderRadius: 18,
+    borderRadius: 16,
     padding: 0,
+    marginTop: 14,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
   billCardClip: {
-    borderRadius: 18,
+    borderRadius: 16,
     overflow: 'hidden',
   },
   billTop: {
@@ -1763,20 +1865,20 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   billTopLabel: {
-    color: '#444',
+    color: '#6B7280',
     fontWeight: '800',
   },
   billTopValue: {
     marginTop: 6,
-    fontSize: 32,
+    fontSize: 26,
     fontWeight: '900',
     color: '#111827',
   },
   billTopSub: {
     marginTop: 6,
-    color: '#666',
-    fontSize: 14,
-    fontWeight: '700',
+    color: '#6B7280',
+    fontSize: 13,
+    fontWeight: '800',
   },
 
   statusPill: {
@@ -1826,6 +1928,43 @@ const styles = StyleSheet.create({
   },
   tileSubPlaceholder: {
     opacity: 0,
+  },
+
+  // RoomView-style breakdown list (replaces tile grid on main UI)
+  breakdownList: {
+    marginTop: 14,
+    marginHorizontal: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  breakdownRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  breakdownDivider: {
+    height: StyleSheet.hairlineWidth,
+    opacity: 0.6,
+  },
+  breakdownIconBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  breakdownLabel: { fontSize: 12, fontWeight: '900', color: '#6B7280' },
+  breakdownSub: { marginTop: 3, fontSize: 12, fontWeight: '800', color: '#6B7280' },
+  breakdownValue: {
+    marginLeft: 10,
+    fontSize: 14,
+    fontWeight: '900',
+    color: '#111827',
+    fontVariant: ['tabular-nums'],
   },
 
   notesSection: {
@@ -1898,7 +2037,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   previewBox: {
-    marginTop: 10,
+    marginTop: 5,
     borderRadius: 14,
     padding: 12,
     borderWidth: 1,
@@ -1930,15 +2069,17 @@ const styles = StyleSheet.create({
 
   payDialog: {
     borderRadius: 18,
+    backgroundColor: '#FFFFFF',
   },
   dialogKav: {
     flex: 1,
     justifyContent: 'center',
   },
   payDialogHeader: {
-    paddingHorizontal: 18,
+    paddingHorizontal: 14,
     paddingTop: 14,
-    paddingBottom: 2,
+    paddingBottom: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   payDialogHeaderRow: {
     flexDirection: 'row',
@@ -1946,8 +2087,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   payDialogIconWrap: {
-    width: 44,
-    height: 44,
+    width: 36,
+    height: 36,
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1959,17 +2100,17 @@ const styles = StyleSheet.create({
   payDialogSub: {
     marginTop: 2,
     color: '#6B7280',
-    fontWeight: '700',
-    fontSize: 14,
+    fontWeight: '800',
+    fontSize: 13,
   },
 
-  quickRow: {
-    marginTop: 10,
-  },
+  dialogContent: { paddingHorizontal: 5, paddingTop: 6, paddingBottom: 10 },
+
+  quickRow: { marginTop: 4 },
   quickLabel: {
     color: '#6B7280',
     fontWeight: '800',
-    fontSize: 14,
+    fontSize: 13,
     marginBottom: 8,
   },
   quickChipsRow: {
@@ -1977,20 +2118,27 @@ const styles = StyleSheet.create({
     gap: 10,
     flexWrap: 'wrap',
   },
-
-  methodBlock: {
-    marginTop: 12,
+  quickPill: {
+    borderRadius: 999,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
   },
+  quickPillInner: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  quickPillText: { fontWeight: '900', fontSize: 13, letterSpacing: 0.2, color: '#6B7280' },
+
+  methodBlock: { marginTop: 12 },
   methodLabel: {
     color: '#6B7280',
     fontWeight: '800',
-    fontSize: 14,
+    fontSize: 13,
     marginBottom: 8,
   },
   methodRow: {
     flexDirection: 'row',
     gap: 10,
     flexWrap: 'wrap',
+    paddingBottom: 10,
   },
   methodChip: {
     borderRadius: 999,
@@ -1999,9 +2147,11 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   methodChipInner: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  methodChipText: { fontWeight: '900', fontSize: 14, letterSpacing: 0.2 },
-  dialogContent: { paddingBottom: 6 },
-  dialogActions: { paddingTop: 6 },
+  methodChipText: { fontWeight: '900', fontSize: 13, letterSpacing: 0.2 },
+  dialogActions: { paddingTop: 0, paddingHorizontal: 27, paddingBottom: 12, gap: 10 },
+  dialogActionBtn: { flex: 1 },
+  dialogActionBtnContent: { paddingVertical: 6 },
+  amountHint: { marginTop: 8, fontWeight: '800' },
 
   commentBox: {
     marginTop: 12,

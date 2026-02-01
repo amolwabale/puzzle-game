@@ -7,16 +7,14 @@ import {
   Button,
   Chip,
   Dialog,
-  HelperText,
   Portal,
-  Provider as PaperProvider,
   Surface,
   Text,
-  TextInput,
   TouchableRipple,
   useTheme,
 } from 'react-native-paper';
 import supabase from '../../service/SupabaseClient';
+import { FormInput } from '../../components/FormInput';
 
 type Errors = Partial<
   Record<
@@ -30,31 +28,8 @@ type Errors = Partial<
   >
 >;
 
-const scalePaperThemeFonts = (t: any, scale: number) => {
-  const s = Number.isFinite(scale) ? scale : 1;
-  const fonts = t?.fonts ?? {};
-  const nextFonts: Record<string, any> = { ...fonts };
-  Object.keys(nextFonts).forEach(k => {
-    const v = nextFonts[k];
-    if (!v || typeof v !== 'object') return;
-    const nv: any = { ...v };
-    if (typeof nv.fontSize === 'number')
-      nv.fontSize = Math.round(nv.fontSize * s);
-    if (typeof nv.lineHeight === 'number')
-      nv.lineHeight = Math.round(nv.lineHeight * s);
-    if (typeof nv.letterSpacing === 'number')
-      nv.letterSpacing = Number((nv.letterSpacing * s).toFixed(2));
-    nextFonts[k] = nv;
-  });
-  return { ...t, fonts: nextFonts };
-};
-
 export default function SettingScreen() {
   const theme = useTheme();
-  const scaledTheme = React.useMemo(
-    () => scalePaperThemeFonts(theme, 1.1),
-    [theme],
-  );
 
   /* ---------------- FORM STATE ---------------- */
 
@@ -247,230 +222,181 @@ export default function SettingScreen() {
 
   if (initialLoading) {
     return (
-      <PaperProvider theme={scaledTheme}>
-        <View style={styles.loader}>
-          <ActivityIndicator size="large" />
-        </View>
-      </PaperProvider>
+      <View style={styles.loader}>
+        <ActivityIndicator size="large" />
+      </View>
     );
   }
 
   return (
     <>
-      <PaperProvider theme={scaledTheme}>
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}
-        >
-          {/* ---------- HERO ---------- */}
-          <Surface style={styles.hero} elevation={3}>
-            <Avatar.Icon size={56} icon="office-building-outline" />
-            <View style={{ marginLeft: 16 }}>
-              <Text variant="titleLarge" style={styles.heroTitle}>
-                Property Settings
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* HERO (Support/Room style) */}
+        <Surface style={styles.hero} elevation={2}>
+          <View style={styles.heroTop}>
+            <View style={[styles.heroIconWrap, { backgroundColor: theme.colors.primaryContainer }]}>
+              <Avatar.Icon size={18} icon="office-building-outline" style={{ backgroundColor: 'transparent' }} />
+            </View>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={styles.heroTitle} numberOfLines={1}>
+                Property settings
               </Text>
-              <Text style={styles.heroSubtitle}>
+              <Text style={styles.heroSubtitle} numberOfLines={1}>
                 Manage your property configuration
               </Text>
             </View>
-          </Surface>
+          </View>
+        </Surface>
 
-          {/* ---------- PROPERTY ---------- */}
-          <Surface style={styles.section} elevation={2}>
-            <SectionTitle title="Property Details" />
+        <Section title="Property details" icon="office-building-outline">
+          <FormInput
+            label="Property Name *"
+            value={propertyName}
+            onChange={setPropertyName}
+            error={errors.propertyName}
+          />
+          <FormInput
+            label="Property Address"
+            value={propertyAddress}
+            onChange={setPropertyAddress}
+            multiline
+          />
+        </Section>
 
-            <Field
-              label="Property Name *"
-              value={propertyName}
-              error={errors.propertyName}
-              onChange={setPropertyName}
-            />
+        <Section title="Utility charges" icon="water-outline">
+          <FormInput
+            label="Water (numeric)"
+            value={water}
+            onChange={setWater}
+            error={errors.water}
+            keyboard="number-pad"
+          />
+          <FormInput
+            label="Electricity unit (numeric)"
+            value={electricity}
+            onChange={setElectricity}
+            error={errors.electricity}
+            keyboard="number-pad"
+          />
+        </Section>
 
-            <Field
-              label="Property Address"
-              value={propertyAddress}
-              error={errors.propertyAddress}
-              onChange={setPropertyAddress}
-              multiline
-            />
-          </Surface>
+        <Section title="Rent cycle" icon="calendar-month-outline">
+          <DaySelectRow
+            label="Rent date (day of month)"
+            value={rentDate}
+            error={errors.rentDate}
+            onPress={() => setDayPickerOpenFor('rentDate')}
+          />
+          <DaySelectRow
+            label="Rent due date (day of month)"
+            value={rentDueDate}
+            error={errors.rentDueDate}
+            onPress={() => setDayPickerOpenFor('rentDueDate')}
+          />
 
-          {/* ---------- UTILITIES ---------- */}
-          <Surface style={styles.section} elevation={2}>
-            <SectionTitle title="Utility Charges" />
+          <Text style={styles.rentHint}>
+            Tip: Due date can be in the next month (e.g. Rent = Last day, Due = 5). If you choose 29/30/31, months with fewer days will treat it as the last day of that month.
+          </Text>
 
-            <Field
-              label="Water (numeric)"
-              value={water}
-              error={errors.water}
-              onChange={setWater}
-              keyboardType="numeric"
-            />
+          <Button
+            mode="contained"
+            onPress={handleSave}
+            loading={saving}
+            disabled={saving}
+            style={styles.primaryButton}
+          >
+            Save Settings
+          </Button>
+        </Section>
+      </ScrollView>
 
-            <Field
-              label="Electricity Unit (numeric)"
-              value={electricity}
-              error={errors.electricity}
-              onChange={setElectricity}
-              keyboardType="numeric"
-            />
-          </Surface>
-
-          {/* ---------- RENT CYCLE ---------- */}
-          <Surface style={styles.section} elevation={2}>
-            <SectionTitle title="Rent Cycle" />
-
-            <DayPickerField
-              label="Rent Date (day of month)"
-              value={rentDate}
-              error={errors.rentDate}
-              onPress={() => setDayPickerOpenFor('rentDate')}
-            />
-
-            <DayPickerField
-              label="Rent Due Date (day of month)"
-              value={rentDueDate}
-              error={errors.rentDueDate}
-              onPress={() => setDayPickerOpenFor('rentDueDate')}
-            />
-
-            <Text style={styles.rentHint}>
-              Tip: Due date can be in the next month (e.g. Rent = Last day, Due
-              = 5). If you choose 29/30/31, months with fewer days will treat it
-              as the last day of that month.
+      {/* ---------- DAY PICKER (DAY OF MONTH) ---------- */}
+      <Portal>
+        <Dialog visible={dayPickerOpenFor != null} onDismiss={() => setDayPickerOpenFor(null)}>
+          <Dialog.Title>
+            {dayPickerOpenFor === 'rentDate' ? 'Select Rent Date' : 'Select Rent Due Date'}
+          </Dialog.Title>
+          <Dialog.Content>
+            <Text style={styles.pickerHint}>
+              Pick a day of month (1–31). If the day doesn’t exist in a month, it will auto-adjust to the month’s last day.
             </Text>
 
-            <Button
-              mode="contained"
-              onPress={handleSave}
-              loading={saving}
-              disabled={saving}
-              style={styles.primaryButton}
-            >
-              Save Settings
-            </Button>
-          </Surface>
-        </ScrollView>
+            <View style={styles.quickRow}>
+              {[1, 5, 10, 15, 20, 25, 28, 30, 31].map(d => (
+                <Chip key={d} compact style={styles.quickChip} onPress={() => selectDay(d)}>
+                  {d === 31 ? 'Last day' : String(d)}
+                </Chip>
+              ))}
+            </View>
 
-        {/* ---------- DAY PICKER (DAY OF MONTH) ---------- */}
-        <Portal>
-          <Dialog
-            visible={dayPickerOpenFor != null}
-            onDismiss={() => setDayPickerOpenFor(null)}
-          >
-            <Dialog.Title>
-              {dayPickerOpenFor === 'rentDate'
-                ? 'Select Rent Date'
-                : 'Select Rent Due Date'}
-            </Dialog.Title>
-            <Dialog.Content>
-              <Text style={styles.pickerHint}>
-                Pick a day of month (1–31). If the day doesn’t exist in a month,
-                it will auto-adjust to the month’s last day.
-              </Text>
-
-              <View style={styles.quickRow}>
-                {[1, 5, 10, 15, 20, 25, 28, 30, 31].map(d => (
+            <View style={styles.dayGrid}>
+              {Array.from({ length: 31 }).map((_, idx) => {
+                const day = idx + 1;
+                const selected =
+                  (dayPickerOpenFor === 'rentDate' ? rentDate : rentDueDate) === String(day);
+                return (
                   <Chip
-                    key={d}
+                    key={day}
                     compact
-                    style={styles.quickChip}
-                    onPress={() => selectDay(d)}
+                    style={[
+                      styles.dayChip,
+                      {
+                        backgroundColor: selected ? theme.colors.primaryContainer : theme.colors.surface,
+                        borderColor: selected ? theme.colors.primary : theme.colors.outline,
+                      },
+                    ]}
+                    textStyle={{
+                      fontWeight: '900',
+                      color: selected ? theme.colors.primary : theme.colors.onSurface,
+                      fontVariant: ['tabular-nums'],
+                    }}
+                    onPress={() => selectDay(day)}
                   >
-                    {d === 31 ? 'Last day' : String(d)}
+                    {String(day)}
                   </Chip>
-                ))}
-              </View>
-
-              <View style={styles.dayGrid}>
-                {Array.from({ length: 31 }).map((_, idx) => {
-                  const day = idx + 1;
-                  const selected =
-                    (dayPickerOpenFor === 'rentDate'
-                      ? rentDate
-                      : rentDueDate) === String(day);
-                  return (
-                    <Chip
-                      key={day}
-                      compact
-                      style={[
-                        styles.dayChip,
-                        {
-                          backgroundColor: selected
-                            ? theme.colors.primaryContainer
-                            : theme.colors.surface,
-                          borderColor: selected
-                            ? theme.colors.primary
-                            : theme.colors.outline,
-                        },
-                      ]}
-                      textStyle={{
-                        fontWeight: '900',
-                        color: selected
-                          ? theme.colors.primary
-                          : theme.colors.onSurface,
-                        fontVariant: ['tabular-nums'],
-                      }}
-                      onPress={() => selectDay(day)}
-                    >
-                      {String(day)}
-                    </Chip>
-                  );
-                })}
-              </View>
-            </Dialog.Content>
-            <Dialog.Actions>
-              <Button
-                onPress={() => {
-                  if (dayPickerOpenFor === 'rentDate') setRentDate('');
-                  if (dayPickerOpenFor === 'rentDueDate') setRentDueDate('');
-                  setDayPickerOpenFor(null);
-                }}
-              >
-                Clear
-              </Button>
-              <Button onPress={() => setDayPickerOpenFor(null)}>Close</Button>
-            </Dialog.Actions>
-          </Dialog>
-        </Portal>
-      </PaperProvider>
+                );
+              })}
+            </View>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button
+              onPress={() => {
+                if (dayPickerOpenFor === 'rentDate') setRentDate('');
+                if (dayPickerOpenFor === 'rentDueDate') setRentDueDate('');
+                setDayPickerOpenFor(null);
+              }}
+            >
+              Clear
+            </Button>
+            <Button onPress={() => setDayPickerOpenFor(null)}>Close</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </>
   );
 }
 
 /* ---------------- HELPERS ---------------- */
 
-const SectionTitle = ({ title }: { title: string }) => (
-  <Text variant="titleMedium" style={styles.sectionTitle}>
-    {title}
-  </Text>
-);
+const Section = ({ title, icon, children }: any) => {
+  const theme = useTheme();
+  const outline = (theme.colors as any).outlineVariant ?? theme.colors.outline;
+  return (
+    <Surface style={[styles.section, { borderColor: outline }]} elevation={2}>
+      <View style={styles.sectionTitleRow}>
+        <View style={[styles.sectionIcon, { backgroundColor: theme.colors.primaryContainer }]}>
+          <Avatar.Icon size={18} icon={icon} style={{ backgroundColor: 'transparent' }} />
+        </View>
+        <Text style={styles.sectionTitle} numberOfLines={1}>
+          {title}
+        </Text>
+      </View>
+      {children}
+    </Surface>
+  );
+};
 
-const Field = ({
-  label,
-  value,
-  onChange,
-  error,
-  keyboardType,
-  multiline,
-}: any) => (
-  <View style={styles.field}>
-    <TextInput
-      label={label}
-      mode="outlined"
-      value={value}
-      onChangeText={onChange}
-      keyboardType={keyboardType}
-      multiline={multiline}
-      error={!!error}
-    />
-    <HelperText type="error" visible={!!error}>
-      {error || ' '}
-    </HelperText>
-  </View>
-);
-
-const DayPickerField = ({
+const DaySelectRow = ({
   label,
   value,
   error,
@@ -480,24 +406,32 @@ const DayPickerField = ({
   value: string;
   error?: string;
   onPress: () => void;
-}) => (
-  <View style={styles.field}>
-    <TouchableRipple onPress={onPress} borderless>
-      <View pointerEvents="none">
-        <TextInput
-          label={label}
-          mode="outlined"
-          value={value ? String(value) : ''}
-          right={<TextInput.Icon icon="calendar-month" />}
-          error={!!error}
-        />
-      </View>
-    </TouchableRipple>
-    <HelperText type="error" visible={!!error}>
-      {error || ' '}
-    </HelperText>
-  </View>
-);
+}) => {
+  const theme = useTheme();
+  const outline = (theme.colors as any).outlineVariant ?? theme.colors.outline;
+  return (
+    <View style={styles.selectWrap}>
+      <TouchableRipple onPress={onPress} borderless style={[styles.selectRow, { borderColor: outline }]}>
+        <View style={styles.selectRowInner}>
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={styles.selectLabel} numberOfLines={1}>
+              {label}
+            </Text>
+            <Text style={styles.selectValue} numberOfLines={1}>
+              {value ? String(value) : 'Tap to select'}
+            </Text>
+          </View>
+          <View style={[styles.selectIconWrap, { backgroundColor: theme.colors.primaryContainer }]}>
+            <Avatar.Icon size={18} icon="calendar-month" style={{ backgroundColor: 'transparent' }} />
+          </View>
+        </View>
+      </TouchableRipple>
+      {error ? (
+        <Text style={[styles.errorText, { color: theme.colors.error }]}>{error}</Text>
+      ) : null}
+    </View>
+  );
+};
 
 /* ---------------- STYLES ---------------- */
 
@@ -514,32 +448,69 @@ const styles = StyleSheet.create({
 
   hero: {
     borderRadius: 18,
-    padding: 18,
-    flexDirection: 'row',
+    padding: 14,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  heroTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  heroIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 14,
     alignItems: 'center',
-    marginBottom: 20,
+    justifyContent: 'center',
   },
-  heroTitle: {
-    fontWeight: '700',
-  },
-  heroSubtitle: {
-    color: '#666',
-    marginTop: 4,
-  },
+  heroTitle: { fontWeight: '900', fontSize: 16, color: '#111827' },
+  heroSubtitle: { marginTop: 2, color: '#6B7280', fontWeight: '800', fontSize: 13 },
 
   section: {
     borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
+    padding: 14,
+    marginTop: 14,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
   },
-  sectionTitle: {
-    fontWeight: '600',
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
     marginBottom: 12,
   },
+  sectionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sectionTitle: { fontWeight: '900', fontSize: 16, color: '#111827' },
 
-  field: {
-    marginBottom: 12,
+  selectWrap: { marginTop: 12 },
+  selectRow: {
+    borderRadius: 14,
+    borderWidth: 1,
+    backgroundColor: '#FFFFFF',
+    overflow: 'hidden',
   },
+  selectRowInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    gap: 12,
+  },
+  selectLabel: { fontSize: 12, fontWeight: '800', color: '#6B7280' },
+  selectValue: { marginTop: 4, fontSize: 14, fontWeight: '900', color: '#111827' },
+  selectIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  errorText: { marginTop: 6, fontSize: 12, fontWeight: '800' },
+
   rentHint: { color: '#6B7280', fontWeight: '800', fontSize: 13, marginTop: 4 },
   pickerHint: { color: '#6B7280', fontWeight: '800', marginBottom: 10 },
   quickRow: {
