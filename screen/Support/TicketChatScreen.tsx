@@ -406,7 +406,6 @@ export default function TicketChatScreen() {
               mode="contained"
               onPress={onSend}
               disabled={!canChat || sending || !input.trim()}
-              loading={sending}
             >
               Send
             </Button>
