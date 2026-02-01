@@ -3,13 +3,11 @@ import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import {
   Avatar,
   Button,
-  HelperText,
   Surface,
   Text,
   useTheme,
 } from 'react-native-paper';
 import { changePasswordAndLogout } from '../../service/MenuService';
-import { SmartTextInput } from '../../ui/SmartTextInput';
 import { FormInput } from '../../components/FormInput';
 
 export default function ChangePasswordScreen() {
@@ -92,9 +90,13 @@ export default function ChangePasswordScreen() {
               label="New password *"
               value={password}
               error={errors.password}
-              onChange={(t: any) => {
-                setPassword(t);
-              }}
+              onChange={(t) => setPassword(t)}
+              secureTextEntry={false}
+              autoCapitalize="none"
+              autoCorrect={false}
+              textContentType="newPassword"
+              autoComplete="password-new"
+              maxLength={64}
             />
           </View>
 
@@ -104,9 +106,13 @@ export default function ChangePasswordScreen() {
               label="Confirm password *"
               value={confirmPassword}
               error={errors.confirmPassword}
-              onChange={(t: any) => {
-                setConfirmPassword(t);
-              }}
+              onChange={(t) => setConfirmPassword(t)}
+              secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
+              textContentType="newPassword"
+              autoComplete="password-new"
+              maxLength={64}
             />
           </View>
 
