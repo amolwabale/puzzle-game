@@ -107,8 +107,27 @@ export default function RegisterScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
     >
-      <ScrollView
-        style={[styles.scroll, { backgroundColor: theme.colors.background }]}
+      <View style={styles.stage}>
+        {/* Soft background accents (same as AuthScreen) */}
+        <View pointerEvents="none" style={styles.bgAccents}>
+          <View
+            style={[
+              styles.blob,
+              styles.blobOne,
+              { backgroundColor: theme.colors.primaryContainer, opacity: 0.55 },
+            ]}
+          />
+          <View
+            style={[
+              styles.blob,
+              styles.blobTwo,
+              { backgroundColor: theme.colors.secondaryContainer, opacity: 0.45 },
+            ]}
+          />
+        </View>
+
+        <ScrollView
+          style={styles.scroll}
         contentContainerStyle={styles.container}
         // Note: using BOTH KeyboardAvoidingView + automaticallyAdjustKeyboardInsets can feel jumpy on long forms.
         // We rely on KeyboardAvoidingView + natural scrolling for smoother behavior.
@@ -119,7 +138,7 @@ export default function RegisterScreen() {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'none'}
         showsVerticalScrollIndicator={false}
-      >
+        >
         {/* HERO */}
         <Surface
           style={[
@@ -327,7 +346,8 @@ export default function RegisterScreen() {
             </Button>
           </View>
         </Surface>
-      </ScrollView>
+        </ScrollView>
+      </View>
     </KeyboardAvoidingView>
   );
 }
@@ -339,6 +359,30 @@ function outlineColor(theme: any) {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
+  },
+  stage: {
+    flex: 1,
+    overflow: 'hidden',
+  },
+  bgAccents: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: 'hidden',
+  },
+  blob: {
+    position: 'absolute',
+    borderRadius: 999,
+  },
+  blobOne: {
+    width: 260,
+    height: 260,
+    top: -90,
+    left: -70,
+  },
+  blobTwo: {
+    width: 220,
+    height: 220,
+    bottom: -90,
+    right: -70,
   },
   scroll: {
     flex: 1,

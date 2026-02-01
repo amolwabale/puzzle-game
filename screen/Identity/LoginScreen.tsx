@@ -81,100 +81,160 @@ export default function LoginScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.screen}
+      style={[styles.screen, { backgroundColor: theme.colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
     >
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.container}
-        automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode={Platform.OS === 'ios' ? 'on-drag' : 'none'}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.inner}>
-          {/* HERO (Room/Tenant standard) */}
-          <Surface style={[styles.hero, { borderColor: outlineColor(theme) }]} elevation={2}>
-            <View style={[styles.heroIconWrap, { backgroundColor: theme.colors.primaryContainer }]}>
-              <Icon source="lock-outline" size={18} color={theme.colors.primary} />
-            </View>
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={styles.heroTitle} numberOfLines={1}>
-                Welcome back
-              </Text>
-              <Text style={styles.heroSub} numberOfLines={2}>
-                Sign in to manage tenants, rooms, and payments.
-              </Text>
-            </View>
-          </Surface>
-
-          {/* FORM */}
-          <Surface style={[styles.card, { borderColor: outlineColor(theme) }]} elevation={2}>
-            <View style={styles.sectionTitleRow}>
-              <View style={[styles.sectionIcon, { backgroundColor: theme.colors.primaryContainer }]}>
-                <Icon source="account-circle-outline" size={18} color={theme.colors.primary} />
-              </View>
-              <Text style={styles.sectionTitle}>Login</Text>
-            </View>
-
-            <FormInput
-              label="Email *"
-              value={email}
-              onChange={(t) => {
-                setEmail(t);
-                setErrors((p) => ({ ...p, email: '' }));
-              }}
-              error={errors.email}
-              keyboard="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              textContentType="username"
-              autoComplete="email"
-              maxLength={50}
-            />
-
-            <FormInput
-              label="Password *"
-              value={password}
-              onChange={(t) => {
-                setPassword(t);
-                setErrors((p) => ({ ...p, password: '' }));
-              }}
-              error={errors.password}
-              secureTextEntry
-              autoCapitalize="none"
-              autoCorrect={false}
-              textContentType="password"
-              autoComplete="password"
-              maxLength={50}
-            />
-
-            <View style={styles.buttonRow}>
-              <Button
-                mode="outlined"
-                onPress={handleBack}
-                style={styles.secondaryButton}
-                contentStyle={styles.buttonContent}
-                disabled={loading}
-              >
-                Back
-              </Button>
-
-              <Button
-                mode="contained"
-                onPress={handleLogin}
-                style={styles.primaryButton}
-                contentStyle={styles.buttonContent}
-                disabled={loading}
-                loading={loading}
-              >
-                Login
-              </Button>
-            </View>
-          </Surface>
+      <View style={styles.stage}>
+        {/* Soft background accents (same as AuthScreen) */}
+        <View pointerEvents="none" style={styles.bgAccents}>
+          <View
+            style={[
+              styles.blob,
+              styles.blobOne,
+              { backgroundColor: theme.colors.primaryContainer, opacity: 0.55 },
+            ]}
+          />
+          <View
+            style={[
+              styles.blob,
+              styles.blobTwo,
+              { backgroundColor: theme.colors.secondaryContainer, opacity: 0.45 },
+            ]}
+          />
         </View>
-      </ScrollView>
+
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.container}
+          automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={Platform.OS === 'ios' ? 'on-drag' : 'none'}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.inner}>
+            {/* HERO (Room/Tenant standard) */}
+            <Surface
+              style={[
+                styles.hero,
+                {
+                  borderColor: outlineColor(theme),
+                  backgroundColor: theme.colors.surface,
+                },
+              ]}
+              elevation={2}
+            >
+              <View
+                style={[
+                  styles.heroIconWrap,
+                  { backgroundColor: theme.colors.primaryContainer },
+                ]}
+              >
+                <Icon source="lock-outline" size={18} color={theme.colors.primary} />
+              </View>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text
+                  style={[styles.heroTitle, { color: theme.colors.onSurface }]}
+                  numberOfLines={1}
+                >
+                  Welcome back
+                </Text>
+                <Text
+                  style={[styles.heroSub, { color: theme.colors.onSurfaceVariant }]}
+                  numberOfLines={2}
+                >
+                  Sign in to manage tenants, rooms, and payments.
+                </Text>
+              </View>
+            </Surface>
+
+            {/* FORM */}
+            <Surface
+              style={[
+                styles.card,
+                {
+                  borderColor: outlineColor(theme),
+                  backgroundColor: theme.colors.surface,
+                },
+              ]}
+              elevation={2}
+            >
+              <View style={styles.sectionTitleRow}>
+                <View
+                  style={[
+                    styles.sectionIcon,
+                    { backgroundColor: theme.colors.primaryContainer },
+                  ]}
+                >
+                  <Icon
+                    source="account-circle-outline"
+                    size={18}
+                    color={theme.colors.primary}
+                  />
+                </View>
+                <Text style={[styles.sectionTitle, { color: theme.colors.onSurface }]}>
+                  Login
+                </Text>
+              </View>
+
+              <FormInput
+                label="Email *"
+                value={email}
+                onChange={(t) => {
+                  setEmail(t);
+                  setErrors((p) => ({ ...p, email: '' }));
+                }}
+                error={errors.email}
+                keyboard="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                textContentType="username"
+                autoComplete="email"
+                maxLength={50}
+              />
+
+              <FormInput
+                label="Password *"
+                value={password}
+                onChange={(t) => {
+                  setPassword(t);
+                  setErrors((p) => ({ ...p, password: '' }));
+                }}
+                error={errors.password}
+                secureTextEntry
+                autoCapitalize="none"
+                autoCorrect={false}
+                textContentType="password"
+                autoComplete="password"
+                maxLength={50}
+              />
+
+              <View style={styles.buttonRow}>
+                <Button
+                  mode="outlined"
+                  onPress={handleBack}
+                  style={styles.secondaryButton}
+                  contentStyle={styles.buttonContent}
+                  disabled={loading}
+                >
+                  Back
+                </Button>
+
+                <Button
+                  mode="contained"
+                  onPress={handleLogin}
+                  style={styles.primaryButton}
+                  contentStyle={styles.buttonContent}
+                  disabled={loading}
+                  loading={loading}
+                >
+                  Login
+                </Button>
+              </View>
+            </Surface>
+          </View>
+        </ScrollView>
+      </View>
     </KeyboardAvoidingView>
   );
 }
@@ -186,7 +246,30 @@ function outlineColor(theme: any) {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#F4F6FA',
+  },
+  stage: {
+    flex: 1,
+    overflow: 'hidden',
+  },
+  bgAccents: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: 'hidden',
+  },
+  blob: {
+    position: 'absolute',
+    borderRadius: 999,
+  },
+  blobOne: {
+    width: 260,
+    height: 260,
+    top: -90,
+    left: -70,
+  },
+  blobTwo: {
+    width: 220,
+    height: 220,
+    bottom: -90,
+    right: -70,
   },
   scroll: {
     flex: 1,
