@@ -13,6 +13,7 @@ import {
   Button,
   FAB,
   Icon,
+  Searchbar,
   Surface,
   Text,
   TouchableRipple,
@@ -49,6 +50,7 @@ export default function TenantScreen() {
   const [initialLoading, setInitialLoading] = React.useState(true);
   const [refreshing, setRefreshing] = React.useState(false);
   const [tenants, setTenants] = React.useState<TenantRecord[]>([]);
+  const [query, setQuery] = React.useState('');
   const [signedUrls, setSignedUrls] = React.useState<Record<number, string>>(
     {},
   );
@@ -165,6 +167,16 @@ export default function TenantScreen() {
     />
   );
 
+  const filteredTenants = React.useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return tenants;
+    return (tenants || []).filter(t =>
+      String(t?.name || '')
+        .toLowerCase()
+        .includes(q),
+    );
+  }, [tenants, query]);
+
   return (
     <View style={styles.container}>
       {initialLoading ? (
@@ -177,10 +189,21 @@ export default function TenantScreen() {
         />
       ) : (
         <FlatList
-          data={tenants}
+          data={filteredTenants}
           renderItem={renderItem}
           keyExtractor={item => item.id.toString()}
           contentContainerStyle={styles.listContent}
+          ListHeaderComponent={
+            <View style={styles.listHeader}>
+              <Searchbar
+                placeholder="Search tenants"
+                value={query}
+                onChangeText={setQuery}
+                style={styles.search}
+                inputStyle={styles.searchInput}
+              />
+            </View>
+          }
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -231,10 +254,18 @@ const TenantCard = ({
                 {item.name || '-'}
               </Text>
               <Text style={styles.cardSubtitle} numberOfLines={1}>
-                Room: {assignment?.roomName ? assignment.roomName : 'Not assigned'}
+                Room:{' '}
+                {assignment?.roomName ? assignment.roomName : 'Not assigned'}
               </Text>
               <Text style={styles.cardCaption} numberOfLines={1}>
-                Joined {assignment?.joiningDate ? formatDate(assignment.joiningDate) : '—'}
+                Joined{' '}
+                {assignment?.joiningDate
+                  ? formatDate(assignment.joiningDate)
+                  : '—'}
+              </Text>
+              <Text style={styles.cardCaption} numberOfLines={1}>
+                Family members{' '}
+                {item.total_family_members ? item.total_family_members : '—'}
               </Text>
             </View>
 
@@ -245,18 +276,32 @@ const TenantCard = ({
                 borderless
                 style={[
                   styles.iconPill,
-                  { backgroundColor: theme.colors.primaryContainer, borderColor: theme.colors.primary },
+                  {
+                    backgroundColor: theme.colors.primaryContainer,
+                    borderColor: theme.colors.primary,
+                  },
                 ]}
               >
-                <Icon source="pencil-outline" size={16} color={theme.colors.primary} />
+                <Icon
+                  source="pencil-outline"
+                  size={16}
+                  color={theme.colors.primary}
+                />
               </TouchableRipple>
 
               <TouchableRipple
                 onPress={onDelete}
                 borderless
-                style={[styles.iconPill, { backgroundColor: '#FEF2F2', borderColor: '#FCA5A5' }]}
+                style={[
+                  styles.iconPill,
+                  { backgroundColor: '#FEF2F2', borderColor: '#FCA5A5' },
+                ]}
               >
-                <Icon source="trash-can-outline" size={16} color={theme.colors.error} />
+                <Icon
+                  source="trash-can-outline"
+                  size={16}
+                  color={theme.colors.error}
+                />
               </TouchableRipple>
             </View>
           </View>
@@ -300,6 +345,15 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F4F6FA' },
   listContent: { padding: 16, paddingBottom: 120 },
   loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+
+  listHeader: { marginBottom: 12 },
+  search: {
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  searchInput: { fontSize: 15, fontWeight: '800' },
 
   card: {
     borderRadius: 16,

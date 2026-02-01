@@ -11,8 +11,10 @@ import {
   ActivityIndicator,
   Avatar,
   Button,
+  Chip,
   FAB,
   Icon,
+  Searchbar,
   Surface,
   Text,
   TouchableRipple,
@@ -31,7 +33,8 @@ import supabase from '../../service/SupabaseClient';
 type Nav = NativeStackNavigationProp<RoomStackParamList, 'RoomList'>;
 
 // Avatar size for occupant (active tenant)
-const OCCUPANT_AVATAR_SIZE = 44;
+// Match Tenant list avatar size for consistency.
+const OCCUPANT_AVATAR_SIZE = 58;
 
 const formatDate = (d?: string | null) =>
   d
@@ -90,6 +93,7 @@ export default function RoomScreen() {
   const [initialLoading, setInitialLoading] = React.useState(true);
   const [refreshing, setRefreshing] = React.useState(false);
   const [rooms, setRooms] = React.useState<RoomRecord[]>([]);
+  const [query, setQuery] = React.useState('');
   const [activeByRoom, setActiveByRoom] = React.useState<
     Record<number, TenantRoomRecord | null>
   >({});
@@ -190,6 +194,24 @@ export default function RoomScreen() {
     />
   );
 
+  const filteredRooms = React.useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return rooms;
+    return (rooms || []).filter(r =>
+      String(r?.name || '')
+        .toLowerCase()
+        .includes(q),
+    );
+  }, [rooms, query]);
+
+  const occupiedCount = React.useMemo(() => {
+    return (filteredRooms || []).reduce(
+      (acc, r) => (activeByRoom[r.id] ? acc + 1 : acc),
+      0,
+    );
+  }, [filteredRooms, activeByRoom]);
+  const vacantCount = (filteredRooms?.length || 0) - occupiedCount;
+
   return (
     <View style={styles.container}>
       {initialLoading ? (
@@ -202,10 +224,49 @@ export default function RoomScreen() {
         />
       ) : (
         <FlatList
-          data={rooms}
+          data={filteredRooms}
           renderItem={renderItem}
           keyExtractor={item => item.id.toString()}
           contentContainerStyle={styles.listContent}
+          ListHeaderComponent={
+            <View style={styles.listHeader}>
+              <Searchbar
+                placeholder="Search rooms"
+                value={query}
+                onChangeText={setQuery}
+                style={styles.search}
+                inputStyle={styles.searchInput}
+              />
+              <View style={styles.pillRow}>
+                <Chip
+                  icon="account-off-outline"
+                  style={[
+                    styles.pill,
+                    { backgroundColor: '#F3F4F6', borderColor: '#E5E7EB' },
+                  ]}
+                  textStyle={styles.pillText}
+                >
+                  Vacant {vacantCount}
+                </Chip>
+                <Chip
+                  icon="account-check-outline"
+                  style={[
+                    styles.pill,
+                    {
+                      backgroundColor: theme.colors.secondaryContainer,
+                      borderColor: theme.colors.secondary,
+                    },
+                  ]}
+                  textStyle={[
+                    styles.pillText,
+                    { color: theme.colors.secondary },
+                  ]}
+                >
+                  Occupied {occupiedCount}
+                </Chip>
+              </View>
+            </View>
+          }
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -257,7 +318,10 @@ const RoomCard = ({
             <View style={styles.occupantAvatarWrap}>
               {occupant ? (
                 occupantPhotoUrl ? (
-                  <Avatar.Image size={OCCUPANT_AVATAR_SIZE} source={{ uri: occupantPhotoUrl }} />
+                  <Avatar.Image
+                    size={OCCUPANT_AVATAR_SIZE}
+                    source={{ uri: occupantPhotoUrl }}
+                  />
                 ) : (
                   <Avatar.Text
                     size={OCCUPANT_AVATAR_SIZE}
@@ -321,10 +385,17 @@ const RoomCard = ({
               style={[
                 styles.iconPill,
                 styles.iconPillSm,
-                { backgroundColor: themeColors.primaryContainer, borderColor: themeColors.primary },
+                {
+                  backgroundColor: themeColors.primaryContainer,
+                  borderColor: themeColors.primary,
+                },
               ]}
             >
-              <Icon source="pencil-outline" size={16} color={themeColors.primary} />
+              <Icon
+                source="pencil-outline"
+                size={16}
+                color={themeColors.primary}
+              />
             </TouchableRipple>
 
             <TouchableRipple
@@ -368,6 +439,18 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F4F6FA' },
   listContent: { padding: 16, paddingBottom: 120 },
   loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+
+  listHeader: { marginBottom: 12 },
+  search: {
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  searchInput: { fontSize: 15, fontWeight: '800' },
+  pillRow: { flexDirection: 'row', gap: 10, marginTop: 10 },
+  pill: { borderRadius: 999, borderWidth: 1 },
+  pillText: { fontWeight: '900', fontSize: 13 },
 
   card: {
     borderRadius: 16,
@@ -480,7 +563,12 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   emptyIcon: { marginBottom: 16, backgroundColor: '#E0E0E0' },
-  emptyTitle: { fontWeight: '900', marginBottom: 6, fontSize: 16, color: '#111827' },
+  emptyTitle: {
+    fontWeight: '900',
+    marginBottom: 6,
+    fontSize: 16,
+    color: '#111827',
+  },
   emptySubtitle: {
     color: '#6B7280',
     textAlign: 'center',
