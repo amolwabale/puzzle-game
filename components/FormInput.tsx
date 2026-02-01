@@ -16,6 +16,7 @@ type Props = {
   error?: string;
   keyboard?: any;
   multiline?: boolean;
+  maxLength?: number;
   /** Optional: pass a style used for the TextInput wrapper */
   style?: StyleProp<ViewStyle>;
   /** Optional: pass a style used for the TextInput content */
@@ -37,6 +38,7 @@ export function FormInput({
   error,
   keyboard,
   multiline,
+  maxLength,
   style,
   contentStyle,
   placeholder,
@@ -94,6 +96,7 @@ export function FormInput({
           keyboardType={keyboard}
           dense={!multiline}
           multiline={!multiline}
+          maxLength={maxLength}
           placeholder={placeholder}
           {...(multiline
             ? {

@@ -18,18 +18,17 @@ import {
   ActivityIndicator,
   Avatar,
   FAB,
-  HelperText,
-  Provider as PaperProvider,
   Surface,
   Text,
-  TextInput,
   Button,
   IconButton,
+  Icon,
   useTheme,
 } from 'react-native-paper';
 import { DatePickerModal } from 'react-native-paper-dates';
 
 import { RoomStackParamList } from '../../navigation/StackParam';
+import { FormInput } from '../../components/FormInput';
 import { fetchRoomById, fetchRooms, saveRoom } from '../../service/RoomService';
 import {
   addTenantToRoom,
@@ -73,35 +72,12 @@ const getInitials = (name?: string | null) => {
     : 'R';
 };
 
-const scalePaperThemeFonts = (t: any, scale: number) => {
-  const s = Number.isFinite(scale) ? scale : 1;
-  const fonts = t?.fonts ?? {};
-  const nextFonts: Record<string, any> = { ...fonts };
-  Object.keys(nextFonts).forEach(k => {
-    const v = nextFonts[k];
-    if (!v || typeof v !== 'object') return;
-    const nv: any = { ...v };
-    if (typeof nv.fontSize === 'number')
-      nv.fontSize = Math.round(nv.fontSize * s);
-    if (typeof nv.lineHeight === 'number')
-      nv.lineHeight = Math.round(nv.lineHeight * s);
-    if (typeof nv.letterSpacing === 'number')
-      nv.letterSpacing = Number((nv.letterSpacing * s).toFixed(2));
-    nextFonts[k] = nv;
-  });
-  return { ...t, fonts: nextFonts };
-};
-
 /* ---------------- SCREEN ---------------- */
 
 export default function RoomFormScreen() {
   const navigation = useNavigation();
   const route = useRoute<Props['route']>();
   const theme = useTheme();
-  const scaledTheme = React.useMemo(
-    () => scalePaperThemeFonts(theme, 1.15),
-    [theme],
-  );
 
   const mode = route.params?.mode ?? 'add';
   const roomId = mode === 'edit' ? route.params?.roomId : undefined;
@@ -223,10 +199,16 @@ export default function RoomFormScreen() {
   const validate = () => {
     const e: Record<string, string> = {};
     if (!name.trim()) e.name = 'Required';
+    else if (name.trim().length > 70) e.name = 'Max 70 characters';
     if (!type.trim()) e.type = 'Required';
+    else if (type.trim().length > 30) e.type = 'Max 30 characters';
+    if (String(area || '').trim().length > 10) e.area = 'Max 10 digits';
     if (!rent.trim()) e.rent = 'Required';
     else if (!/^\d+$/.test(rent.trim())) e.rent = 'Numbers only';
+    else if (rent.trim().length > 10) e.rent = 'Max 10 digits';
     if (!/^\d+$/.test(deposit)) e.deposit = 'Numbers only';
+    else if (deposit.trim().length > 10) e.deposit = 'Max 10 digits';
+    if (String(comment || '').trim().length > 100) e.comment = 'Max 100 characters';
 
     if (selectedTenant && !joiningDate) {
       e.joiningDate = 'Joining date is required';
@@ -405,74 +387,94 @@ export default function RoomFormScreen() {
 
   return (
     <>
-      <PaperProvider theme={scaledTheme}>
-        <KeyboardAvoidingView
-          style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView
+          contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <ScrollView
-            contentContainerStyle={styles.container}
-            keyboardShouldPersistTaps="handled"
-          >
-            {/* ===== ROOM DETAILS (ENHANCED) ===== */}
-            <Surface style={styles.roomHero} elevation={2}>
-              <View style={styles.roomHeroHeader}>
-                <Avatar.Icon
-                  size={52}
-                  icon="home-city-outline"
-                  style={{ backgroundColor: theme.colors.primaryContainer }}
-                  color={theme.colors.primary}
-                />
-                <View style={{ marginLeft: 14 }}>
-                  <Text variant="titleLarge" style={{ fontWeight: '800' }}>
-                    Room Details
-                  </Text>
-                  <Text style={{ color: '#666' }}>Configuration & pricing</Text>
-                </View>
+          {/* ===== ROOM DETAILS ===== */}
+          <Surface style={styles.roomHero} elevation={2}>
+            <View style={styles.sectionTitleRow}>
+              <View style={[styles.sectionIcon, { backgroundColor: theme.colors.primaryContainer }]}>
+                <Icon source="home-city-outline" size={18} color={theme.colors.primary} />
               </View>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={styles.sectionTitle} numberOfLines={1}>
+                  Room details
+                </Text>
+                <Text style={styles.sectionSub} numberOfLines={1}>
+                  Configuration & pricing
+                </Text>
+              </View>
+            </View>
 
               <FormInput
                 label="Room Name *"
                 value={name}
                 onChange={setName}
                 error={errors.name}
-                icon="home-outline"
+                maxLength={50}
               />
               <FormInput
                 label="Room Type *"
                 value={type}
                 onChange={setType}
                 error={errors.type}
-                icon="shape-outline"
+                maxLength={30}
               />
               <FormInput
                 label="Area (sq ft)"
                 value={area}
-                onChange={setArea}
-                icon="ruler-square"
+                onChange={(v) => setArea(String(v ?? '').replace(/[^\d]/g, '').slice(0, 10))}
+                keyboard="number-pad"
+                error={errors.area}
+                maxLength={10}
               />
 
               <View style={styles.moneyRow}>
-                <MoneyInput
-                  label="Rent (₹)"
-                  value={rent}
-                  onChange={setRent}
-                  error={errors.rent}
-                />
-                <MoneyInput
-                  label="Deposit (₹)"
-                  value={deposit}
-                  onChange={setDeposit}
-                  error={errors.deposit}
-                />
+                <View style={{ flex: 1 }}>
+                  <FormInput
+                    label="Rent (₹) *"
+                    value={rent}
+                    onChange={(v) => setRent(String(v ?? '').replace(/[^\d]/g, '').slice(0, 10))}
+                    error={errors.rent}
+                    keyboard="number-pad"
+                    maxLength={10}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <FormInput
+                    label="Deposit (₹)"
+                    value={deposit}
+                    onChange={(v) => setDeposit(String(v ?? '').replace(/[^\d]/g, '').slice(0, 10))}
+                    error={errors.deposit}
+                    keyboard="number-pad"
+                    maxLength={10}
+                  />
+                </View>
               </View>
+
+              <FormInput
+                label="Comment"
+                value={comment}
+                onChange={setComment}
+                error={errors.comment}
+                maxLength={100}
+              />
             </Surface>
 
-            {/* ===== TENANT OCCUPANCY ===== */}
-            <Surface style={styles.section} elevation={2}>
-              <Text variant="titleMedium" style={styles.sectionTitle}>
-                Tenant Occupancy
-              </Text>
+          {/* ===== TENANT OCCUPANCY ===== */}
+          <Surface style={styles.section} elevation={2}>
+            <View style={styles.sectionTitleRow}>
+              <View style={[styles.sectionIcon, { backgroundColor: theme.colors.primaryContainer }]}>
+                <Icon source="account-outline" size={18} color={theme.colors.primary} />
+              </View>
+              <Text style={styles.sectionTitle}>Tenant occupancy</Text>
+            </View>
 
               {activeTenant && !editingOccupancy ? (
                 <>
@@ -494,7 +496,7 @@ export default function RoomFormScreen() {
                         >
                           {activeTenant.tenant.name}
                         </Text>
-                        <Text style={styles.occupancySub}>Active tenant</Text>
+                        <Text style={styles.muted}>Active tenant</Text>
                       </View>
 
                       <View
@@ -522,9 +524,7 @@ export default function RoomFormScreen() {
                           style={styles.metaIcon}
                         />
                         <View style={{ flex: 1 }}>
-                          <Text style={styles.metaLabel}>
-                            Joining Meter reading
-                          </Text>
+                          <Text style={styles.metaLabel}>Joining meter reading</Text>
                           <Text style={styles.metaValue}>
                             {activeMeterUnit != null
                               ? String(activeMeterUnit)
@@ -608,7 +608,13 @@ export default function RoomFormScreen() {
                 <>
                   {!selectedTenant && (
                     <>
-                      <Surface style={styles.occupancyHint} elevation={0}>
+                      <Surface
+                        style={[
+                          styles.occupancyHint,
+                          { borderColor: (theme.colors as any).outlineVariant ?? theme.colors.outline },
+                        ]}
+                        elevation={0}
+                      >
                         <Avatar.Icon
                           size={40}
                           icon="account-plus-outline"
@@ -618,25 +624,23 @@ export default function RoomFormScreen() {
                           color={theme.colors.primary}
                         />
                         <View style={{ flex: 1, marginLeft: 12 }}>
-                          <Text style={{ fontWeight: '700' }}>
+                          <Text style={styles.hintTitle}>
                             No tenant assigned
                           </Text>
-                          <Text style={{ color: '#666', marginTop: 2 }}>
+                          <Text style={styles.hintSub}>
                             Search and select a tenant to occupy this room.
                           </Text>
                         </View>
                       </Surface>
 
-                      <TextInput
-                        label="Search Tenant"
+                      <FormInput
+                        label="Search tenant"
                         value={tenantQuery}
-                        onChangeText={setTenantQuery}
-                        mode="outlined"
-                        left={<TextInput.Icon icon="magnify" />}
+                        onChange={setTenantQuery}
                       />
 
                       {filteredTenants.length > 0 && (
-                        <Surface style={styles.dropdown} elevation={2}>
+                        <Surface style={styles.dropdown} elevation={0}>
                           {filteredTenants.map(t => (
                             <TouchableOpacity
                               key={t.id}
@@ -684,25 +688,17 @@ export default function RoomFormScreen() {
 
                   {selectedTenant && (
                     <>
-                      <TextInput
+                      <FormInput
                         label="Joining Meter Reading *"
                         value={meterReading}
-                        onChangeText={text => {
+                        onChange={(text: string) => {
                           const next = text.replace(/[^\d]/g, '');
                           setMeterReading(next);
                           setErrors(prev => ({ ...prev, meterReading: '' }));
                         }}
-                        mode="outlined"
-                        keyboardType="number-pad"
-                        left={<TextInput.Icon icon="counter" />}
-                        error={!!errors.meterReading}
-                        style={{ marginTop: 12 }}
+                        error={errors.meterReading}
+                        keyboard="number-pad"
                       />
-                      {!!errors.meterReading && (
-                        <HelperText type="error" visible>
-                          {errors.meterReading}
-                        </HelperText>
-                      )}
                     </>
                   )}
 
@@ -717,11 +713,9 @@ export default function RoomFormScreen() {
                       : 'Select Joining Date'}
                   </Button>
 
-                  {!!errors.joiningDate && (
-                    <HelperText type="error" visible>
-                      {errors.joiningDate}
-                    </HelperText>
-                  )}
+                  {!!errors.joiningDate ? (
+                    <Text style={[styles.errorText, { color: theme.colors.error }]}>{errors.joiningDate}</Text>
+                  ) : null}
 
                   {editingOccupancy && activeTenant && (
                     <Button
@@ -758,9 +752,12 @@ export default function RoomFormScreen() {
             {/* ===== TENANT HISTORY ===== */}
             {tenantHistory.length > 0 && (
               <Surface style={styles.section} elevation={2}>
-                <Text variant="titleMedium" style={styles.sectionTitle}>
-                  Tenant History
-                </Text>
+                <View style={styles.sectionTitleRow}>
+                  <View style={[styles.sectionIcon, { backgroundColor: theme.colors.primaryContainer }]}>
+                    <Icon source="history" size={18} color={theme.colors.primary} />
+                  </View>
+                  <Text style={styles.sectionTitle}>Tenant history</Text>
+                </View>
 
                 {tenantHistory.map((h, i) => (
                   <Surface key={i} style={styles.historyCard} elevation={1}>
@@ -776,8 +773,8 @@ export default function RoomFormScreen() {
                 ))}
               </Surface>
             )}
-          </ScrollView>
-        </KeyboardAvoidingView>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
         <FAB
           icon="content-save"
@@ -786,89 +783,61 @@ export default function RoomFormScreen() {
           onPress={save}
         />
 
-        <DatePickerModal
-          locale="en"
-          mode="single"
-          visible={dateModalOpen}
-          date={joiningDate ?? new Date()}
-          onDismiss={() => setDateModalOpen(false)}
-          onConfirm={({ date }) => {
-            setDateModalOpen(false);
-            setJoiningDate(date ?? null);
-          }}
-        />
-      </PaperProvider>
+      <DatePickerModal
+        locale="en"
+        mode="single"
+        visible={dateModalOpen}
+        date={joiningDate ?? new Date()}
+        onDismiss={() => setDateModalOpen(false)}
+        onConfirm={({ date }) => {
+          setDateModalOpen(false);
+          setJoiningDate(date ?? null);
+        }}
+      />
     </>
   );
 }
-
-/* ---------------- COMPONENTS ---------------- */
-
-const FormInput = ({ label, value, onChange, error, icon }: any) => (
-  <>
-    <TextInput
-      label={label}
-      value={value}
-      onChangeText={onChange}
-      mode="outlined"
-      left={<TextInput.Icon icon={icon} />}
-      error={!!error}
-    />
-    <HelperText type="error" visible={!!error}>
-      {error || ' '}
-    </HelperText>
-  </>
-);
-
-const MoneyInput = ({ label, value, onChange, error }: any) => (
-  <View style={{ flex: 1 }}>
-    <TextInput
-      label={label}
-      value={value}
-      onChangeText={onChange}
-      mode="outlined"
-      keyboardType="number-pad"
-      left={<TextInput.Icon icon="currency-inr" />}
-      error={!!error}
-    />
-    <HelperText type="error" visible={!!error}>
-      {error || ' '}
-    </HelperText>
-  </View>
-);
 
 /* ---------------- STYLES ---------------- */
 
 const styles = StyleSheet.create({
   container: { padding: 16, paddingBottom: 120, backgroundColor: '#F4F6FA' },
-  section: { borderRadius: 16, padding: 16, marginBottom: 16 },
+  section: {
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 14,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
   fab: { position: 'absolute', right: 16, bottom: 24 },
   loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
   roomHero: {
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
+    borderRadius: 18,
+    padding: 14,
+    marginBottom: 14,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
-  roomHeroHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
+  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
+  sectionIcon: { width: 36, height: 36, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  sectionTitle: { fontWeight: '900', fontSize: 16, color: '#111827' },
+  sectionSub: { marginTop: 2, color: '#6B7280', fontWeight: '800', fontSize: 13 },
   moneyRow: {
     flexDirection: 'row',
     gap: 12,
   },
-
-  sectionTitle: {
-    fontWeight: '600',
-    marginBottom: 12,
-  },
+  errorText: { marginTop: 6, fontSize: 12, fontWeight: '800' },
 
   occupancyCard: {
-    borderRadius: 14,
-    padding: 14,
+    borderRadius: 16,
+    padding: 12,
     marginTop: 8,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
   occupancyHeader: {
     flexDirection: 'row',
@@ -879,20 +848,20 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   occupancyName: {
-    fontWeight: '800',
+    fontWeight: '900',
+    color: '#111827',
   },
-  occupancySub: {
-    color: '#666',
-    marginTop: 2,
-  },
+  muted: { color: '#6B7280', marginTop: 2, fontWeight: '800', fontSize: 12 },
   statusPill: {
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
   statusPillText: {
-    fontSize: 14,
     fontWeight: '800',
+    fontSize: 12,
   },
   occupancyMetaRow: {
     marginTop: 12,
@@ -909,38 +878,49 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   metaLabel: {
-    fontSize: 14,
-    color: '#888',
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '800',
   },
   metaValue: {
-    fontSize: 17,
-    fontWeight: '700',
+    fontSize: 14,
+    fontWeight: '900',
     marginTop: 2,
+    color: '#111827',
   },
   occupancyHint: {
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: 14,
     padding: 12,
-    backgroundColor: '#F6F8FF',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
     marginBottom: 12,
   },
+  hintTitle: { fontWeight: '900', fontSize: 14, color: '#111827' },
+  hintSub: { color: '#6B7280', marginTop: 2, fontSize: 13, fontWeight: '800' },
 
   dropdown: {
     marginTop: 6,
-    borderRadius: 8,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    overflow: 'hidden',
   },
   dropdownItem: {
     padding: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#DDD',
+    borderBottomColor: '#E5E7EB',
   },
   selectedTenant: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
-    borderRadius: 12,
+    borderRadius: 14,
     marginTop: 8,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
   historyCard: {
     flexDirection: 'row',
@@ -948,5 +928,8 @@ const styles = StyleSheet.create({
     padding: 12,
     marginTop: 8,
     borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
 });

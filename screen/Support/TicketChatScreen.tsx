@@ -205,34 +205,80 @@ export default function TicketChatScreen() {
               Created {formatDate(ticket.created_at)}
             </Text>
 
-            {/* ATTACHMENT */}
-            {ticket.upload_url && (
-              <TouchableRipple
-                onPress={async () => {
-                  const signed = await createSignedUrlFromPublicUrl(
-                    ticket.upload_url!,
-                  );
-                  navigation.navigate('SupportDocument', {
-                    title: 'Attachment',
-                    url: signed,
-                  });
-                }}
-              >
-                <Text style={styles.attachText}>View attachment</Text>
-              </TouchableRipple>
-            )}
-            {/* MARK AS CLOSED */}
-            {ticket.status !== 'CLOSED' && (
-              <View style={styles.closeAction}>
+            {/* ACTIONS (same-row buttons) */}
+            {ticket.upload_url && ticket.status !== 'CLOSED' ? (
+              <View style={styles.detailActionsRow}>
+                <Button
+                  mode="outlined"
+                  icon="paperclip"
+                  style={styles.detailActionBtn}
+                  onPress={async () => {
+                    try {
+                      const signed = await createSignedUrlFromPublicUrl(
+                        ticket.upload_url!,
+                      );
+                      navigation.navigate('SupportDocument', {
+                        title: 'Attachment',
+                        url: signed,
+                      });
+                    } catch (e: any) {
+                      Alert.alert(
+                        'Failed',
+                        e?.message || 'Could not open attachment',
+                      );
+                    }
+                  }}
+                >
+                  View attachment
+                </Button>
+
                 <Button
                   mode="outlined"
                   icon="check-circle-outline"
+                  style={styles.detailActionBtn}
                   onPress={onCloseTicket}
                 >
                   Mark as Closed
                 </Button>
               </View>
-            )}
+            ) : ticket.upload_url ? (
+              <View style={styles.detailActionsRow}>
+                <Button
+                  mode="outlined"
+                  icon="paperclip"
+                  style={styles.detailActionBtnSingle}
+                  onPress={async () => {
+                    try {
+                      const signed = await createSignedUrlFromPublicUrl(
+                        ticket.upload_url!,
+                      );
+                      navigation.navigate('SupportDocument', {
+                        title: 'Attachment',
+                        url: signed,
+                      });
+                    } catch (e: any) {
+                      Alert.alert(
+                        'Failed',
+                        e?.message || 'Could not open attachment',
+                      );
+                    }
+                  }}
+                >
+                  View attachment
+                </Button>
+              </View>
+            ) : ticket.status !== 'CLOSED' ? (
+              <View style={styles.detailActionsRow}>
+                <Button
+                  mode="outlined"
+                  icon="check-circle-outline"
+                  style={styles.detailActionBtnSingle}
+                  onPress={onCloseTicket}
+                >
+                  Mark as Closed
+                </Button>
+              </View>
+            ) : null}
           </View>
         )}
       </Surface>
@@ -318,11 +364,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#6B7280',
   },
-  attachText: {
-    marginTop: 6,
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#2563EB',
+  detailActionsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 12,
+    alignItems: 'center',
+  },
+  detailActionBtn: {
+    flex: 1,
+  },
+  detailActionBtnSingle: {
+    flex: 1,
+    alignSelf: 'flex-start',
   },
 
   chatContent: {
@@ -339,9 +392,5 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderColor: '#E5E7EB',
-  },
-  closeAction: {
-    marginTop: 14,
-    alignItems: 'flex-end',
   },
 });
