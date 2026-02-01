@@ -63,10 +63,16 @@ export function SmartTextInput({
   const verticalPad = multiline ? 10 : 8;
 
   const minHeight = multiline ? 120 : 48;
-  const maxHeight = multiline ? Math.max(minHeight, maxLines * lineHeight + verticalPad * 2 + 20) : minHeight;
+  const maxHeight = multiline
+    ? Math.max(minHeight, maxLines * lineHeight + verticalPad * 2 + 20)
+    : minHeight;
 
-  const [measuredHeight, setMeasuredHeight] = React.useState<number | undefined>(undefined);
-  const height = multiline ? Math.min(maxHeight, Math.max(minHeight, measuredHeight || minHeight)) : undefined;
+  const [measuredHeight, setMeasuredHeight] = React.useState<
+    number | undefined
+  >(undefined);
+  const height = multiline
+    ? Math.min(maxHeight, Math.max(minHeight, measuredHeight || minHeight))
+    : undefined;
   // Some platform combos can paint text outside bounds when scrolling is disabled.
   // Keep scrolling enabled for multiline; height determines whether it "feels" like it scrolls.
   const scrollEnabled = multiline;
@@ -77,7 +83,9 @@ export function SmartTextInput({
       lineHeight,
       paddingVertical: verticalPad,
       // Android-specific: prevents extra font padding that can cause text to render outside outline.
-      ...(Platform.OS === 'android' ? ({ includeFontPadding: false } as any) : null),
+      ...(Platform.OS === 'android'
+        ? ({ includeFontPadding: false } as any)
+        : null),
       textAlignVertical: multiline ? 'top' : 'center',
     },
     contentStyle,
@@ -90,10 +98,18 @@ export function SmartTextInput({
         ...theme,
         fonts: {
           ...(theme as any).fonts,
-          labelLarge: { ...(theme as any).fonts?.labelLarge, fontSize: 14, lineHeight: 18 },
-          bodyLarge: { ...(theme as any).fonts?.bodyLarge, fontSize, lineHeight },
+          labelLarge: {
+            ...(theme as any).fonts?.labelLarge,
+            fontSize: 14,
+            lineHeight: 18,
+          },
+          bodyLarge: {
+            ...(theme as any).fonts?.bodyLarge,
+            fontSize,
+            lineHeight,
+          },
         },
-      }) as any,
+      } as any),
     [theme],
   );
 
@@ -129,12 +145,12 @@ export function SmartTextInput({
       editable={editable}
       disabled={disabled}
       // Measure content height to auto-grow multiline (prevents border overflow).
-      onContentSizeChange={(e) => {
+      onContentSizeChange={e => {
         if (!multiline) return;
         const h = e?.nativeEvent?.contentSize?.height;
-        if (typeof h === 'number' && Number.isFinite(h)) setMeasuredHeight(h + verticalPad * 2);
+        if (typeof h === 'number' && Number.isFinite(h))
+          setMeasuredHeight(h + verticalPad * 2);
       }}
     />
   );
 }
-

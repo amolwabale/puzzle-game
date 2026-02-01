@@ -7,7 +7,13 @@ import {
   sendSupportTicketMessage,
 } from './MenuService';
 
-export type { FileInput, Ticket, TicketChat, TicketStatus, TicketUserRole } from './ticketTypes';
+export type {
+  FileInput,
+  Ticket,
+  TicketChat,
+  TicketStatus,
+  TicketUserRole,
+} from './ticketTypes';
 import type { FileInput } from './ticketTypes';
 
 export async function listTickets() {
@@ -30,11 +36,13 @@ export async function listTicketChat(ticketId: string) {
   return await fetchSupportTicketChat(ticketId);
 }
 
-export async function sendTicketChat(input: { ticketId: string; chat: string }) {
+export async function sendTicketChat(input: {
+  ticketId: string;
+  chat: string;
+}) {
   return await sendSupportTicketMessage(input);
 }
 
 export async function closeTicket(ticketId: string) {
   return await closeSupportTicket(ticketId);
 }
-

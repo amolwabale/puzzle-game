@@ -1,4 +1,4 @@
-  import React from 'react';
+import React from 'react';
 import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import {
   Avatar,
@@ -10,20 +10,26 @@ import {
 } from 'react-native-paper';
 import { changePasswordAndLogout } from '../../service/MenuService';
 import { SmartTextInput } from '../../ui/SmartTextInput';
+import { FormInput } from '../../components/FormInput';
 
 export default function ChangePasswordScreen() {
   const theme = useTheme();
   const [password, setPassword] = React.useState('');
   const [confirmPassword, setConfirmPassword] = React.useState('');
   const [saving, setSaving] = React.useState(false);
-  const [errors, setErrors] = React.useState<{ password?: string; confirmPassword?: string }>({});
+  const [errors, setErrors] = React.useState<{
+    password?: string;
+    confirmPassword?: string;
+  }>({});
 
   const validate = React.useCallback(() => {
     const next: { password?: string; confirmPassword?: string } = {};
     if (!password) next.password = 'Required';
-    else if (password.length < 6) next.password = 'Minimum 6 characters required';
+    else if (password.length < 6)
+      next.password = 'Minimum 6 characters required';
     if (!confirmPassword) next.confirmPassword = 'Required';
-    else if (password !== confirmPassword) next.confirmPassword = 'Passwords do not match';
+    else if (password !== confirmPassword)
+      next.confirmPassword = 'Passwords do not match';
     setErrors(next);
     return Object.keys(next).length === 0;
   }, [password, confirmPassword]);
@@ -33,7 +39,10 @@ export default function ChangePasswordScreen() {
     try {
       setSaving(true);
       await changePasswordAndLogout(password);
-      Alert.alert('Password changed', 'Please login again with your new password.');
+      Alert.alert(
+        'Password changed',
+        'Please login again with your new password.',
+      );
       // AppNavigator will redirect to AuthStack after signOut.
     } catch (e: any) {
       Alert.alert('Failed', e?.message || 'Could not change password.');
@@ -47,7 +56,12 @@ export default function ChangePasswordScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         {/* HERO */}
         <Surface style={styles.hero} elevation={2}>
-          <View style={[styles.heroIconWrap, { backgroundColor: theme.colors.primaryContainer }]}>
+          <View
+            style={[
+              styles.heroIconWrap,
+              { backgroundColor: theme.colors.primaryContainer },
+            ]}
+          >
             <Avatar.Icon
               size={46}
               icon="lock-reset"
@@ -71,47 +85,29 @@ export default function ChangePasswordScreen() {
             New password
           </Text>
 
-          <View style={styles.field}>
+          <View>
             {/* As requested: show typed characters (not masked) */}
-            <SmartTextInput
-              label="New password"
+
+            <FormInput
+              label="New password *"
               value={password}
-              onChangeText={(t) => {
+              error={errors.password}
+              onChange={(t: any) => {
                 setPassword(t);
-                setErrors((p) => ({ ...p, password: undefined }));
               }}
-              secureTextEntry={false}
-              returnKeyType="next"
-              error={!!errors.password}
-              style={styles.input}
             />
-            {errors.password ? (
-              <HelperText type="error" visible style={styles.helper}>
-                {errors.password}
-              </HelperText>
-            ) : null}
           </View>
 
-          <View style={styles.field}>
+          <View>
             {/* As requested: show as stars */}
-            <SmartTextInput
-              label="Confirm password"
+            <FormInput
+              label="Confirm password *"
               value={confirmPassword}
-              onChangeText={(t) => {
+              error={errors.confirmPassword}
+              onChange={(t: any) => {
                 setConfirmPassword(t);
-                setErrors((p) => ({ ...p, confirmPassword: undefined }));
               }}
-              secureTextEntry
-              returnKeyType="done"
-              onSubmitEditing={() => void onSave()}
-              error={!!errors.confirmPassword}
-              style={styles.input}
             />
-            {errors.confirmPassword ? (
-              <HelperText type="error" visible style={styles.helper}>
-                {errors.confirmPassword}
-              </HelperText>
-            ) : null}
           </View>
 
           <Button
@@ -143,10 +139,20 @@ const styles = StyleSheet.create({
   heroIconWrap: { borderRadius: 14, overflow: 'hidden' },
   heroText: { flex: 1, marginLeft: 12, minWidth: 0 },
   heroTitle: { fontWeight: '800', fontSize: 20, color: '#111827' },
-  heroSubtitle: { color: '#6B7280', marginTop: 2, fontSize: 13, fontWeight: '700' },
+  heroSubtitle: {
+    color: '#6B7280',
+    marginTop: 2,
+    fontSize: 13,
+    fontWeight: '700',
+  },
 
   section: { borderRadius: 16, padding: 12, backgroundColor: '#FFFFFF' },
-  sectionTitle: { fontWeight: '800', marginBottom: 8, fontSize: 16, color: '#111827' },
+  sectionTitle: {
+    fontWeight: '800',
+    marginBottom: 8,
+    fontSize: 16,
+    color: '#111827',
+  },
   field: { marginBottom: 8 },
   // Critical: keep fontSize/lineHeight consistent so the outlined container always contains the glyphs.
   // This prevents rare blur/layout reflows where text can wrap and visually paint outside the outline.
@@ -155,4 +161,3 @@ const styles = StyleSheet.create({
   helper: { marginTop: 0, paddingVertical: 2 },
   primaryButton: { marginTop: 4 },
 });
-

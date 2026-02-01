@@ -26,4 +26,3 @@ export type FileInput = {
   name: string;
   type?: string;
 };
-

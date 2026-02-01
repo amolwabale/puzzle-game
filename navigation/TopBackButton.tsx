@@ -3,7 +3,13 @@ import { StyleSheet, View } from 'react-native';
 import { Text, TouchableRipple, useTheme } from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
-export function TopBackButton({ onPress, label }: { onPress: () => void; label: string }) {
+export function TopBackButton({
+  onPress,
+  label,
+}: {
+  onPress: () => void;
+  label: string;
+}) {
   const theme = useTheme();
 
   return (
@@ -15,30 +21,30 @@ export function TopBackButton({ onPress, label }: { onPress: () => void; label: 
       accessibilityLabel="Go back"
     >
       <View
-  style={[
-    styles.labelPill,
-    {
-      borderColor: theme.colors.primary,
-      backgroundColor: theme.colors.primaryContainer,
-    },
-  ]}
->
-  <View style={styles.iconTextRow}>
-    <MaterialCommunityIcons
-      name="chevron-left"
-      size={20}
-      color={theme.colors.primary}
-    />
+        style={[
+          styles.labelPill,
+          {
+            borderColor: theme.colors.primary,
+            backgroundColor: theme.colors.primaryContainer,
+          },
+        ]}
+      >
+        <View style={styles.iconTextRow}>
+          <MaterialCommunityIcons
+            name="chevron-left"
+            size={20}
+            color={theme.colors.primary}
+          />
 
-    <Text
-      style={[styles.labelText, { color: theme.colors.primary }]}
-      numberOfLines={1}
-      ellipsizeMode="tail"
-    >
-      {label}
-    </Text>
-  </View>
-</View>
+          <Text
+            style={[styles.labelText, { color: theme.colors.primary }]}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {label}
+          </Text>
+        </View>
+      </View>
     </TouchableRipple>
   );
 }
@@ -71,4 +77,3 @@ const styles = StyleSheet.create({
     gap: 2, // RN 0.71+, otherwise use marginRight
   },
 });
-

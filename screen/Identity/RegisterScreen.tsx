@@ -1,7 +1,14 @@
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import * as React from 'react';
-import { View, StyleSheet, Alert, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  Alert,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 import {
   Button,
   Text,
@@ -14,14 +21,16 @@ import { AuthStackParamList } from '../../navigation/StackParam';
 import { RegisterUser } from '../../service/IdentityService';
 import { RegisterPayload } from '../../model/Register';
 
-
 export default function RegisterScreen() {
   const theme = useTheme();
-  const navigation = useNavigation<NativeStackNavigationProp<AuthStackParamList, 'AuthScreen'>>();
+  const navigation =
+    useNavigation<
+      NativeStackNavigationProp<AuthStackParamList, 'AuthScreen'>
+    >();
   const handleBack = () => {
     navigation.navigate('AuthScreen');
   };
-  
+
   const [firstName, setFirstName] = React.useState('');
   const [lastName, setLastName] = React.useState('');
   const [email, setEmail] = React.useState('');
@@ -84,7 +93,7 @@ export default function RegisterScreen() {
       Alert.alert(
         'Registration Successful',
         'Your account has been created successfully. Please login.',
-        [{ text: 'OK', onPress: handleBack }]
+        [{ text: 'OK', onPress: handleBack }],
       );
     } catch (err: any) {
       Alert.alert('Registration Failed', err.message || 'Something went wrong');
@@ -105,7 +114,9 @@ export default function RegisterScreen() {
         // Note: using BOTH KeyboardAvoidingView + automaticallyAdjustKeyboardInsets can feel jumpy on long forms.
         // We rely on KeyboardAvoidingView + natural scrolling for smoother behavior.
         automaticallyAdjustKeyboardInsets={false}
-        contentInsetAdjustmentBehavior={Platform.OS === 'ios' ? 'automatic' : undefined}
+        contentInsetAdjustmentBehavior={
+          Platform.OS === 'ios' ? 'automatic' : undefined
+        }
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'none'}
         showsVerticalScrollIndicator={false}
@@ -123,7 +134,7 @@ export default function RegisterScreen() {
             label="First Name *"
             mode="outlined"
             value={firstName}
-            onChangeText={(text) => {
+            onChangeText={text => {
               setFirstName(text);
               setErrors({ ...errors, firstName: '' });
             }}
@@ -139,7 +150,7 @@ export default function RegisterScreen() {
             label="Last Name *"
             mode="outlined"
             value={lastName}
-            onChangeText={(text) => {
+            onChangeText={text => {
               setLastName(text);
               setErrors({ ...errors, lastName: '' });
             }}
@@ -157,7 +168,7 @@ export default function RegisterScreen() {
             keyboardType="email-address"
             autoCapitalize="none"
             value={email}
-            onChangeText={(text) => {
+            onChangeText={text => {
               setEmail(text);
               setErrors({ ...errors, email: '' });
             }}
@@ -175,7 +186,7 @@ export default function RegisterScreen() {
             keyboardType="phone-pad"
             maxLength={10}
             value={mobile}
-            onChangeText={(text) => {
+            onChangeText={text => {
               setMobile(text);
               setErrors({ ...errors, mobile: '' });
             }}
@@ -206,7 +217,7 @@ export default function RegisterScreen() {
             mode="outlined"
             secureTextEntry
             value={password}
-            onChangeText={(text) => {
+            onChangeText={text => {
               setPassword(text);
               setErrors({ ...errors, password: '' });
             }}
@@ -223,7 +234,7 @@ export default function RegisterScreen() {
             mode="outlined"
             secureTextEntry
             value={confirmPassword}
-            onChangeText={(text) => {
+            onChangeText={text => {
               setConfirmPassword(text);
               setErrors({ ...errors, confirmPassword: '' });
             }}
@@ -287,10 +298,10 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   input: {
-    marginBottom: 0
+    marginBottom: 0,
   },
   button: {
-    marginTop: 16
+    marginTop: 16,
   },
   buttonContent: {
     paddingVertical: 8,

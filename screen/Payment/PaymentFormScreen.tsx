@@ -1,4 +1,8 @@
-import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
+import {
+  useFocusEffect,
+  useNavigation,
+  useRoute,
+} from '@react-navigation/native';
 import React from 'react';
 import {
   Alert,
@@ -66,13 +70,16 @@ const scalePaperThemeFonts = (t: any, scale: number) => {
   const s = Number.isFinite(scale) ? scale : 1;
   const fonts = t?.fonts ?? {};
   const nextFonts: Record<string, any> = { ...fonts };
-  Object.keys(nextFonts).forEach((k) => {
+  Object.keys(nextFonts).forEach(k => {
     const v = nextFonts[k];
     if (!v || typeof v !== 'object') return;
     const nv: any = { ...v };
-    if (typeof nv.fontSize === 'number') nv.fontSize = Math.round(nv.fontSize * s);
-    if (typeof nv.lineHeight === 'number') nv.lineHeight = Math.round(nv.lineHeight * s);
-    if (typeof nv.letterSpacing === 'number') nv.letterSpacing = Number((nv.letterSpacing * s).toFixed(2));
+    if (typeof nv.fontSize === 'number')
+      nv.fontSize = Math.round(nv.fontSize * s);
+    if (typeof nv.lineHeight === 'number')
+      nv.lineHeight = Math.round(nv.lineHeight * s);
+    if (typeof nv.letterSpacing === 'number')
+      nv.letterSpacing = Number((nv.letterSpacing * s).toFixed(2));
     nextFonts[k] = nv;
   });
   return { ...t, fonts: nextFonts };
@@ -80,7 +87,10 @@ const scalePaperThemeFonts = (t: any, scale: number) => {
 
 export default function PaymentFormScreen() {
   const theme = useTheme();
-  const scaledTheme = React.useMemo(() => scalePaperThemeFonts(theme, 1.15), [theme]);
+  const scaledTheme = React.useMemo(
+    () => scalePaperThemeFonts(theme, 1.15),
+    [theme],
+  );
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const billId: number | undefined = route.params?.billId;
@@ -94,14 +104,20 @@ export default function PaymentFormScreen() {
   const [assignments, setAssignments] = React.useState<
     Array<{ room: RoomRecord; tenant: TenantRecord }>
   >([]);
-  const [settings, setSettings] = React.useState<{ water: number; electricity_unit: number }>({
+  const [settings, setSettings] = React.useState<{
+    water: number;
+    electricity_unit: number;
+  }>({
     water: 0,
     electricity_unit: 0,
   });
 
   const [pairQuery, setPairQuery] = React.useState('');
-  const [selectedRoom, setSelectedRoom] = React.useState<RoomRecord | null>(null);
-  const [selectedTenant, setSelectedTenant] = React.useState<TenantRecord | null>(null);
+  const [selectedRoom, setSelectedRoom] = React.useState<RoomRecord | null>(
+    null,
+  );
+  const [selectedTenant, setSelectedTenant] =
+    React.useState<TenantRecord | null>(null);
 
   const [previousMeter, setPreviousMeter] = React.useState<number>(0);
   const [currentMeter, setCurrentMeter] = React.useState('');
@@ -122,11 +138,11 @@ export default function PaymentFormScreen() {
       setRooms(r || []);
       setSettings(s);
 
-      const roomIdList = (r || []).map((x) => x.id);
+      const roomIdList = (r || []).map(x => x.id);
       const activeByRoom = await fetchActiveTenantsForRooms(roomIdList);
       const pairs: Array<{ room: RoomRecord; tenant: TenantRecord }> = [];
 
-      (r || []).forEach((room) => {
+      (r || []).forEach(room => {
         const active = activeByRoom?.[room.id];
         if (active?.tenant) {
           pairs.push({ room, tenant: active.tenant });
@@ -140,16 +156,18 @@ export default function PaymentFormScreen() {
 
         const alreadyPaid = Number(b.paid_amount || 0) > 0;
         if (alreadyPaid) {
-          Alert.alert('Not allowed', 'You can edit a bill only when paid amount is 0.', [
-            { text: 'OK', onPress: () => navigation.goBack() },
-          ]);
+          Alert.alert(
+            'Not allowed',
+            'You can edit a bill only when paid amount is 0.',
+            [{ text: 'OK', onPress: () => navigation.goBack() }],
+          );
           return;
         }
 
         setEditingBill(b);
 
-        const room = (r || []).find((x) => x.id === b.room_id) || null;
-        const tenant = (t || []).find((x) => x.id === b.tenant_id) || null;
+        const room = (r || []).find(x => x.id === b.room_id) || null;
+        const tenant = (t || []).find(x => x.id === b.tenant_id) || null;
 
         if (!room || !tenant) {
           throw new Error('Could not load room/tenant for this bill');
@@ -162,7 +180,9 @@ export default function PaymentFormScreen() {
 
         setPreviousMeter(Number(b.previous_month_meter_reading || 0));
         setCurrentMeter(String(Number(b.current_month_meter_reading || 0)));
-        setAdHocAmount(b.ad_hoc_amount != null ? String(Number(b.ad_hoc_amount || 0)) : '');
+        setAdHocAmount(
+          b.ad_hoc_amount != null ? String(Number(b.ad_hoc_amount || 0)) : '',
+        );
         setAdHocComment(b.ad_hoc_comment || '');
       } else {
         setEditingBill(null);
@@ -201,7 +221,8 @@ export default function PaymentFormScreen() {
     const e: Record<string, string> = {};
     if (!selectedRoom || !selectedTenant) e.pair = 'Room-Tenant is required';
     if (!/^\d+$/.test(currentMeter)) e.currentMeter = 'Numbers only';
-    if (adHocAmount && !/^\d+$/.test(adHocAmount)) e.adHocAmount = 'Numbers only';
+    if (adHocAmount && !/^\d+$/.test(adHocAmount))
+      e.adHocAmount = 'Numbers only';
 
     if (selectedRoom && currentMeter && Number(currentMeter) < previousMeter) {
       e.currentMeter = `Must be ≥ previous (${previousMeter})`;
@@ -211,14 +232,19 @@ export default function PaymentFormScreen() {
     return Object.keys(e).length === 0;
   };
 
-  const selectPair = async (pair: { room: RoomRecord; tenant: TenantRecord }) => {
+  const selectPair = async (pair: {
+    room: RoomRecord;
+    tenant: TenantRecord;
+  }) => {
     setSelectedRoom(pair.room);
     setSelectedTenant(pair.tenant);
     setPairQuery('');
-    setErrors((p) => ({ ...p, pair: '' }));
+    setErrors(p => ({ ...p, pair: '' }));
 
     try {
-      const latest = await fetchLatestMeterReadingForRoom({ roomId: pair.room.id });
+      const latest = await fetchLatestMeterReadingForRoom({
+        roomId: pair.room.id,
+      });
       setPreviousMeter(latest?.unit != null ? Number(latest.unit) : 0);
     } catch {
       setPreviousMeter(0);
@@ -237,8 +263,13 @@ export default function PaymentFormScreen() {
       const curr = Number(currentMeter);
 
       if (isEdit && billId) {
-        const paidAmount = editingBill?.paid_amount != null ? Number(editingBill.paid_amount) : 0;
-        const status = editingBill?.status ? String(editingBill.status) : 'UNPAID';
+        const paidAmount =
+          editingBill?.paid_amount != null
+            ? Number(editingBill.paid_amount)
+            : 0;
+        const status = editingBill?.status
+          ? String(editingBill.status)
+          : 'UNPAID';
 
         await updateBill({
           billId,
@@ -261,7 +292,9 @@ export default function PaymentFormScreen() {
         try {
           const latestBill = await fetchLatestBillForRoom(selectedRoom.id);
           if (latestBill?.id === billId) {
-            const latestMr = await fetchLatestMeterReadingForRoom({ roomId: selectedRoom.id });
+            const latestMr = await fetchLatestMeterReadingForRoom({
+              roomId: selectedRoom.id,
+            });
             if (latestMr?.id != null) {
               await updateMeterReading({ id: latestMr.id, unit: curr });
             }
@@ -329,236 +362,272 @@ export default function PaymentFormScreen() {
             keyboardShouldPersistTaps="handled"
           >
             <View>
-            {/* HERO */}
-            <Surface style={styles.hero} elevation={2}>
-              <Avatar.Icon
-                size={52}
-                icon="file-document-outline"
-                style={{ backgroundColor: theme.colors.primaryContainer }}
-                color={theme.colors.primary}
-              />
-              <View style={{ marginLeft: 14 }}>
-                <Text variant="titleLarge" style={{ fontWeight: '800' }}>
-                  {isEdit ? 'Edit Payment' : 'Add Payment'}
-                </Text>
-                <Text style={{ color: '#666', marginTop: 2 }}>
-                  {isEdit ? 'Update this bill' : 'Capture rent & utilities'}
-                </Text>
-              </View>
-            </Surface>
+              {/* HERO */}
+              <Surface style={styles.hero} elevation={2}>
+                <Avatar.Icon
+                  size={52}
+                  icon="file-document-outline"
+                  style={{ backgroundColor: theme.colors.primaryContainer }}
+                  color={theme.colors.primary}
+                />
+                <View style={{ marginLeft: 14 }}>
+                  <Text variant="titleLarge" style={{ fontWeight: '800' }}>
+                    {isEdit ? 'Edit Payment' : 'Add Payment'}
+                  </Text>
+                  <Text style={{ color: '#666', marginTop: 2 }}>
+                    {isEdit ? 'Update this bill' : 'Capture rent & utilities'}
+                  </Text>
+                </View>
+              </Surface>
 
-            {/* SELECTION */}
-            <Surface style={styles.section} elevation={2}>
-              <Text variant="titleMedium" style={styles.sectionTitle}>
-                Select Tenant & Room
-              </Text>
+              {/* SELECTION */}
+              <Surface style={styles.section} elevation={2}>
+                <Text variant="titleMedium" style={styles.sectionTitle}>
+                  Select Tenant & Room
+                </Text>
 
-            {!selectedRoom || !selectedTenant ? (
-              <>
-                <Surface style={styles.occupancyHint} elevation={0}>
-                  <Avatar.Icon
-                    size={40}
-                    icon="swap-horizontal"
-                    style={{ backgroundColor: theme.colors.primaryContainer }}
+                {!selectedRoom || !selectedTenant ? (
+                  <>
+                    <Surface style={styles.occupancyHint} elevation={0}>
+                      <Avatar.Icon
+                        size={40}
+                        icon="swap-horizontal"
+                        style={{
+                          backgroundColor: theme.colors.primaryContainer,
+                        }}
+                        color={theme.colors.primary}
+                      />
+                      <View style={{ flex: 1, marginLeft: 12 }}>
+                        <Text style={{ fontWeight: '700' }}>
+                          Select an occupied room
+                        </Text>
+                        <Text style={{ color: '#666', marginTop: 2 }}>
+                          Search by room or tenant name (Room - Tenant).
+                        </Text>
+                      </View>
+                    </Surface>
+
+                    <TextInput
+                      label="Search Room - Tenant *"
+                      mode="outlined"
+                      value={pairQuery}
+                      onChangeText={t => {
+                        setPairQuery(t);
+                        setErrors(p => ({ ...p, pair: '' }));
+                      }}
+                      left={<TextInput.Icon icon="magnify" />}
+                      error={!!errors.pair}
+                    />
+                    <HelperText type="error" visible={!!errors.pair}>
+                      {errors.pair || ' '}
+                    </HelperText>
+
+                    {filteredPairs.length > 0 && (
+                      <Surface style={styles.dropdown} elevation={2}>
+                        <View style={styles.dropdownClip}>
+                          {filteredPairs.slice(0, 8).map(({ room, tenant }) => (
+                            <TouchableOpacity
+                              key={`${room.id}-${tenant.id}`}
+                              style={styles.dropdownItem}
+                              onPress={() => selectPair({ room, tenant })}
+                            >
+                              <Text style={{ fontWeight: '800' }}>
+                                {(room.name || '-') +
+                                  ' - ' +
+                                  (tenant.name || '-')}
+                              </Text>
+                              <Text
+                                style={{
+                                  color: '#666',
+                                  fontSize: 14,
+                                  marginTop: 2,
+                                }}
+                              >
+                                Rent:{' '}
+                                {room.rent
+                                  ? formatMoney(Number(room.rent))
+                                  : '-'}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      </Surface>
+                    )}
+
+                    {pairQuery.trim().length > 0 &&
+                      filteredPairs.length === 0 && (
+                        <Text style={{ color: '#777', marginTop: 8 }}>
+                          No occupied rooms found.
+                        </Text>
+                      )}
+                  </>
+                ) : (
+                  <Surface style={styles.selectedTile} elevation={1}>
+                    <Avatar.Icon size={36} icon="home-city-outline" />
+                    <View style={{ flex: 1, marginLeft: 12 }}>
+                      <Text style={{ fontWeight: '800' }}>
+                        {(selectedRoom.name || '-') +
+                          ' - ' +
+                          (selectedTenant.name || '-')}
+                      </Text>
+                      <Text style={{ color: '#666', marginTop: 2 }}>
+                        Rent{' '}
+                        {selectedRoom.rent
+                          ? formatMoney(Number(selectedRoom.rent))
+                          : '-'}
+                      </Text>
+                    </View>
+                    {!isEdit && (
+                      <IconButton
+                        icon="close"
+                        onPress={() => {
+                          setSelectedRoom(null);
+                          setSelectedTenant(null);
+                          setPairQuery('');
+                          setPreviousMeter(0);
+                          setCurrentMeter('');
+                        }}
+                      />
+                    )}
+                  </Surface>
+                )}
+              </Surface>
+
+              {/* METER + ADHOC */}
+              <Surface style={styles.section} elevation={2}>
+                <Text variant="titleMedium" style={styles.sectionTitle}>
+                  Meter & Charges
+                </Text>
+
+                <Surface style={styles.readingRow} elevation={0}>
+                  <Icon
+                    source="counter"
+                    size={20}
                     color={theme.colors.primary}
                   />
-                  <View style={{ flex: 1, marginLeft: 12 }}>
-                    <Text style={{ fontWeight: '700' }}>Select an occupied room</Text>
+                  <View style={{ marginLeft: 10 }}>
+                    <Text style={{ fontWeight: '700' }}>Previous reading</Text>
                     <Text style={{ color: '#666', marginTop: 2 }}>
-                      Search by room or tenant name (Room - Tenant).
+                      {previousMeter}
                     </Text>
                   </View>
                 </Surface>
 
                 <TextInput
-                  label="Search Room - Tenant *"
-                  mode="outlined"
-                  value={pairQuery}
-                  onChangeText={(t) => {
-                    setPairQuery(t);
-                    setErrors((p) => ({ ...p, pair: '' }));
+                  label="Current Meter Reading *"
+                  value={currentMeter}
+                  onChangeText={t => {
+                    const next = t.replace(/[^\d]/g, '');
+                    setCurrentMeter(next);
+                    setErrors(p => ({ ...p, currentMeter: '' }));
                   }}
-                  left={<TextInput.Icon icon="magnify" />}
-                  error={!!errors.pair}
+                  mode="outlined"
+                  keyboardType="number-pad"
+                  left={<TextInput.Icon icon="counter" />}
+                  error={!!errors.currentMeter}
                 />
-                <HelperText type="error" visible={!!errors.pair}>
-                  {errors.pair || ' '}
+                <HelperText type="error" visible={!!errors.currentMeter}>
+                  {errors.currentMeter || ' '}
                 </HelperText>
 
-                {filteredPairs.length > 0 && (
-                  <Surface style={styles.dropdown} elevation={2}>
-                    <View style={styles.dropdownClip}>
-                      {filteredPairs.slice(0, 8).map(({ room, tenant }) => (
-                        <TouchableOpacity
-                          key={`${room.id}-${tenant.id}`}
-                          style={styles.dropdownItem}
-                          onPress={() => selectPair({ room, tenant })}
-                        >
-                          <Text style={{ fontWeight: '800' }}>
-                            {(room.name || '-') + ' - ' + (tenant.name || '-')}
-                          </Text>
-                          <Text style={{ color: '#666', fontSize: 14, marginTop: 2 }}>
-                            Rent: {room.rent ? formatMoney(Number(room.rent)) : '-'}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  </Surface>
-                )}
-
-                {pairQuery.trim().length > 0 && filteredPairs.length === 0 && (
-                  <Text style={{ color: '#777', marginTop: 8 }}>
-                    No occupied rooms found.
-                  </Text>
-                )}
-              </>
-            ) : (
-              <Surface style={styles.selectedTile} elevation={1}>
-                <Avatar.Icon size={36} icon="home-city-outline" />
-                <View style={{ flex: 1, marginLeft: 12 }}>
-                  <Text style={{ fontWeight: '800' }}>
-                    {(selectedRoom.name || '-') + ' - ' + (selectedTenant.name || '-')}
-                  </Text>
-                  <Text style={{ color: '#666', marginTop: 2 }}>
-                    Rent {selectedRoom.rent ? formatMoney(Number(selectedRoom.rent)) : '-'}
-                  </Text>
-                </View>
-                {!isEdit && (
-                  <IconButton
-                    icon="close"
-                    onPress={() => {
-                      setSelectedRoom(null);
-                      setSelectedTenant(null);
-                      setPairQuery('');
-                      setPreviousMeter(0);
-                      setCurrentMeter('');
-                    }}
-                  />
-                )}
-              </Surface>
-            )}
-          </Surface>
-
-          {/* METER + ADHOC */}
-          <Surface style={styles.section} elevation={2}>
-            <Text variant="titleMedium" style={styles.sectionTitle}>
-              Meter & Charges
-            </Text>
-
-            <Surface style={styles.readingRow} elevation={0}>
-              <Icon source="counter" size={20} color={theme.colors.primary} />
-              <View style={{ marginLeft: 10 }}>
-                <Text style={{ fontWeight: '700' }}>Previous reading</Text>
-                <Text style={{ color: '#666', marginTop: 2 }}>{previousMeter}</Text>
-              </View>
-            </Surface>
-
-            <TextInput
-              label="Current Meter Reading *"
-              value={currentMeter}
-              onChangeText={(t) => {
-                const next = t.replace(/[^\d]/g, '');
-                setCurrentMeter(next);
-                setErrors((p) => ({ ...p, currentMeter: '' }));
-              }}
-              mode="outlined"
-              keyboardType="number-pad"
-              left={<TextInput.Icon icon="counter" />}
-              error={!!errors.currentMeter}
-            />
-            <HelperText type="error" visible={!!errors.currentMeter}>
-              {errors.currentMeter || ' '}
-            </HelperText>
-
-            <TextInput
-              label="Ad-hoc Amount"
-              value={adHocAmount}
-              onChangeText={(t) => {
-                const next = t.replace(/[^\d]/g, '');
-                setAdHocAmount(next);
-                setErrors((p) => ({ ...p, adHocAmount: '' }));
-              }}
-              mode="outlined"
-              keyboardType="number-pad"
-              left={<TextInput.Icon icon="cash-plus" />}
-              error={!!errors.adHocAmount}
-            />
-            <HelperText type="error" visible={!!errors.adHocAmount}>
-              {errors.adHocAmount || ' '}
-            </HelperText>
-
-            <TextInput
-              label="Ad-hoc Comment"
-              value={adHocComment}
-              onChangeText={setAdHocComment}
-              mode="outlined"
-              multiline
-              left={<TextInput.Icon icon="comment-text-outline" />}
-            />
-          </Surface>
-
-          {/* SUMMARY */}
-          <Surface style={styles.section} elevation={2}>
-            <Text variant="titleMedium" style={styles.sectionTitle}>
-              Summary
-            </Text>
-
-            <Surface
-              style={[
-                styles.summaryHero,
-                { backgroundColor: theme.colors.primaryContainer },
-              ]}
-              elevation={0}
-            >
-              <View style={styles.summaryHeroRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.summaryHeroLabel}>Total payable</Text>
-                  <Text style={styles.summaryHeroValue}>{formatMoney(total)}</Text>
-                </View>
-
-                <View style={styles.statusPill}>
-                  <Text style={styles.statusPillText}>UNPAID</Text>
-                </View>
-              </View>
-            </Surface>
-
-            <View style={styles.tileGrid}>
-              <SummaryTile
-                icon="home-city-outline"
-                label="Rent"
-                value={formatMoney(rent)}
-              />
-              <SummaryTile
-                icon="water-outline"
-                label="Water"
-                value={formatMoney(water)}
-              />
-              <SummaryTile
-                icon="flash-outline"
-                label="Electricity"
-                value={formatMoney(electricity)}
-                sub={`${diffUnits} × ${settings.electricity_unit}`}
-              />
-              <SummaryTile
-                icon="cash-plus"
-                label="Ad-hoc"
-                value={formatMoney(adHoc)}
-                sub={adHocComment?.trim() ? adHocComment.trim() : undefined}
-              />
-            </View>
-
-            <View style={styles.meterSection}>
-              <View style={styles.meterGrid}>
-                <MeterTile kind="prev" title="Previous" month={prevLabel} value={previousMeter} />
-                <MeterTile
-                  kind="curr"
-                  title="Current"
-                  month={currLabel}
-                  value={currentMeter.trim().length > 0 ? currentMeterNum : null}
+                <TextInput
+                  label="Ad-hoc Amount"
+                  value={adHocAmount}
+                  onChangeText={t => {
+                    const next = t.replace(/[^\d]/g, '');
+                    setAdHocAmount(next);
+                    setErrors(p => ({ ...p, adHocAmount: '' }));
+                  }}
+                  mode="outlined"
+                  keyboardType="number-pad"
+                  left={<TextInput.Icon icon="cash-plus" />}
+                  error={!!errors.adHocAmount}
                 />
-              </View>
-            </View>
-          </Surface>
+                <HelperText type="error" visible={!!errors.adHocAmount}>
+                  {errors.adHocAmount || ' '}
+                </HelperText>
+
+                <TextInput
+                  label="Ad-hoc Comment"
+                  value={adHocComment}
+                  onChangeText={setAdHocComment}
+                  mode="outlined"
+                  multiline
+                  left={<TextInput.Icon icon="comment-text-outline" />}
+                />
+              </Surface>
+
+              {/* SUMMARY */}
+              <Surface style={styles.section} elevation={2}>
+                <Text variant="titleMedium" style={styles.sectionTitle}>
+                  Summary
+                </Text>
+
+                <Surface
+                  style={[
+                    styles.summaryHero,
+                    { backgroundColor: theme.colors.primaryContainer },
+                  ]}
+                  elevation={0}
+                >
+                  <View style={styles.summaryHeroRow}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.summaryHeroLabel}>Total payable</Text>
+                      <Text style={styles.summaryHeroValue}>
+                        {formatMoney(total)}
+                      </Text>
+                    </View>
+
+                    <View style={styles.statusPill}>
+                      <Text style={styles.statusPillText}>UNPAID</Text>
+                    </View>
+                  </View>
+                </Surface>
+
+                <View style={styles.tileGrid}>
+                  <SummaryTile
+                    icon="home-city-outline"
+                    label="Rent"
+                    value={formatMoney(rent)}
+                  />
+                  <SummaryTile
+                    icon="water-outline"
+                    label="Water"
+                    value={formatMoney(water)}
+                  />
+                  <SummaryTile
+                    icon="flash-outline"
+                    label="Electricity"
+                    value={formatMoney(electricity)}
+                    sub={`${diffUnits} × ${settings.electricity_unit}`}
+                  />
+                  <SummaryTile
+                    icon="cash-plus"
+                    label="Ad-hoc"
+                    value={formatMoney(adHoc)}
+                    sub={adHocComment?.trim() ? adHocComment.trim() : undefined}
+                  />
+                </View>
+
+                <View style={styles.meterSection}>
+                  <View style={styles.meterGrid}>
+                    <MeterTile
+                      kind="prev"
+                      title="Previous"
+                      month={prevLabel}
+                      value={previousMeter}
+                    />
+                    <MeterTile
+                      kind="curr"
+                      title="Current"
+                      month={currLabel}
+                      value={
+                        currentMeter.trim().length > 0 ? currentMeterNum : null
+                      }
+                    />
+                  </View>
+                </View>
+              </Surface>
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
@@ -596,7 +665,10 @@ const SummaryTile = ({
       <Text style={styles.tileValue} numberOfLines={1}>
         {value}
       </Text>
-      <Text style={[styles.tileSub, !sub && styles.tileSubPlaceholder]} numberOfLines={1}>
+      <Text
+        style={[styles.tileSub, !sub && styles.tileSubPlaceholder]}
+        numberOfLines={1}
+      >
         {sub || ' '}
       </Text>
     </View>
@@ -640,7 +712,10 @@ const MeterTile = ({
       <Text style={styles.tileValue} numberOfLines={1}>
         {value != null ? String(value) : '-'}
       </Text>
-      <Text style={[styles.tileSub, !month && styles.tileSubPlaceholder]} numberOfLines={1}>
+      <Text
+        style={[styles.tileSub, !month && styles.tileSubPlaceholder]}
+        numberOfLines={1}
+      >
         {month || ' '}
       </Text>
     </View>
@@ -878,4 +953,3 @@ const styles = StyleSheet.create({
 
   fab: { position: 'absolute', right: 16, bottom: 24 },
 });
-

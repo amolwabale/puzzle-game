@@ -71,7 +71,9 @@ export async function fetchBills(): Promise<BillRecord[]> {
   return (data || []) as any;
 }
 
-export async function fetchBillById(billId: number): Promise<BillRecord | null> {
+export async function fetchBillById(
+  billId: number,
+): Promise<BillRecord | null> {
   const userId = await getCurrentUserId();
 
   const { data, error } = await supabase
@@ -85,7 +87,9 @@ export async function fetchBillById(billId: number): Promise<BillRecord | null> 
   return (data || null) as any;
 }
 
-export async function fetchLatestBillForRoom(roomId: number): Promise<Pick<BillRecord, 'id' | 'created_at'> | null> {
+export async function fetchLatestBillForRoom(
+  roomId: number,
+): Promise<Pick<BillRecord, 'id' | 'created_at'> | null> {
   const userId = await getCurrentUserId();
 
   const { data, error } = await supabase
@@ -101,7 +105,9 @@ export async function fetchLatestBillForRoom(roomId: number): Promise<Pick<BillR
   return (data || null) as any;
 }
 
-export async function createBill(payload: CreateBillPayload): Promise<BillRecord> {
+export async function createBill(
+  payload: CreateBillPayload,
+): Promise<BillRecord> {
   const userId = await getCurrentUserId();
 
   const { data, error } = await supabase
@@ -129,7 +135,9 @@ export async function createBill(payload: CreateBillPayload): Promise<BillRecord
   return data as any;
 }
 
-export async function updateBill(payload: UpdateBillPayload): Promise<BillRecord> {
+export async function updateBill(
+  payload: UpdateBillPayload,
+): Promise<BillRecord> {
   const userId = await getCurrentUserId();
 
   const { data, error } = await supabase
@@ -185,7 +193,11 @@ export async function updateBillPayment(params: {
 
 export async function deleteBill(billId: number): Promise<void> {
   const userId = await getCurrentUserId();
-  const { error } = await supabase.from('bill').delete().eq('user_id', userId).eq('id', billId);
+  const { error } = await supabase
+    .from('bill')
+    .delete()
+    .eq('user_id', userId)
+    .eq('id', billId);
   if (error) throw error;
 }
 
@@ -201,7 +213,9 @@ export async function fetchLatestSetting(): Promise<{
 
   const { data, error } = await supabase
     .from('setting')
-    .select('property_name, property_address, water, electricity_unit, rent_date, rent_due_date, modified_at, created_at')
+    .select(
+      'property_name, property_address, water, electricity_unit, rent_date, rent_due_date, modified_at, created_at',
+    )
     .eq('user_id', userId)
     .order('modified_at', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false })
@@ -214,10 +228,17 @@ export async function fetchLatestSetting(): Promise<{
   const electricity_unit =
     data?.electricity_unit != null ? Number(data.electricity_unit) : 0;
   const rent_date = data?.rent_date != null ? Number(data.rent_date) : 0;
-  const rent_due_date = data?.rent_due_date != null ? Number(data.rent_due_date) : 0;
+  const rent_due_date =
+    data?.rent_due_date != null ? Number(data.rent_due_date) : 0;
   const property_name = data?.property_name ?? undefined;
   const property_address = data?.property_address ?? undefined;
 
-  return { water, electricity_unit, rent_date, rent_due_date, property_name, property_address };
+  return {
+    water,
+    electricity_unit,
+    rent_date,
+    rent_due_date,
+    property_name,
+    property_address,
+  };
 }
-

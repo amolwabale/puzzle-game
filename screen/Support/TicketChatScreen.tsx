@@ -1,4 +1,8 @@
-import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
+import {
+  useFocusEffect,
+  useNavigation,
+  useRoute,
+} from '@react-navigation/native';
 import React from 'react';
 import {
   Alert,
@@ -19,7 +23,12 @@ import {
   useTheme,
 } from 'react-native-paper';
 import type { Ticket, TicketChat } from '../../service/ticketTypes';
-import { closeTicket, getTicket, listTicketChat, sendTicketChat } from '../../service/ticketService';
+import {
+  closeTicket,
+  getTicket,
+  listTicketChat,
+  sendTicketChat,
+} from '../../service/ticketService';
 import { createSignedUrlFromPublicUrl } from '../../service/MenuService';
 import { ChatBubble } from './components/ChatBubble';
 import { StatusChip } from './components/StatusChip';
@@ -52,30 +61,37 @@ export default function TicketChatScreen() {
   React.useEffect(() => {
     // Default to collapsed for long tickets; expanded for short ones.
     if (!ticket) return;
-    const score = (ticket.title?.length || 0) + (ticket.description?.length || 0);
+    const score =
+      (ticket.title?.length || 0) + (ticket.description?.length || 0);
     setDetailsOpen(score <= 180);
     // Only when a new ticket loads.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ticketId]);
 
-  const load = React.useCallback(async (isRefresh = false) => {
-    try {
-      isRefresh ? setRefreshing(true) : setLoading(true);
-      const [t, chat] = await Promise.all([getTicket(ticketId), listTicketChat(ticketId)]);
-      if (!t) {
-        Alert.alert('Not found', 'Ticket could not be loaded.', [
-          { text: 'OK', onPress: () => navigation.goBack() },
+  const load = React.useCallback(
+    async (isRefresh = false) => {
+      try {
+        isRefresh ? setRefreshing(true) : setLoading(true);
+        const [t, chat] = await Promise.all([
+          getTicket(ticketId),
+          listTicketChat(ticketId),
         ]);
-        return;
+        if (!t) {
+          Alert.alert('Not found', 'Ticket could not be loaded.', [
+            { text: 'OK', onPress: () => navigation.goBack() },
+          ]);
+          return;
+        }
+        setTicket(t);
+        setMessages(chat || []);
+      } catch (e: any) {
+        Alert.alert('Load Failed', e?.message || 'Could not load ticket');
+      } finally {
+        isRefresh ? setRefreshing(false) : setLoading(false);
       }
-      setTicket(t);
-      setMessages(chat || []);
-    } catch (e: any) {
-      Alert.alert('Load Failed', e?.message || 'Could not load ticket');
-    } finally {
-      isRefresh ? setRefreshing(false) : setLoading(false);
-    }
-  }, [ticketId, navigation]);
+    },
+    [ticketId, navigation],
+  );
 
   useFocusEffect(
     React.useCallback(() => {
@@ -107,16 +123,25 @@ export default function TicketChatScreen() {
   const openAttachment = React.useCallback(async () => {
     const url = ticket?.upload_url;
     if (!url) {
-      Alert.alert('Not available', 'No attachment was uploaded for this ticket.');
+      Alert.alert(
+        'Not available',
+        'No attachment was uploaded for this ticket.',
+      );
       return;
     }
     try {
       const signed = await createSignedUrlFromPublicUrl(url);
       if (!signed) {
-        Alert.alert('Open failed', 'Could not generate a secure link. Please try again.');
+        Alert.alert(
+          'Open failed',
+          'Could not generate a secure link. Please try again.',
+        );
         return;
       }
-      navigation.navigate('SupportDocument', { title: 'Attachment', url: signed });
+      navigation.navigate('SupportDocument', {
+        title: 'Attachment',
+        url: signed,
+      });
     } catch {
       Alert.alert('Open failed', 'Could not open attachment.');
     }
@@ -138,14 +163,14 @@ export default function TicketChatScreen() {
 
     setInput('');
     setSending(true);
-    setMessages((prev) => [...prev, temp]);
+    setMessages(prev => [...prev, temp]);
 
     try {
       const saved = await sendTicketChat({ ticketId, chat: text });
-      setMessages((prev) => prev.map((m) => (m.id === temp.id ? saved : m)));
+      setMessages(prev => prev.map(m => (m.id === temp.id ? saved : m)));
     } catch (e: any) {
       // rollback optimistic message
-      setMessages((prev) => prev.filter((m) => m.id !== temp.id));
+      setMessages(prev => prev.filter(m => m.id !== temp.id));
       Alert.alert('Send failed', e?.message || 'Could not send message');
       setInput(text);
     } finally {
@@ -162,7 +187,10 @@ export default function TicketChatScreen() {
   }
 
   return (
-    <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView
+      style={styles.screen}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
       <Surface style={styles.hero} elevation={2}>
         <View style={styles.heroTop}>
           <View style={{ flex: 1, minWidth: 0 }}>
@@ -177,15 +205,28 @@ export default function TicketChatScreen() {
         </View>
 
         {ticket.status === 'CLOSED' ? (
-          <View style={[styles.banner, { backgroundColor: theme.colors.primaryContainer }]}>
-            <Icon source="lock-outline" size={16} color={theme.colors.primary} />
+          <View
+            style={[
+              styles.banner,
+              { backgroundColor: theme.colors.primaryContainer },
+            ]}
+          >
+            <Icon
+              source="lock-outline"
+              size={16}
+              color={theme.colors.primary}
+            />
             <Text style={[styles.bannerText, { color: theme.colors.primary }]}>
               This ticket is closed. Chat is disabled.
             </Text>
           </View>
         ) : (
           <View style={styles.heroActions}>
-            <Button mode="outlined" onPress={onCloseTicket} icon="check-circle-outline">
+            <Button
+              mode="outlined"
+              onPress={onCloseTicket}
+              icon="check-circle-outline"
+            >
               Mark as Closed
             </Button>
             <Button mode="text" onPress={() => void load(true)} icon="refresh">
@@ -198,19 +239,39 @@ export default function TicketChatScreen() {
         <Surface
           style={[
             styles.detailsCard,
-            { borderColor: (theme.colors as any).outlineVariant ?? theme.colors.outline },
+            {
+              borderColor:
+                (theme.colors as any).outlineVariant ?? theme.colors.outline,
+            },
           ]}
           elevation={0}
         >
-          <TouchableRipple onPress={() => setDetailsOpen((v) => !v)} borderless style={styles.detailsHeader}>
+          <TouchableRipple
+            onPress={() => setDetailsOpen(v => !v)}
+            borderless
+            style={styles.detailsHeader}
+          >
             <View style={styles.detailsHeaderInner}>
-              <View style={[styles.detailsIcon, { backgroundColor: theme.colors.primaryContainer }]}>
-                <Icon source="information-outline" size={16} color={theme.colors.primary} />
+              <View
+                style={[
+                  styles.detailsIcon,
+                  { backgroundColor: theme.colors.primaryContainer },
+                ]}
+              >
+                <Icon
+                  source="information-outline"
+                  size={16}
+                  color={theme.colors.primary}
+                />
               </View>
               <Text style={styles.detailsTitle} numberOfLines={1}>
                 Ticket details
               </Text>
-              <Icon source={detailsOpen ? 'chevron-up' : 'chevron-down'} size={18} color="#6B7280" />
+              <Icon
+                source={detailsOpen ? 'chevron-up' : 'chevron-down'}
+                size={18}
+                color="#6B7280"
+              />
             </View>
           </TouchableRipple>
 
@@ -222,19 +283,37 @@ export default function TicketChatScreen() {
               </View>
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Description</Text>
-                <Text style={styles.detailValue}>{ticket.description || '-'}</Text>
+                <Text style={styles.detailValue}>
+                  {ticket.description || '-'}
+                </Text>
               </View>
               <View style={styles.detailMetaRow}>
                 <View style={styles.metaPill}>
                   <Icon source="calendar" size={14} color="#6B7280" />
-                  <Text style={styles.metaText}>Created {formatDate(ticket.created_at)}</Text>
+                  <Text style={styles.metaText}>
+                    Created {formatDate(ticket.created_at)}
+                  </Text>
                 </View>
 
                 {ticket.upload_url ? (
-                  <TouchableRipple onPress={() => void openAttachment()} borderless style={styles.attachPill}>
+                  <TouchableRipple
+                    onPress={() => void openAttachment()}
+                    borderless
+                    style={styles.attachPill}
+                  >
                     <View style={styles.attachPillInner}>
-                      <Icon source="paperclip" size={14} color={theme.colors.primary} />
-                      <Text style={[styles.attachText, { color: theme.colors.primary }]} numberOfLines={1}>
+                      <Icon
+                        source="paperclip"
+                        size={14}
+                        color={theme.colors.primary}
+                      />
+                      <Text
+                        style={[
+                          styles.attachText,
+                          { color: theme.colors.primary },
+                        ]}
+                        numberOfLines={1}
+                      >
                         View attachment
                       </Text>
                     </View>
@@ -248,7 +327,7 @@ export default function TicketChatScreen() {
 
       <FlatList
         data={messages}
-        keyExtractor={(m) => m.id}
+        keyExtractor={m => m.id}
         contentContainerStyle={styles.chatContent}
         renderItem={({ item }) => (
           <ChatBubble msg={item} isMe={item.user_role === 'USER'} />
@@ -285,13 +364,29 @@ export default function TicketChatScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#F4F6FA' },
-  loader: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F4F6FA' },
+  loader: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F4F6FA',
+  },
 
-  hero: { borderRadius: 18, padding: 14, margin: 16, marginBottom: 10, backgroundColor: '#FFFFFF' },
+  hero: {
+    borderRadius: 18,
+    padding: 14,
+    margin: 16,
+    marginBottom: 10,
+    backgroundColor: '#FFFFFF',
+  },
   heroTop: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   heroTitle: { fontWeight: '900', fontSize: 16, color: '#111827' },
   heroSub: { marginTop: 2, color: '#6B7280', fontWeight: '800', fontSize: 12 },
-  heroActions: { marginTop: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  heroActions: {
+    marginTop: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
 
   banner: {
     marginTop: 10,
@@ -319,13 +414,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  detailsIcon: { width: 28, height: 28, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  detailsIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   detailsTitle: { flex: 1, fontWeight: '900', fontSize: 13, color: '#111827' },
   detailsBody: { paddingHorizontal: 12, paddingBottom: 12 },
   detailRow: { marginTop: 10 },
-  detailLabel: { fontSize: 12, fontWeight: '800', color: '#6B7280', marginBottom: 4 },
-  detailValue: { fontSize: 14, fontWeight: '700', color: '#111827', lineHeight: 20 },
-  detailMetaRow: { marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
+  detailLabel: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#6B7280',
+    marginBottom: 4,
+  },
+  detailValue: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#111827',
+    lineHeight: 20,
+  },
+  detailMetaRow: {
+    marginTop: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flexWrap: 'wrap',
+  },
   metaPill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -338,8 +455,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   metaText: { fontSize: 12, fontWeight: '800', color: '#6B7280' },
-  attachPill: { borderRadius: 999, borderWidth: 1, borderColor: '#E5E7EB', backgroundColor: '#FFFFFF' },
-  attachPillInner: { paddingHorizontal: 10, paddingVertical: 6, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  attachPill: {
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
+  },
+  attachPillInner: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   attachText: { fontSize: 12, fontWeight: '900' },
 
   chatContent: { paddingHorizontal: 16, paddingBottom: 88 },
@@ -359,4 +487,3 @@ const styles = StyleSheet.create({
   inputContent: { paddingVertical: 8 },
   sendBtn: { borderRadius: 12 },
 });
-

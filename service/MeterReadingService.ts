@@ -47,10 +47,7 @@ export async function fetchLatestMeterReadingForRoom(params: {
   return data ? (data as any) : null;
 }
 
-export async function updateMeterReading(params: {
-  id: number;
-  unit: number;
-}) {
+export async function updateMeterReading(params: { id: number; unit: number }) {
   // Some DBs have meter_reading.user_id as uuid, others as numeric.
   // Updating only unit is safe and avoids user_id mismatch.
   const { error } = await supabase
@@ -69,7 +66,9 @@ export async function updateMeterReading(params: {
  * - Tries inserting with user_id
  * - If Postgres rejects due to numeric/UUID mismatch, retries without user_id
  */
-export async function createMeterReading(payload: MeterReadingInsert): Promise<MeterReadingRow> {
+export async function createMeterReading(
+  payload: MeterReadingInsert,
+): Promise<MeterReadingRow> {
   const { data: userData, error: userError } = await supabase.auth.getUser();
   if (userError) throw userError;
 
@@ -104,7 +103,8 @@ export async function createMeterReading(payload: MeterReadingInsert): Promise<M
       .maybeSingle();
 
     if (insertWithoutUser.error) throw insertWithoutUser.error;
-    if (!insertWithoutUser.data?.id) throw new Error('Meter reading save failed');
+    if (!insertWithoutUser.data?.id)
+      throw new Error('Meter reading save failed');
     return insertWithoutUser.data as any;
   }
 

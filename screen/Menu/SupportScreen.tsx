@@ -1,7 +1,19 @@
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import React from 'react';
-import { Alert, FlatList, RefreshControl, StyleSheet, View } from 'react-native';
-import { ActivityIndicator, Avatar, Button, FAB, Text } from 'react-native-paper';
+import {
+  Alert,
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  View,
+} from 'react-native';
+import {
+  ActivityIndicator,
+  Avatar,
+  Button,
+  FAB,
+  Text,
+} from 'react-native-paper';
 import { listTickets } from '../../service/ticketService';
 import type { Ticket } from '../../service/ticketTypes';
 import { TicketCard } from '../Support/components/TicketCard';
@@ -31,7 +43,8 @@ export default function SupportScreen() {
   );
 
   const goNew = () => navigation.navigate('SupportNewTicket');
-  const goChat = (ticketId: string) => navigation.navigate('SupportTicketChat', { ticketId });
+  const goChat = (ticketId: string) =>
+    navigation.navigate('SupportTicketChat', { ticketId });
 
   return (
     <View style={styles.container}>
@@ -55,10 +68,17 @@ export default function SupportScreen() {
       ) : (
         <FlatList
           data={tickets}
-          keyExtractor={(t) => t.id}
+          keyExtractor={t => t.id}
           contentContainerStyle={styles.listContent}
-          renderItem={({ item }) => <TicketCard ticket={item} onPress={() => goChat(item.id)} />}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} />}
+          renderItem={({ item }) => (
+            <TicketCard ticket={item} onPress={() => goChat(item.id)} />
+          )}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => load(true)}
+            />
+          }
         />
       )}
 
@@ -88,4 +108,3 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 });
-

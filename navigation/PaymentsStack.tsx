@@ -1,4 +1,3 @@
-
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTheme } from 'react-native-paper';
 import PaymentScreen from '../screen/Payment/PaymentScreen';
@@ -29,7 +28,12 @@ export default function PaymentsStack() {
           headerBackVisible: false,
           headerBackTitleVisible: false,
           headerLeft: () =>
-            showBack ? <TopBackButton label="Payments" onPress={() => navigation.goBack()} /> : null,
+            showBack ? (
+              <TopBackButton
+                label="Payments"
+                onPress={() => navigation.goBack()}
+              />
+            ) : null,
         };
       }}
     >
@@ -59,4 +63,3 @@ export default function PaymentsStack() {
     </Stack.Navigator>
   );
 }
-

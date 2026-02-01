@@ -90,7 +90,7 @@ const fetchActiveTenantsForRooms = async (roomIds: number[]) => {
   if (error) throw error;
 
   const map: Record<number, TenantRoomRecord | null> = {};
-  ids.forEach((id) => (map[id] = null));
+  ids.forEach(id => (map[id] = null));
 
   (data || []).forEach((r: any) => {
     map[r.room_id] = {
@@ -104,7 +104,8 @@ const fetchActiveTenantsForRooms = async (roomIds: number[]) => {
 
 const fetchActiveRoomForTenants = async (tenantIds: number[]) => {
   const ids = Array.from(new Set(tenantIds)).filter(Boolean);
-  if (ids.length === 0) return {} as Record<number, ActiveTenantAssignment | null>;
+  if (ids.length === 0)
+    return {} as Record<number, ActiveTenantAssignment | null>;
 
   const userId = await getCurrentUserId();
 
@@ -118,7 +119,7 @@ const fetchActiveRoomForTenants = async (tenantIds: number[]) => {
   if (error) throw error;
 
   const map: Record<number, ActiveTenantAssignment | null> = {};
-  ids.forEach((id) => (map[id] = null));
+  ids.forEach(id => (map[id] = null));
 
   (data || []).forEach((r: any) => {
     // If multiple active rows exist unexpectedly, keep the first encountered

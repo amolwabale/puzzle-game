@@ -11,9 +11,17 @@ import {
   TouchableRipple,
   useTheme,
 } from 'react-native-paper';
-import { BillRecord, fetchBills, fetchLatestSetting } from '../../service/BillService';
+import {
+  BillRecord,
+  fetchBills,
+  fetchLatestSetting,
+} from '../../service/BillService';
 import { fetchRooms, RoomRecord } from '../../service/RoomService';
-import { fetchTenants, getCurrentUserId, TenantRecord } from '../../service/tenantService';
+import {
+  fetchTenants,
+  getCurrentUserId,
+  TenantRecord,
+} from '../../service/tenantService';
 import { supabase } from '../../service/SupabaseClient';
 
 type MonthRange = { start: Date; end: Date };
@@ -29,7 +37,9 @@ type TenantRoomMappingLite = {
 const formatMoney = (n?: number | null) => {
   const v = Math.round(Number(n || 0));
   try {
-    return `₹${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(v)}`;
+    return `₹${new Intl.NumberFormat('en-IN', {
+      maximumFractionDigits: 0,
+    }).format(v)}`;
   } catch {
     return `₹${String(v).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
   }
@@ -38,7 +48,8 @@ const formatMoney = (n?: number | null) => {
 const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
 
 const startOfMonth = (d: Date) => new Date(d.getFullYear(), d.getMonth(), 1);
-const startOfNextMonth = (d: Date) => new Date(d.getFullYear(), d.getMonth() + 1, 1);
+const startOfNextMonth = (d: Date) =>
+  new Date(d.getFullYear(), d.getMonth() + 1, 1);
 const startOfYear = (d: Date) => new Date(d.getFullYear(), 0, 1);
 const startOfNextYear = (d: Date) => new Date(d.getFullYear() + 1, 0, 1);
 
@@ -131,7 +142,10 @@ const UtilityStat = ({
     </Text>
     {sub ? (
       <Text
-        style={[styles.utilStatSub, valueIndent === 'label' ? styles.utilStatValueIndent : null]}
+        style={[
+          styles.utilStatSub,
+          valueIndent === 'label' ? styles.utilStatValueIndent : null,
+        ]}
         numberOfLines={1}
       >
         {sub}
@@ -164,7 +178,10 @@ export default function DashboardScreen() {
   const yearLabel = React.useMemo(() => getYearLabel(new Date()), []);
 
   const openTab = React.useCallback(
-    (tabName: 'Tenant' | 'Rooms' | 'Payments' | 'Settings', screen?: string) => {
+    (
+      tabName: 'Tenant' | 'Rooms' | 'Payments' | 'Settings',
+      screen?: string,
+    ) => {
       const tabNav = navigation.getParent?.() || navigation;
       if (!screen) return tabNav.navigate(tabName);
       return tabNav.navigate(tabName, { screen });
@@ -178,23 +195,24 @@ export default function DashboardScreen() {
 
       const userId = await getCurrentUserId();
 
-      const [roomRows, tenantRows, billRows, latestSetting, mappingRows] = await Promise.all([
-        fetchRooms(),
-        fetchTenants(),
-        fetchBills(),
-        fetchLatestSetting().catch(() => ({
-          water: 0,
-          electricity_unit: 0,
-          rent_date: 0,
-          rent_due_date: 0,
-          property_name: undefined,
-          property_address: undefined,
-        })),
-        supabase
-          .from('tenant_room_mapping')
-          .select('id, room_id, tenant_id, joining_date, leaving_date')
-          .eq('user_id', userId),
-      ]);
+      const [roomRows, tenantRows, billRows, latestSetting, mappingRows] =
+        await Promise.all([
+          fetchRooms(),
+          fetchTenants(),
+          fetchBills(),
+          fetchLatestSetting().catch(() => ({
+            water: 0,
+            electricity_unit: 0,
+            rent_date: 0,
+            rent_due_date: 0,
+            property_name: undefined,
+            property_address: undefined,
+          })),
+          supabase
+            .from('tenant_room_mapping')
+            .select('id, room_id, tenant_id, joining_date, leaving_date')
+            .eq('user_id', userId),
+        ]);
 
       setRooms(roomRows || []);
       setTenants(tenantRows || []);
@@ -233,48 +251,75 @@ export default function DashboardScreen() {
     const roomCount = rooms.length;
     const tenantCount = tenants.length;
 
-    const activeMappings = mappings.filter((m) => !m.leaving_date);
-    const occupiedRoomIds = new Set(activeMappings.map((m) => m.room_id));
+    const activeMappings = mappings.filter(m => !m.leaving_date);
+    const occupiedRoomIds = new Set(activeMappings.map(m => m.room_id));
     const occupiedRooms = occupiedRoomIds.size;
     const vacantRooms = Math.max(0, roomCount - occupiedRooms);
-    const occupancyPct = roomCount > 0 ? Math.round((occupiedRooms / roomCount) * 100) : 0;
+    const occupancyPct =
+      roomCount > 0 ? Math.round((occupiedRooms / roomCount) * 100) : 0;
 
-    const billsThisMonth = (bills || []).filter((b) => isInRange(b.created_at, monthRange));
-    const billsThisYear = (bills || []).filter((b) => isInRange(b.created_at, yearRange));
-    const expectedThisMonth = sum(billsThisMonth.map((b) => billTotal(b)));
-    const collectedThisMonth = sum(billsThisMonth.map((b) => b.paid_amount));
-    const pendingThisMonth = Math.max(0, expectedThisMonth - collectedThisMonth);
-    const collectionPct = expectedThisMonth > 0 ? Math.round((collectedThisMonth / expectedThisMonth) * 100) : 0;
+    const billsThisMonth = (bills || []).filter(b =>
+      isInRange(b.created_at, monthRange),
+    );
+    const billsThisYear = (bills || []).filter(b =>
+      isInRange(b.created_at, yearRange),
+    );
+    const expectedThisMonth = sum(billsThisMonth.map(b => billTotal(b)));
+    const collectedThisMonth = sum(billsThisMonth.map(b => b.paid_amount));
+    const pendingThisMonth = Math.max(
+      0,
+      expectedThisMonth - collectedThisMonth,
+    );
+    const collectionPct =
+      expectedThisMonth > 0
+        ? Math.round((collectedThisMonth / expectedThisMonth) * 100)
+        : 0;
 
-    const expectedThisYear = sum(billsThisYear.map((b) => billTotal(b)));
-    const collectedThisYear = sum(billsThisYear.map((b) => b.paid_amount));
+    const expectedThisYear = sum(billsThisYear.map(b => billTotal(b)));
+    const collectedThisYear = sum(billsThisYear.map(b => b.paid_amount));
     const pendingThisYear = Math.max(0, expectedThisYear - collectedThisYear);
-    const collectionPctYear = expectedThisYear > 0 ? Math.round((collectedThisYear / expectedThisYear) * 100) : 0;
+    const collectionPctYear =
+      expectedThisYear > 0
+        ? Math.round((collectedThisYear / expectedThisYear) * 100)
+        : 0;
 
     // Rent billed this month (rent-only, regardless of status/paid).
-    const rentBilledThisMonth = sum(billsThisMonth.map((b) => b.rent));
+    const rentBilledThisMonth = sum(billsThisMonth.map(b => b.rent));
 
-    const allPending = sum((bills || []).map((b) => Math.max(0, billTotal(b) - Number(b.paid_amount || 0))));
+    const allPending = sum(
+      (bills || []).map(b =>
+        Math.max(0, billTotal(b) - Number(b.paid_amount || 0)),
+      ),
+    );
     const prevMonthsPending = sum(
       (bills || [])
-        .filter((b) => {
+        .filter(b => {
           const dt = new Date(b.created_at);
           return !Number.isNaN(dt.getTime()) && dt < monthRange.start;
         })
-        .map((b) => Math.max(0, billTotal(b) - Number(b.paid_amount || 0))),
+        .map(b => Math.max(0, billTotal(b) - Number(b.paid_amount || 0))),
     );
-    const overdueBillsCount = (bills || []).filter((b) => {
+    const overdueBillsCount = (bills || []).filter(b => {
       const dt = new Date(b.created_at);
       const pending = Math.max(0, billTotal(b) - Number(b.paid_amount || 0));
       const status = String(b.status || '').toUpperCase();
-      return !Number.isNaN(dt.getTime()) && dt < monthRange.start && pending > 0 && status !== 'PAID';
+      return (
+        !Number.isNaN(dt.getTime()) &&
+        dt < monthRange.start &&
+        pending > 0 &&
+        status !== 'PAID'
+      );
     }).length;
 
-    const joinThisMonth = mappings.filter((m) => isInRange(m.joining_date, monthRange)).length;
-    const vacatedThisMonth = mappings.filter((m) => isInRange(m.leaving_date, monthRange)).length;
+    const joinThisMonth = mappings.filter(m =>
+      isInRange(m.joining_date, monthRange),
+    ).length;
+    const vacatedThisMonth = mappings.filter(m =>
+      isInRange(m.leaving_date, monthRange),
+    ).length;
 
     const electricityUnitsThisMonth = sum(
-      billsThisMonth.map((b) => {
+      billsThisMonth.map(b => {
         const prev = Number(b.previous_month_meter_reading);
         const curr = Number(b.current_month_meter_reading);
         if (Number.isNaN(prev) || Number.isNaN(curr)) return 0;
@@ -282,18 +327,22 @@ export default function DashboardScreen() {
       }),
     );
 
-    const electricityChargesThisMonth = sum(billsThisMonth.map((b) => b.electricity));
-    const waterChargesThisMonth = sum(billsThisMonth.map((b) => b.water));
-    const adHocThisMonth = sum(billsThisMonth.map((b) => b.ad_hoc_amount));
+    const electricityChargesThisMonth = sum(
+      billsThisMonth.map(b => b.electricity),
+    );
+    const waterChargesThisMonth = sum(billsThisMonth.map(b => b.water));
+    const adHocThisMonth = sum(billsThisMonth.map(b => b.ad_hoc_amount));
 
-    const rentBilledThisYear = sum(billsThisYear.map((b) => b.rent));
-    const electricityChargesThisYear = sum(billsThisYear.map((b) => b.electricity));
-    const waterChargesThisYear = sum(billsThisYear.map((b) => b.water));
-    const adHocThisYear = sum(billsThisYear.map((b) => b.ad_hoc_amount));
+    const rentBilledThisYear = sum(billsThisYear.map(b => b.rent));
+    const electricityChargesThisYear = sum(
+      billsThisYear.map(b => b.electricity),
+    );
+    const waterChargesThisYear = sum(billsThisYear.map(b => b.water));
+    const adHocThisYear = sum(billsThisYear.map(b => b.ad_hoc_amount));
 
     // Highest outstanding tenant
     const pendingByTenant: Record<number, number> = {};
-    (bills || []).forEach((b) => {
+    (bills || []).forEach(b => {
       const tid = b.tenant_id;
       if (tid == null) return;
       const pending = Math.max(0, billTotal(b) - Number(b.paid_amount || 0));
@@ -302,28 +351,39 @@ export default function DashboardScreen() {
     });
     const tenantsWithDuesCount = Object.keys(pendingByTenant).length;
     const avgDuePerTenant =
-      tenantsWithDuesCount > 0 ? Math.round(allPending / tenantsWithDuesCount) : 0;
+      tenantsWithDuesCount > 0
+        ? Math.round(allPending / tenantsWithDuesCount)
+        : 0;
     const highestOutstandingTenantId = Object.keys(pendingByTenant)
-      .map((k) => Number(k))
+      .map(k => Number(k))
       .sort((a, b) => (pendingByTenant[b] || 0) - (pendingByTenant[a] || 0))[0];
     const highestOutstanding = highestOutstandingTenantId
-      ? { tenantId: highestOutstandingTenantId, amount: pendingByTenant[highestOutstandingTenantId] || 0 }
+      ? {
+          tenantId: highestOutstandingTenantId,
+          amount: pendingByTenant[highestOutstandingTenantId] || 0,
+        }
       : null;
     const highestOutstandingTenantName =
       highestOutstanding?.tenantId != null
-        ? (tenants.find((t) => t.id === highestOutstanding.tenantId)?.name ?? 'Tenant')
+        ? tenants.find(t => t.id === highestOutstanding.tenantId)?.name ??
+          'Tenant'
         : null;
 
     // Missing bills for occupied rooms (this month)
-    const billedRoomIdsThisMonth = new Set(billsThisMonth.map((b) => b.room_id).filter(Boolean));
-    const missingBillsForOccupied = Array.from(occupiedRoomIds).filter((rid) => !billedRoomIdsThisMonth.has(rid)).length;
+    const billedRoomIdsThisMonth = new Set(
+      billsThisMonth.map(b => b.room_id).filter(Boolean),
+    );
+    const missingBillsForOccupied = Array.from(occupiedRoomIds).filter(
+      rid => !billedRoomIdsThisMonth.has(rid),
+    ).length;
 
     // Attention needed: occupied tenants with bill not generated after rent day / due day.
     const now = new Date();
     const rentDay = Number(setting?.rent_date || 0);
     const dueDay = Number(setting?.rent_due_date || 0);
     const isValidDay = (d: number) => Number.isFinite(d) && d >= 1 && d <= 31;
-    const daysInMonth = (y: number, m: number) => new Date(y, m + 1, 0).getDate();
+    const daysInMonth = (y: number, m: number) =>
+      new Date(y, m + 1, 0).getDate();
     const clampDayToMonth = (y: number, m: number, day: number) => {
       const dd = Math.max(1, Math.min(daysInMonth(y, m), Math.floor(day)));
       return new Date(y, m, dd);
@@ -334,21 +394,27 @@ export default function DashboardScreen() {
     const prevMonth = m === 0 ? 11 : m - 1;
     const prevYear = m === 0 ? y - 1 : y;
 
-    const rentDateThisMonth = isValidDay(rentDay) ? clampDayToMonth(y, m, rentDay) : null;
-    const afterRentGate = Boolean(rentDateThisMonth && now >= rentDateThisMonth);
+    const rentDateThisMonth = isValidDay(rentDay)
+      ? clampDayToMonth(y, m, rentDay)
+      : null;
+    const afterRentGate = Boolean(
+      rentDateThisMonth && now >= rentDateThisMonth,
+    );
 
     // Current rent cycle is anchored to the most recent rent date <= now.
     const cycleStart =
       rentDateThisMonth && now >= rentDateThisMonth
         ? rentDateThisMonth
         : isValidDay(rentDay)
-          ? clampDayToMonth(prevYear, prevMonth, rentDay)
-          : null;
+        ? clampDayToMonth(prevYear, prevMonth, rentDay)
+        : null;
 
     const cycleEnd =
       cycleStart && isValidDay(rentDay)
         ? clampDayToMonth(
-            cycleStart.getMonth() === 11 ? cycleStart.getFullYear() + 1 : cycleStart.getFullYear(),
+            cycleStart.getMonth() === 11
+              ? cycleStart.getFullYear() + 1
+              : cycleStart.getFullYear(),
             cycleStart.getMonth() === 11 ? 0 : cycleStart.getMonth() + 1,
             rentDay,
           )
@@ -360,14 +426,19 @@ export default function DashboardScreen() {
             const dueIsNextMonth = dueDay < rentDay;
             const baseMonth = cycleStart.getMonth();
             const baseYear = cycleStart.getFullYear();
-            const dm = dueIsNextMonth ? (baseMonth === 11 ? 0 : baseMonth + 1) : baseMonth;
-            const dy = dueIsNextMonth && baseMonth === 11 ? baseYear + 1 : baseYear;
+            const dm = dueIsNextMonth
+              ? baseMonth === 11
+                ? 0
+                : baseMonth + 1
+              : baseMonth;
+            const dy =
+              dueIsNextMonth && baseMonth === 11 ? baseYear + 1 : baseYear;
             return clampDayToMonth(dy, dm, dueDay);
           })()
         : null;
     const afterDueGate = Boolean(dueDate && now >= dueDate);
 
-    const billsInCycle = (bills || []).filter((b) => {
+    const billsInCycle = (bills || []).filter(b => {
       if (!cycleStart || !cycleEnd) return false;
       const dt = new Date(b.created_at);
       if (Number.isNaN(dt.getTime())) return false;
@@ -376,7 +447,7 @@ export default function DashboardScreen() {
 
     const billKeySet = new Set(
       billsInCycle
-        .map((b) => {
+        .map(b => {
           if (b.tenant_id == null || b.room_id == null) return null;
           return `${b.tenant_id}-${b.room_id}`;
         })
@@ -386,23 +457,25 @@ export default function DashboardScreen() {
     const missingTenantIds = new Set<number>();
     // Only count occupancies that existed before the cycle started.
     activeMappings
-      .filter((mm) => {
+      .filter(mm => {
         if (!cycleStart) return false;
         const jd = new Date(mm.joining_date);
         if (Number.isNaN(jd.getTime())) return true;
         return jd <= cycleStart;
       })
-      .forEach((mm) => {
+      .forEach(mm => {
         if (mm.tenant_id == null || mm.room_id == null) return;
         const key = `${mm.tenant_id}-${mm.room_id}`;
         if (!billKeySet.has(key)) missingTenantIds.add(mm.tenant_id);
       });
 
     const tenantsMissingBillsAfterRentDayCount =
-      afterRentGate && cycleStart && isValidDay(rentDay) ? missingTenantIds.size : 0;
+      afterRentGate && cycleStart && isValidDay(rentDay)
+        ? missingTenantIds.size
+        : 0;
 
     const billsUnpaidAfterDueDayCount = afterDueGate
-      ? billsInCycle.filter((b) => {
+      ? billsInCycle.filter(b => {
           const total = billTotal(b);
           const paid = Number(b.paid_amount || 0);
           const pending = Math.max(0, total - paid);
@@ -411,8 +484,12 @@ export default function DashboardScreen() {
         }).length
       : 0;
 
-    const agreementAbsentCount = (tenants || []).filter((t) => !String((t as any).agreement_url || '').trim()).length;
-    const adharAbsentCount = (tenants || []).filter((t) => !String((t as any).adhar_card_url || '').trim()).length;
+    const agreementAbsentCount = (tenants || []).filter(
+      t => !String((t as any).agreement_url || '').trim(),
+    ).length;
+    const adharAbsentCount = (tenants || []).filter(
+      t => !String((t as any).adhar_card_url || '').trim(),
+    ).length;
 
     return {
       roomCount,
@@ -463,12 +540,17 @@ export default function DashboardScreen() {
     return (
       <View style={styles.loaderWrap}>
         <ActivityIndicator size="large" />
-        <Text style={{ marginTop: 10, color: '#6B7280', fontWeight: '800' }}>Loading dashboard…</Text>
+        <Text style={{ marginTop: 10, color: '#6B7280', fontWeight: '800' }}>
+          Loading dashboard…
+        </Text>
       </View>
     );
   }
 
-  const hasAnyData = derived.roomCount > 0 || derived.tenantCount > 0 || (bills || []).length > 0;
+  const hasAnyData =
+    derived.roomCount > 0 ||
+    derived.tenantCount > 0 ||
+    (bills || []).length > 0;
 
   // If nothing is configured yet, show only a single "No data yet" card.
   if (!hasAnyData) {
@@ -477,37 +559,88 @@ export default function DashboardScreen() {
         style={styles.screen}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => load(true)}
+          />
+        }
       >
         <Surface style={styles.emptyCard} elevation={1}>
           <View style={styles.emptyTop}>
-            <View style={[styles.emptyIcon, { backgroundColor: theme.colors.primaryContainer }]}>
-              <Icon source="home-city-outline" size={22} color={theme.colors.primary} />
+            <View
+              style={[
+                styles.emptyIcon,
+                { backgroundColor: theme.colors.primaryContainer },
+              ]}
+            >
+              <Icon
+                source="home-city-outline"
+                size={22}
+                color={theme.colors.primary}
+              />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.emptyTitle}>No data yet</Text>
               <Text style={styles.emptySub}>
-                Add rooms, tenants, or a bill to start tracking occupancy, dues, and utilities.
+                Add rooms, tenants, or a bill to start tracking occupancy, dues,
+                and utilities.
               </Text>
             </View>
           </View>
           <View style={styles.emptyActions}>
-            <TouchableRipple onPress={() => openTab('Rooms', 'RoomList')} style={styles.emptyBtn} borderless>
+            <TouchableRipple
+              onPress={() => openTab('Rooms', 'RoomList')}
+              style={styles.emptyBtn}
+              borderless
+            >
               <View style={styles.emptyBtnInner}>
-                <Icon source="home-city-outline" size={16} color={theme.colors.primary} />
-                <Text style={[styles.emptyBtnText, { color: theme.colors.primary }]}>Rooms</Text>
+                <Icon
+                  source="home-city-outline"
+                  size={16}
+                  color={theme.colors.primary}
+                />
+                <Text
+                  style={[styles.emptyBtnText, { color: theme.colors.primary }]}
+                >
+                  Rooms
+                </Text>
               </View>
             </TouchableRipple>
-            <TouchableRipple onPress={() => openTab('Tenant', 'TenantList')} style={styles.emptyBtn} borderless>
+            <TouchableRipple
+              onPress={() => openTab('Tenant', 'TenantList')}
+              style={styles.emptyBtn}
+              borderless
+            >
               <View style={styles.emptyBtnInner}>
-                <Icon source="account-group" size={16} color={theme.colors.primary} />
-                <Text style={[styles.emptyBtnText, { color: theme.colors.primary }]}>Tenants</Text>
+                <Icon
+                  source="account-group"
+                  size={16}
+                  color={theme.colors.primary}
+                />
+                <Text
+                  style={[styles.emptyBtnText, { color: theme.colors.primary }]}
+                >
+                  Tenants
+                </Text>
               </View>
             </TouchableRipple>
-            <TouchableRipple onPress={() => openTab('Payments', 'PaymentList')} style={styles.emptyBtn} borderless>
+            <TouchableRipple
+              onPress={() => openTab('Payments', 'PaymentList')}
+              style={styles.emptyBtn}
+              borderless
+            >
               <View style={styles.emptyBtnInner}>
-                <Icon source="credit-card-outline" size={16} color={theme.colors.primary} />
-                <Text style={[styles.emptyBtnText, { color: theme.colors.primary }]}>Payments</Text>
+                <Icon
+                  source="credit-card-outline"
+                  size={16}
+                  color={theme.colors.primary}
+                />
+                <Text
+                  style={[styles.emptyBtnText, { color: theme.colors.primary }]}
+                >
+                  Payments
+                </Text>
               </View>
             </TouchableRipple>
           </View>
@@ -521,13 +654,24 @@ export default function DashboardScreen() {
       style={styles.screen}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} />}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={() => load(true)} />
+      }
     >
       {/* HERO */}
       <Surface style={styles.hero} elevation={2}>
         <View style={styles.heroTopRow}>
-          <View style={[styles.heroHeaderIcon, { backgroundColor: theme.colors.primaryContainer }]}>
-            <Icon source="view-dashboard-outline" size={18} color={theme.colors.primary} />
+          <View
+            style={[
+              styles.heroHeaderIcon,
+              { backgroundColor: theme.colors.primaryContainer },
+            ]}
+          >
+            <Icon
+              source="view-dashboard-outline"
+              size={18}
+              color={theme.colors.primary}
+            />
           </View>
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={styles.heroHeaderTitle} numberOfLines={1}>
@@ -539,7 +683,10 @@ export default function DashboardScreen() {
           </View>
           <Chip
             icon="calendar-month"
-            style={[styles.heroChip, { backgroundColor: theme.colors.primaryContainer }]}
+            style={[
+              styles.heroChip,
+              { backgroundColor: theme.colors.primaryContainer },
+            ]}
             textStyle={{ color: theme.colors.primary, fontWeight: '900' }}
           >
             {monthLabel}
@@ -560,36 +707,67 @@ export default function DashboardScreen() {
               </View>
 
               <View style={styles.heroOccRight}>
-                <View style={[styles.heroOccBadge, { backgroundColor: '#ECFDF3', borderColor: '#86EFAC' }]}>
-                  <View style={[styles.heroOccBadgeIcon, { backgroundColor: '#DCFCE7' }]}>
+                <View
+                  style={[
+                    styles.heroOccBadge,
+                    { backgroundColor: '#ECFDF3', borderColor: '#86EFAC' },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.heroOccBadgeIcon,
+                      { backgroundColor: '#DCFCE7' },
+                    ]}
+                  >
                     <Icon source="door-closed" size={14} color="#16A34A" />
                   </View>
                   <View style={styles.heroOccBadgeText}>
-                    <Text style={[styles.heroOccBadgeValue, { color: '#16A34A' }]} numberOfLines={1}>
+                    <Text
+                      style={[styles.heroOccBadgeValue, { color: '#16A34A' }]}
+                      numberOfLines={1}
+                    >
                       {derived.occupiedRooms}
                     </Text>
-                    <Text style={[styles.heroOccBadgeLabel, { color: '#16A34A' }]} numberOfLines={1}>
+                    <Text
+                      style={[styles.heroOccBadgeLabel, { color: '#16A34A' }]}
+                      numberOfLines={1}
+                    >
                       Occupied
                     </Text>
                   </View>
                 </View>
 
-                <View style={[styles.heroOccBadge, { backgroundColor: '#FFF7ED', borderColor: '#FDBA74' }]}>
-                  <View style={[styles.heroOccBadgeIcon, { backgroundColor: '#FFEDD5' }]}>
+                <View
+                  style={[
+                    styles.heroOccBadge,
+                    { backgroundColor: '#FFF7ED', borderColor: '#FDBA74' },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.heroOccBadgeIcon,
+                      { backgroundColor: '#FFEDD5' },
+                    ]}
+                  >
                     <Icon source="door-open" size={14} color="#F97316" />
                   </View>
                   <View style={styles.heroOccBadgeText}>
-                    <Text style={[styles.heroOccBadgeValue, { color: '#F97316' }]} numberOfLines={1}>
+                    <Text
+                      style={[styles.heroOccBadgeValue, { color: '#F97316' }]}
+                      numberOfLines={1}
+                    >
                       {derived.vacantRooms}
                     </Text>
-                    <Text style={[styles.heroOccBadgeLabel, { color: '#F97316' }]} numberOfLines={1}>
+                    <Text
+                      style={[styles.heroOccBadgeLabel, { color: '#F97316' }]}
+                      numberOfLines={1}
+                    >
                       Vacant
                     </Text>
                   </View>
                 </View>
               </View>
             </View>
-
           </View>
 
           <Surface
@@ -597,7 +775,8 @@ export default function DashboardScreen() {
               styles.rentStrip,
               {
                 backgroundColor: '#FFFFFF',
-                borderColor: (theme.colors as any).outlineVariant ?? theme.colors.outline,
+                borderColor:
+                  (theme.colors as any).outlineVariant ?? theme.colors.outline,
               },
             ]}
             elevation={0}
@@ -605,8 +784,17 @@ export default function DashboardScreen() {
             <View style={styles.rentStripHeader}>
               <View style={{ flex: 1, minWidth: 0 }}>
                 <View style={styles.rentStripTitleRow}>
-                  <View style={[styles.rentStripIcon, { backgroundColor: theme.colors.surface }]}>
-                    <Icon source="cash-multiple" size={18} color={theme.colors.primary} />
+                  <View
+                    style={[
+                      styles.rentStripIcon,
+                      { backgroundColor: theme.colors.surface },
+                    ]}
+                  >
+                    <Icon
+                      source="cash-multiple"
+                      size={18}
+                      color={theme.colors.primary}
+                    />
                   </View>
                   <Text style={styles.rentStripTitle} numberOfLines={1}>
                     Monthly Rent
@@ -629,28 +817,47 @@ export default function DashboardScreen() {
                 styles.paymentStrip,
                 {
                   backgroundColor: theme.colors.surface,
-                  borderColor: (theme.colors as any).outlineVariant ?? theme.colors.outline,
+                  borderColor:
+                    (theme.colors as any).outlineVariant ??
+                    theme.colors.outline,
                 },
               ]}
               elevation={0}
             >
               <View style={styles.paymentStripRow}>
-                <PaymentStat icon="cash" label="Paid" amount={formatMoney(derived.collectedThisMonth)} color={theme.colors.primary} />
+                <PaymentStat
+                  icon="cash"
+                  label="Paid"
+                  amount={formatMoney(derived.collectedThisMonth)}
+                  color={theme.colors.primary}
+                />
                 <View
                   style={[
                     styles.paymentStripDivider,
-                    { backgroundColor: (theme.colors as any).outlineVariant ?? theme.colors.outline },
+                    {
+                      backgroundColor:
+                        (theme.colors as any).outlineVariant ??
+                        theme.colors.outline,
+                    },
                   ]}
                 />
                 <PaymentStat
                   icon="clock-outline"
                   label="Pending"
                   amount={formatMoney(derived.pendingThisMonth)}
-                  color={derived.pendingThisMonth > 0 ? theme.colors.error : theme.colors.primary}
+                  color={
+                    derived.pendingThisMonth > 0
+                      ? theme.colors.error
+                      : theme.colors.primary
+                  }
                 />
               </View>
               <ProgressBar
-                progress={clamp01(derived.expectedThisMonth ? derived.collectedThisMonth / derived.expectedThisMonth : 0)}
+                progress={clamp01(
+                  derived.expectedThisMonth
+                    ? derived.collectedThisMonth / derived.expectedThisMonth
+                    : 0,
+                )}
                 color={theme.colors.primary}
                 style={styles.paymentProgress}
               />
@@ -660,24 +867,47 @@ export default function DashboardScreen() {
       </Surface>
 
       {/* UTILITIES */}
-     
+
       <Surface style={styles.utilStrip} elevation={1}>
         <View style={styles.utilHeaderRow}>
-          <View style={[styles.utilHeaderIcon, { backgroundColor: theme.colors.primaryContainer }]}>
-            <Icon source="cash-multiple" size={18} color={theme.colors.primary} />
+          <View
+            style={[
+              styles.utilHeaderIcon,
+              { backgroundColor: theme.colors.primaryContainer },
+            ]}
+          >
+            <Icon
+              source="cash-multiple"
+              size={18}
+              color={theme.colors.primary}
+            />
           </View>
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={styles.utilHeaderTitle} numberOfLines={1}>
-            Monthly Rent Breakdown
+              Monthly Rent Breakdown
             </Text>
             <Text style={styles.utilHeaderSub} numberOfLines={1}>
               Bills generated in {monthLabel}
             </Text>
           </View>
-          <TouchableRipple onPress={() => openTab('Settings')} borderless style={styles.utilHeaderCta}>
+          <TouchableRipple
+            onPress={() => openTab('Settings')}
+            borderless
+            style={styles.utilHeaderCta}
+          >
             <View style={styles.utilHeaderCtaInner}>
-              <Icon source="cog-outline" size={16} color={theme.colors.primary} />
-              <Text style={[styles.utilHeaderCtaText, { color: theme.colors.primary }]} numberOfLines={1}>
+              <Icon
+                source="cog-outline"
+                size={16}
+                color={theme.colors.primary}
+              />
+              <Text
+                style={[
+                  styles.utilHeaderCtaText,
+                  { color: theme.colors.primary },
+                ]}
+                numberOfLines={1}
+              >
                 Rates
               </Text>
             </View>
@@ -689,7 +919,8 @@ export default function DashboardScreen() {
             styles.utilGridCard,
             {
               backgroundColor: theme.colors.surface,
-              borderColor: (theme.colors as any).outlineVariant ?? theme.colors.outline,
+              borderColor:
+                (theme.colors as any).outlineVariant ?? theme.colors.outline,
             },
           ]}
           elevation={0}
@@ -705,7 +936,11 @@ export default function DashboardScreen() {
             <View
               style={[
                 styles.utilDividerV,
-                { backgroundColor: (theme.colors as any).outlineVariant ?? theme.colors.outline },
+                {
+                  backgroundColor:
+                    (theme.colors as any).outlineVariant ??
+                    theme.colors.outline,
+                },
               ]}
             />
             <UtilityStat
@@ -713,14 +948,21 @@ export default function DashboardScreen() {
               label="Electricity"
               value={formatMoney(derived.electricityChargesThisMonth)}
               color={theme.colors.primary}
-              sub={derived.electricityUnitRate > 0 ? `Rate ₹${derived.electricityUnitRate}/unit` : 'Charges'}
+              sub={
+                derived.electricityUnitRate > 0
+                  ? `Rate ₹${derived.electricityUnitRate}/unit`
+                  : 'Charges'
+              }
             />
           </View>
 
           <View
             style={[
               styles.utilDividerH,
-              { backgroundColor: (theme.colors as any).outlineVariant ?? theme.colors.outline },
+              {
+                backgroundColor:
+                  (theme.colors as any).outlineVariant ?? theme.colors.outline,
+              },
             ]}
           />
 
@@ -735,7 +977,11 @@ export default function DashboardScreen() {
             <View
               style={[
                 styles.utilDividerV,
-                { backgroundColor: (theme.colors as any).outlineVariant ?? theme.colors.outline },
+                {
+                  backgroundColor:
+                    (theme.colors as any).outlineVariant ??
+                    theme.colors.outline,
+                },
               ]}
             />
             <UtilityStat
@@ -752,7 +998,12 @@ export default function DashboardScreen() {
       {/* ALERTS */}
       <Surface style={[styles.utilStrip, { marginTop: 14 }]} elevation={1}>
         <View style={styles.utilHeaderRow}>
-          <View style={[styles.utilHeaderIcon, { backgroundColor: theme.colors.primaryContainer }]}>
+          <View
+            style={[
+              styles.utilHeaderIcon,
+              { backgroundColor: theme.colors.primaryContainer },
+            ]}
+          >
             <Icon source="alert" size={18} color={theme.colors.primary} />
           </View>
           <View style={{ flex: 1, minWidth: 0 }}>
@@ -763,10 +1014,24 @@ export default function DashboardScreen() {
               Billing & collections follow-up
             </Text>
           </View>
-          <TouchableRipple onPress={() => openTab('Payments', 'PaymentList')} borderless style={styles.utilHeaderCta}>
+          <TouchableRipple
+            onPress={() => openTab('Payments', 'PaymentList')}
+            borderless
+            style={styles.utilHeaderCta}
+          >
             <View style={styles.utilHeaderCtaInner}>
-              <Icon source="credit-card-outline" size={16} color={theme.colors.primary} />
-              <Text style={[styles.utilHeaderCtaText, { color: theme.colors.primary }]} numberOfLines={1}>
+              <Icon
+                source="credit-card-outline"
+                size={16}
+                color={theme.colors.primary}
+              />
+              <Text
+                style={[
+                  styles.utilHeaderCtaText,
+                  { color: theme.colors.primary },
+                ]}
+                numberOfLines={1}
+              >
                 Payments
               </Text>
             </View>
@@ -778,7 +1043,8 @@ export default function DashboardScreen() {
             styles.utilGridCard,
             {
               backgroundColor: theme.colors.surface,
-              borderColor: (theme.colors as any).outlineVariant ?? theme.colors.outline,
+              borderColor:
+                (theme.colors as any).outlineVariant ?? theme.colors.outline,
             },
           ]}
           elevation={0}
@@ -801,14 +1067,22 @@ export default function DashboardScreen() {
             <View
               style={[
                 styles.utilDividerV,
-                { backgroundColor: (theme.colors as any).outlineVariant ?? theme.colors.outline },
+                {
+                  backgroundColor:
+                    (theme.colors as any).outlineVariant ??
+                    theme.colors.outline,
+                },
               ]}
             />
             <UtilityStat
               icon="calendar-alert"
               label="Bills unpaid"
               value={String(derived.billsUnpaidAfterDueDayCount)}
-              color={derived.billsUnpaidAfterDueDayCount > 0 ? theme.colors.error : theme.colors.primary}
+              color={
+                derived.billsUnpaidAfterDueDayCount > 0
+                  ? theme.colors.error
+                  : theme.colors.primary
+              }
               valueIndent="label"
               sub={
                 derived.dueDay
@@ -823,7 +1097,10 @@ export default function DashboardScreen() {
           <View
             style={[
               styles.utilDividerH,
-              { backgroundColor: (theme.colors as any).outlineVariant ?? theme.colors.outline },
+              {
+                backgroundColor:
+                  (theme.colors as any).outlineVariant ?? theme.colors.outline,
+              },
             ]}
           />
 
@@ -832,21 +1109,33 @@ export default function DashboardScreen() {
               icon="file-document-outline"
               label="Agreement absent"
               value={String(derived.agreementAbsentCount)}
-              color={derived.agreementAbsentCount > 0 ? theme.colors.error : theme.colors.primary}
+              color={
+                derived.agreementAbsentCount > 0
+                  ? theme.colors.error
+                  : theme.colors.primary
+              }
               sub={undefined}
               valueIndent="label"
             />
             <View
               style={[
                 styles.utilDividerV,
-                { backgroundColor: (theme.colors as any).outlineVariant ?? theme.colors.outline },
+                {
+                  backgroundColor:
+                    (theme.colors as any).outlineVariant ??
+                    theme.colors.outline,
+                },
               ]}
             />
             <UtilityStat
               icon="card-account-details-outline"
               label="Aadhaar absent"
               value={String(derived.adharAbsentCount)}
-              color={derived.adharAbsentCount > 0 ? theme.colors.error : theme.colors.primary}
+              color={
+                derived.adharAbsentCount > 0
+                  ? theme.colors.error
+                  : theme.colors.primary
+              }
               sub={undefined}
               valueIndent="label"
             />
@@ -861,7 +1150,8 @@ export default function DashboardScreen() {
           {
             marginTop: 14,
             backgroundColor: '#FFFFFF',
-            borderColor: (theme.colors as any).outlineVariant ?? theme.colors.outline,
+            borderColor:
+              (theme.colors as any).outlineVariant ?? theme.colors.outline,
           },
         ]}
         elevation={0}
@@ -869,8 +1159,17 @@ export default function DashboardScreen() {
         <View style={styles.rentStripHeader}>
           <View style={{ flex: 1, minWidth: 0 }}>
             <View style={styles.rentStripTitleRow}>
-              <View style={[styles.rentStripIcon, { backgroundColor: theme.colors.surface }]}>
-                <Icon source="cash-multiple" size={18} color={theme.colors.primary} />
+              <View
+                style={[
+                  styles.rentStripIcon,
+                  { backgroundColor: theme.colors.surface },
+                ]}
+              >
+                <Icon
+                  source="cash-multiple"
+                  size={18}
+                  color={theme.colors.primary}
+                />
               </View>
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Text style={styles.rentStripTitle} numberOfLines={1}>
@@ -884,7 +1183,10 @@ export default function DashboardScreen() {
           </View>
 
           <Text
-            style={[styles.yearlyRentHeaderAmount, { color: theme.colors.primary }]}
+            style={[
+              styles.yearlyRentHeaderAmount,
+              { color: theme.colors.primary },
+            ]}
             numberOfLines={1}
             adjustsFontSizeToFit
             minimumFontScale={0.65}
@@ -898,7 +1200,8 @@ export default function DashboardScreen() {
             styles.paymentStrip,
             {
               backgroundColor: theme.colors.surface,
-              borderColor: (theme.colors as any).outlineVariant ?? theme.colors.outline,
+              borderColor:
+                (theme.colors as any).outlineVariant ?? theme.colors.outline,
             },
           ]}
           elevation={0}
@@ -913,18 +1216,30 @@ export default function DashboardScreen() {
             <View
               style={[
                 styles.paymentStripDivider,
-                { backgroundColor: (theme.colors as any).outlineVariant ?? theme.colors.outline },
+                {
+                  backgroundColor:
+                    (theme.colors as any).outlineVariant ??
+                    theme.colors.outline,
+                },
               ]}
             />
             <PaymentStat
               icon="clock-outline"
               label="Pending"
               amount={formatMoney(derived.pendingThisYear)}
-              color={derived.pendingThisYear > 0 ? theme.colors.error : theme.colors.primary}
+              color={
+                derived.pendingThisYear > 0
+                  ? theme.colors.error
+                  : theme.colors.primary
+              }
             />
           </View>
           <ProgressBar
-            progress={clamp01(derived.expectedThisYear ? derived.collectedThisYear / derived.expectedThisYear : 0)}
+            progress={clamp01(
+              derived.expectedThisYear
+                ? derived.collectedThisYear / derived.expectedThisYear
+                : 0,
+            )}
             color={theme.colors.primary}
             style={styles.paymentProgress}
           />
@@ -933,8 +1248,17 @@ export default function DashboardScreen() {
 
       <Surface style={[styles.utilStrip, { marginTop: 14 }]} elevation={1}>
         <View style={styles.utilHeaderRow}>
-          <View style={[styles.utilHeaderIcon, { backgroundColor: theme.colors.primaryContainer }]}>
-            <Icon source="calendar-month" size={18} color={theme.colors.primary} />
+          <View
+            style={[
+              styles.utilHeaderIcon,
+              { backgroundColor: theme.colors.primaryContainer },
+            ]}
+          >
+            <Icon
+              source="calendar-month"
+              size={18}
+              color={theme.colors.primary}
+            />
           </View>
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={styles.utilHeaderTitle} numberOfLines={1}>
@@ -944,10 +1268,24 @@ export default function DashboardScreen() {
               Bills generated in {yearLabel}
             </Text>
           </View>
-          <TouchableRipple onPress={() => openTab('Settings')} borderless style={styles.utilHeaderCta}>
+          <TouchableRipple
+            onPress={() => openTab('Settings')}
+            borderless
+            style={styles.utilHeaderCta}
+          >
             <View style={styles.utilHeaderCtaInner}>
-              <Icon source="cog-outline" size={16} color={theme.colors.primary} />
-              <Text style={[styles.utilHeaderCtaText, { color: theme.colors.primary }]} numberOfLines={1}>
+              <Icon
+                source="cog-outline"
+                size={16}
+                color={theme.colors.primary}
+              />
+              <Text
+                style={[
+                  styles.utilHeaderCtaText,
+                  { color: theme.colors.primary },
+                ]}
+                numberOfLines={1}
+              >
                 Rates
               </Text>
             </View>
@@ -959,7 +1297,8 @@ export default function DashboardScreen() {
             styles.utilGridCard,
             {
               backgroundColor: theme.colors.surface,
-              borderColor: (theme.colors as any).outlineVariant ?? theme.colors.outline,
+              borderColor:
+                (theme.colors as any).outlineVariant ?? theme.colors.outline,
             },
           ]}
           elevation={0}
@@ -975,7 +1314,11 @@ export default function DashboardScreen() {
             <View
               style={[
                 styles.utilDividerV,
-                { backgroundColor: (theme.colors as any).outlineVariant ?? theme.colors.outline },
+                {
+                  backgroundColor:
+                    (theme.colors as any).outlineVariant ??
+                    theme.colors.outline,
+                },
               ]}
             />
             <UtilityStat
@@ -983,14 +1326,21 @@ export default function DashboardScreen() {
               label="Electricity"
               value={formatMoney(derived.electricityChargesThisYear)}
               color={theme.colors.primary}
-              sub={derived.electricityUnitRate > 0 ? `Rate ₹${derived.electricityUnitRate}/unit` : 'Charges'}
+              sub={
+                derived.electricityUnitRate > 0
+                  ? `Rate ₹${derived.electricityUnitRate}/unit`
+                  : 'Charges'
+              }
             />
           </View>
 
           <View
             style={[
               styles.utilDividerH,
-              { backgroundColor: (theme.colors as any).outlineVariant ?? theme.colors.outline },
+              {
+                backgroundColor:
+                  (theme.colors as any).outlineVariant ?? theme.colors.outline,
+              },
             ]}
           />
 
@@ -1005,7 +1355,11 @@ export default function DashboardScreen() {
             <View
               style={[
                 styles.utilDividerV,
-                { backgroundColor: (theme.colors as any).outlineVariant ?? theme.colors.outline },
+                {
+                  backgroundColor:
+                    (theme.colors as any).outlineVariant ??
+                    theme.colors.outline,
+                },
               ]}
             />
             <UtilityStat
@@ -1027,24 +1381,79 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#F4F6FA' },
   content: { padding: 16, paddingBottom: 24 },
-  loaderWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F4F6FA' },
+  loaderWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F4F6FA',
+  },
 
   // Support-module standard: white Surface, subtle border, compact header.
-  hero: { borderRadius: 18, padding: 14, marginBottom: 14, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5E7EB' },
+  hero: {
+    borderRadius: 18,
+    padding: 14,
+    marginBottom: 14,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
   heroTopRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  heroHeaderIcon: { width: 36, height: 36, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  heroHeaderIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   heroHeaderTitle: { fontWeight: '900', fontSize: 16, color: '#111827' },
-  heroHeaderSub: { marginTop: 2, color: '#6B7280', fontWeight: '800', fontSize: 12 },
+  heroHeaderSub: {
+    marginTop: 2,
+    color: '#6B7280',
+    fontWeight: '800',
+    fontSize: 12,
+  },
   heroChip: { borderRadius: 999 },
   heroGrid: { marginTop: 14, flexDirection: 'column', gap: 12 },
-  heroStatLabel: { color: '#6B7280', fontWeight: '900', fontSize: 12, letterSpacing: 0.6 },
-  heroStatValue: { fontWeight: '900', fontSize: 24, marginTop: 6, color: '#111827' },
-  heroStatSub: { marginTop: 2, color: '#6B7280', fontWeight: '800', fontSize: 13 },
-  heroOccWide: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 12, borderWidth: 1, borderColor: '#E5E7EB' },
+  heroStatLabel: {
+    color: '#6B7280',
+    fontWeight: '900',
+    fontSize: 12,
+    letterSpacing: 0.6,
+  },
+  heroStatValue: {
+    fontWeight: '900',
+    fontSize: 24,
+    marginTop: 6,
+    color: '#111827',
+  },
+  heroStatSub: {
+    marginTop: 2,
+    color: '#6B7280',
+    fontWeight: '800',
+    fontSize: 13,
+  },
+  heroOccWide: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
   heroOccRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   heroOccLeft: { flex: 1, minWidth: 0 },
-  heroOccValue: { fontWeight: '900', fontSize: 29, marginTop: 4, color: '#111827', fontVariant: ['tabular-nums'] },
-  heroOccSub: { marginTop: 2, color: '#6B7280', fontWeight: '800', fontSize: 13 },
+  heroOccValue: {
+    fontWeight: '900',
+    fontSize: 29,
+    marginTop: 4,
+    color: '#111827',
+    fontVariant: ['tabular-nums'],
+  },
+  heroOccSub: {
+    marginTop: 2,
+    color: '#6B7280',
+    fontWeight: '800',
+    fontSize: 13,
+  },
   heroOccRight: { width: 150, gap: 8 },
   heroOccBadge: {
     borderRadius: 14,
@@ -1055,16 +1464,52 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  heroOccBadgeIcon: { width: 28, height: 28, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  heroOccBadgeIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   heroOccBadgeText: { flex: 1, minWidth: 0 },
-  heroOccBadgeValue: { fontWeight: '900', fontSize: 17, fontVariant: ['tabular-nums'] },
+  heroOccBadgeValue: {
+    fontWeight: '900',
+    fontSize: 17,
+    fontVariant: ['tabular-nums'],
+  },
   heroOccBadgeLabel: { fontWeight: '900', fontSize: 12, opacity: 0.95 },
-  rentStrip: { borderRadius: 18, borderWidth: 1, padding: 12, backgroundColor: '#FFFFFF' },
-  rentStripHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  rentStrip: {
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 12,
+    backgroundColor: '#FFFFFF',
+  },
+  rentStripHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
   rentStripTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  rentStripIcon: { width: 34, height: 34, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  rentStripTitle: { color: '#111827', fontWeight: '900', fontSize: 15, flex: 1 },
-  yearlyRentSub: { marginTop: 2, color: '#6B7280', fontWeight: '800', fontSize: 13 },
+  rentStripIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rentStripTitle: {
+    color: '#111827',
+    fontWeight: '900',
+    fontSize: 15,
+    flex: 1,
+  },
+  yearlyRentSub: {
+    marginTop: 2,
+    color: '#6B7280',
+    fontWeight: '800',
+    fontSize: 13,
+  },
   rentStripTotal: {
     fontWeight: '900',
     fontSize: 24,
@@ -1080,54 +1525,161 @@ const styles = StyleSheet.create({
     maxWidth: 200,
   },
 
-  paymentStrip: { marginTop: 12, borderRadius: 16, borderWidth: 1, padding: 10 },
+  paymentStrip: {
+    marginTop: 12,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 10,
+  },
   paymentStripRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  paymentStripDivider: { width: StyleSheet.hairlineWidth, height: 34, borderRadius: 1 },
+  paymentStripDivider: {
+    width: StyleSheet.hairlineWidth,
+    height: 34,
+    borderRadius: 1,
+  },
   paymentStat: { flex: 1 },
   paymentStatTop: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   paymentStatLabel: { color: '#6B7280', fontWeight: '800', fontSize: 12 },
-  paymentStatAmount: { marginTop: 6, fontWeight: '900', fontSize: 18, fontVariant: ['tabular-nums'] },
+  paymentStatAmount: {
+    marginTop: 6,
+    fontWeight: '900',
+    fontSize: 18,
+    fontVariant: ['tabular-nums'],
+  },
   paymentProgress: { marginTop: 10, height: 6, borderRadius: 999 },
 
-  utilStrip: { borderRadius: 18, padding: 14, borderWidth: 1, borderColor: '#E5E7EB', backgroundColor: '#FFFFFF' },
-  utilHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
-  utilHeaderIcon: { width: 36, height: 36, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  utilStrip: {
+    borderRadius: 18,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
+  },
+  utilHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+  },
+  utilHeaderIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   utilHeaderTitle: { fontWeight: '900', fontSize: 15, color: '#111827' },
-  utilHeaderSub: { marginTop: 2, color: '#6B7280', fontWeight: '800', fontSize: 13 },
+  utilHeaderSub: {
+    marginTop: 2,
+    color: '#6B7280',
+    fontWeight: '800',
+    fontSize: 13,
+  },
   utilHeaderCta: { borderRadius: 999, borderWidth: 1, borderColor: '#E5E7EB' },
-  utilHeaderCtaInner: { paddingHorizontal: 10, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  utilHeaderCtaInner: {
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   utilHeaderCtaText: { fontWeight: '900', fontSize: 13 },
 
   utilGridCard: { borderRadius: 16, borderWidth: 1, padding: 10 },
   utilRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  utilDividerV: { width: StyleSheet.hairlineWidth, height: 58, borderRadius: 1 },
-  utilDividerH: { height: StyleSheet.hairlineWidth, marginVertical: 10, opacity: 0.9 },
+  utilDividerV: {
+    width: StyleSheet.hairlineWidth,
+    height: 58,
+    borderRadius: 1,
+  },
+  utilDividerH: {
+    height: StyleSheet.hairlineWidth,
+    marginVertical: 10,
+    opacity: 0.9,
+  },
   utilStat: { flex: 1, minWidth: 0 },
   utilStatTop: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   utilStatLabel: { color: '#6B7280', fontWeight: '800', fontSize: 12 },
-  utilStatValue: { marginTop: 6, fontWeight: '900', fontSize: 18, fontVariant: ['tabular-nums'] },
+  utilStatValue: {
+    marginTop: 6,
+    fontWeight: '900',
+    fontSize: 18,
+    fontVariant: ['tabular-nums'],
+  },
   // Align value/sub under the label start (after the icon + gap).
   utilStatValueIndent: { marginLeft: 22 },
-  utilStatSub: { marginTop: 2, color: '#6B7280', fontWeight: '800', fontSize: 12 },
+  utilStatSub: {
+    marginTop: 2,
+    color: '#6B7280',
+    fontWeight: '800',
+    fontSize: 12,
+  },
 
-  emptyCard: { borderRadius: 18, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: '#E5E7EB' },
+  emptyCard: {
+    borderRadius: 18,
+    padding: 14,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
   emptyTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  emptyIcon: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  emptyIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   emptyTitle: { fontWeight: '900', fontSize: 18, color: '#111827' },
   emptySub: { marginTop: 2, color: '#6B7280', fontWeight: '800', fontSize: 13 },
   emptyActions: { flexDirection: 'row', gap: 10, marginTop: 12 },
-  emptyBtn: { flex: 1, borderRadius: 14, borderWidth: 1, borderColor: '#E5E7EB' },
-  emptyBtnInner: { paddingVertical: 10, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 8, justifyContent: 'center' },
+  emptyBtn: {
+    flex: 1,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  emptyBtnInner: {
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    justifyContent: 'center',
+  },
   emptyBtnText: { fontWeight: '900', fontSize: 13 },
 
-  alertCard: { borderRadius: 18, padding: 14, borderWidth: 1, borderColor: '#E5E7EB', backgroundColor: '#FFFFFF' },
+  alertCard: {
+    borderRadius: 18,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
+  },
   alertRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  alertIconWrap: { width: 36, height: 36, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  alertIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   alertTitle: { fontWeight: '900', fontSize: 15, color: '#111827' },
   alertSub: { marginTop: 2, color: '#6B7280', fontWeight: '800', fontSize: 13 },
   alertCta: { borderRadius: 999, borderWidth: 1, borderColor: '#E5E7EB' },
-  alertCtaInner: { paddingHorizontal: 10, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 4 },
+  alertCtaInner: {
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
   alertCtaText: { fontWeight: '900', fontSize: 13 },
-  alertMiniRow: { flexDirection: 'row', gap: 10, marginTop: 12, flexWrap: 'wrap' },
+  alertMiniRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 12,
+    flexWrap: 'wrap',
+  },
   alertChip: { borderRadius: 999 },
 });

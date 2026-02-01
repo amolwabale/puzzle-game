@@ -1,6 +1,10 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { StackActions, useFocusEffect, useNavigation } from '@react-navigation/native';
+import {
+  StackActions,
+  useFocusEffect,
+  useNavigation,
+} from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { View } from 'react-native';
 import { ActivityIndicator, Icon, Text, useTheme } from 'react-native-paper';
@@ -21,14 +25,22 @@ function MenuHomeExitScreen() {
     React.useCallback(() => {
       // Replace the whole MenuTabs stack with MainTabs, selecting Dashboard tab.
       const parent = navigation.getParent();
-      parent?.dispatch(StackActions.replace('MainTabs', { screen: 'Dashboard' }));
+      parent?.dispatch(
+        StackActions.replace('MainTabs', { screen: 'Dashboard' }),
+      );
     }, [navigation]),
   );
 
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
       <ActivityIndicator />
-      <Text style={{ marginTop: 10, color: theme.colors.onSurfaceVariant, fontWeight: '800' }}>
+      <Text
+        style={{
+          marginTop: 10,
+          color: theme.colors.onSurfaceVariant,
+          fontWeight: '800',
+        }}
+      >
         Going home…
       </Text>
     </View>
@@ -109,7 +121,9 @@ export default function MenuTabs() {
         component={MenuHomeExitScreen}
         options={{
           tabBarLabel: 'Home',
-          tabBarIcon: ({ color, size }) => <Icon source="home" color={color} size={size} />,
+          tabBarIcon: ({ color, size }) => (
+            <Icon source="home" color={color} size={size} />
+          ),
         }}
       />
 
@@ -129,7 +143,9 @@ export default function MenuTabs() {
         component={MenuChangePasswordStack}
         options={{
           tabBarLabel: 'Password',
-          tabBarIcon: ({ color, size }) => <Icon source="lock-reset" color={color} size={size} />,
+          tabBarIcon: ({ color, size }) => (
+            <Icon source="lock-reset" color={color} size={size} />
+          ),
         }}
       />
 
@@ -138,10 +154,11 @@ export default function MenuTabs() {
         component={MenuSupportStack}
         options={{
           tabBarLabel: 'Support',
-          tabBarIcon: ({ color, size }) => <Icon source="lifebuoy" color={color} size={size} />,
+          tabBarIcon: ({ color, size }) => (
+            <Icon source="lifebuoy" color={color} size={size} />
+          ),
         }}
       />
     </Tab.Navigator>
   );
 }
-

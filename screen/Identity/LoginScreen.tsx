@@ -1,6 +1,16 @@
-import { CompositeNavigationProp, useNavigation } from '@react-navigation/native';
+import {
+  CompositeNavigationProp,
+  useNavigation,
+} from '@react-navigation/native';
 import * as React from 'react';
-import { View, StyleSheet, Alert, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  Alert,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 import {
   Button,
   Text,
@@ -11,7 +21,10 @@ import {
   ActivityIndicator,
 } from 'react-native-paper';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { AuthStackParamList, RootStackParamList } from '../../navigation/StackParam';
+import {
+  AuthStackParamList,
+  RootStackParamList,
+} from '../../navigation/StackParam';
 import { Login } from '../../service/IdentityService';
 
 type AuthNav = NativeStackNavigationProp<AuthStackParamList, 'LoginScreen'>;
@@ -58,8 +71,7 @@ export default function LoginScreen() {
       if (!user || result.error) {
         Alert.alert('Invalid email or password');
         return;
-      };
-
+      }
     } catch (error: any) {
       Alert.alert('Login Failed', error.message);
     } finally {
@@ -102,13 +114,13 @@ export default function LoginScreen() {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 value={email}
-                onChangeText={(text) => {
+                onChangeText={text => {
                   setEmail(text);
                   setErrors({ ...errors, email: '' });
                 }}
                 error={!!errors.email}
               />
-            <HelperText type="error" visible style={styles.helperTight}>
+              <HelperText type="error" visible style={styles.helperTight}>
                 {errors.email || ' '}
               </HelperText>
             </View>
@@ -120,13 +132,13 @@ export default function LoginScreen() {
                 mode="outlined"
                 secureTextEntry
                 value={password}
-                onChangeText={(text) => {
+                onChangeText={text => {
                   setPassword(text);
                   setErrors({ ...errors, password: '' });
                 }}
                 error={!!errors.password}
               />
-            <HelperText type="error" visible style={styles.helperTight}>
+              <HelperText type="error" visible style={styles.helperTight}>
                 {errors.password || ' '}
               </HelperText>
             </View>
@@ -160,7 +172,6 @@ export default function LoginScreen() {
     </KeyboardAvoidingView>
   );
 }
-
 
 const styles = StyleSheet.create({
   screen: {
@@ -216,5 +227,4 @@ const styles = StyleSheet.create({
   secondaryButton: {
     flex: 1,
   },
-  
 });

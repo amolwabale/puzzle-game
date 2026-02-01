@@ -28,7 +28,9 @@ const formatMoney = (n?: number | null) => {
   const v = Math.round(Number(n || 0));
   try {
     // Indian grouping for readability: 12,34,567
-    return `₹${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(v)}`;
+    return `₹${new Intl.NumberFormat('en-IN', {
+      maximumFractionDigits: 0,
+    }).format(v)}`;
   } catch {
     // Fallback if Intl is unavailable
     return `₹${String(v).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
@@ -60,9 +62,15 @@ export default function PaymentScreen() {
   const [initialLoading, setInitialLoading] = React.useState(true);
   const [refreshing, setRefreshing] = React.useState(false);
   const [bills, setBills] = React.useState<BillRecord[]>([]);
-  const [tenantNameById, setTenantNameById] = React.useState<Record<number, string>>({});
-  const [roomNameById, setRoomNameById] = React.useState<Record<number, string>>({});
-  const [tenantPhotoById, setTenantPhotoById] = React.useState<Record<number, string>>({});
+  const [tenantNameById, setTenantNameById] = React.useState<
+    Record<number, string>
+  >({});
+  const [roomNameById, setRoomNameById] = React.useState<
+    Record<number, string>
+  >({});
+  const [tenantPhotoById, setTenantPhotoById] = React.useState<
+    Record<number, string>
+  >({});
 
   // same approach as Tenant list screen (signed URLs for private bucket)
   const createSignedUrl = async (fullUrl?: string | null) => {
@@ -80,17 +88,20 @@ export default function PaymentScreen() {
     return data.signedUrl;
   };
 
-  const generateSignedUrls = async (tenants: TenantRecord[], billRows: BillRecord[]) => {
+  const generateSignedUrls = async (
+    tenants: TenantRecord[],
+    billRows: BillRecord[],
+  ) => {
     const usedTenantIds = new Set<number>();
-    (billRows || []).forEach((b) => {
+    (billRows || []).forEach(b => {
       if (b.tenant_id != null) usedTenantIds.add(b.tenant_id);
     });
 
     const map: Record<number, string> = {};
     await Promise.all(
       (tenants || [])
-        .filter((t) => usedTenantIds.has(t.id))
-        .map(async (t) => {
+        .filter(t => usedTenantIds.has(t.id))
+        .map(async t => {
           const signed = await createSignedUrl((t as any).profile_photo_url);
           if (signed) map[t.id] = signed;
         }),
@@ -139,8 +150,15 @@ export default function PaymentScreen() {
       item={item}
       roomName={item.room_id != null ? roomNameById[item.room_id] : '-'}
       tenantName={item.tenant_id != null ? tenantNameById[item.tenant_id] : '-'}
-      photoUrl={item.tenant_id != null ? tenantPhotoById[item.tenant_id] : undefined}
-      onRecord={() => navigation.navigate('PaymentView', { billId: item.id, openRecordPayment: true })}
+      photoUrl={
+        item.tenant_id != null ? tenantPhotoById[item.tenant_id] : undefined
+      }
+      onRecord={() =>
+        navigation.navigate('PaymentView', {
+          billId: item.id,
+          openRecordPayment: true,
+        })
+      }
       onPress={() => navigation.navigate('PaymentView', { billId: item.id })}
       theme={theme}
     />
@@ -158,10 +176,13 @@ export default function PaymentScreen() {
         <FlatList
           data={bills}
           renderItem={renderItem}
-          keyExtractor={(i) => i.id.toString()}
+          keyExtractor={i => i.id.toString()}
           contentContainerStyle={styles.listContent}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={() => load(true)} />
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => load(true)}
+            />
           }
         />
       )}
@@ -194,7 +215,11 @@ const PaymentCard = ({
 }) => (
   <Surface style={styles.card} elevation={2}>
     <View style={styles.cardClip}>
-      <TouchableOpacity style={styles.cardContent} activeOpacity={0.85} onPress={onPress}>
+      <TouchableOpacity
+        style={styles.cardContent}
+        activeOpacity={0.85}
+        onPress={onPress}
+      >
         <AvatarDisplay uri={photoUrl} size={AVATAR_SIZE} />
 
         <View style={styles.cardBody}>
@@ -207,17 +232,24 @@ const PaymentCard = ({
               status === 'PAID'
                 ? { bg: '#ECFDF3', border: '#86EFAC', text: '#16A34A' }
                 : status === 'PARTIAL'
-                  ? { bg: '#FFF7ED', border: '#FDBA74', text: '#F97316' }
-                  : { bg: '#FFF5F5', border: '#FECACA', text: '#EF4444' };
+                ? { bg: '#FFF7ED', border: '#FDBA74', text: '#F97316' }
+                : { bg: '#FFF5F5', border: '#FECACA', text: '#EF4444' };
 
             return (
               <>
                 <View style={styles.titleRow}>
-                  <Text variant="titleMedium" style={styles.cardTitle} numberOfLines={1}>
+                  <Text
+                    variant="titleMedium"
+                    style={styles.cardTitle}
+                    numberOfLines={1}
+                  >
                     {tenantName}
                   </Text>
                   <Text
-                    style={[styles.totalTopRight, { color: theme.colors.primary }]}
+                    style={[
+                      styles.totalTopRight,
+                      { color: theme.colors.primary },
+                    ]}
                     numberOfLines={1}
                     adjustsFontSizeToFit
                     minimumFontScale={0.7}
@@ -229,7 +261,11 @@ const PaymentCard = ({
                 <View style={styles.metaRow}>
                   <View style={styles.metaLeft}>
                     <View style={styles.roomRow}>
-                      <Icon source="home-city-outline" size={16} color={theme.colors.primary} />
+                      <Icon
+                        source="home-city-outline"
+                        size={16}
+                        color={theme.colors.primary}
+                      />
                       <Text style={styles.roomText} numberOfLines={1}>
                         {roomName}
                       </Text>
@@ -245,10 +281,19 @@ const PaymentCard = ({
                   <View style={styles.metaRight}>
                     <View style={styles.recordStatusRow}>
                       <View
-                        style={[styles.statusPill, { backgroundColor: statusTone.bg, borderColor: statusTone.border }]}
+                        style={[
+                          styles.statusPill,
+                          {
+                            backgroundColor: statusTone.bg,
+                            borderColor: statusTone.border,
+                          },
+                        ]}
                       >
                         <Text
-                          style={[styles.statusPillText, { color: statusTone.text }]}
+                          style={[
+                            styles.statusPillText,
+                            { color: statusTone.text },
+                          ]}
                           numberOfLines={1}
                           adjustsFontSizeToFit
                           minimumFontScale={0.85}
@@ -271,7 +316,11 @@ const PaymentCard = ({
                         ]}
                       >
                         <View style={styles.statusActionBtnInner}>
-                          <Icon source="cash-plus" size={16} color={theme.colors.primary} />
+                          <Icon
+                            source="cash-plus"
+                            size={16}
+                            color={theme.colors.primary}
+                          />
                         </View>
                       </TouchableRipple>
                     </View>
@@ -287,7 +336,11 @@ const PaymentCard = ({
 );
 
 const AvatarDisplay = ({ uri, size }: { uri?: string; size: number }) =>
-  uri ? <Avatar.Image size={size} source={{ uri }} /> : <Avatar.Icon size={size} icon="account" />;
+  uri ? (
+    <Avatar.Image size={size} source={{ uri }} />
+  ) : (
+    <Avatar.Icon size={size} icon="account" />
+  );
 
 /* ---------------- EMPTY ---------------- */
 
@@ -343,10 +396,21 @@ const styles = StyleSheet.create({
   metaLeft: { flex: 1, minWidth: 0 },
   roomRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 },
   roomText: { color: '#555', fontWeight: '700', flex: 1, fontSize: 15 },
-  issuedRow: { marginTop: 4, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  issuedRow: {
+    marginTop: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   dateText: { color: '#777', fontSize: 13, fontWeight: '700' },
   metaRight: { alignItems: 'flex-end', justifyContent: 'flex-start' },
-  recordStatusRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' },
+  recordStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
+  },
   statusPill: {
     width: 86,
     height: 28,
@@ -355,14 +419,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  statusPillText: { fontWeight: '900', fontSize: 12, letterSpacing: 0.4, textAlign: 'center' },
+  statusPillText: {
+    fontWeight: '900',
+    fontSize: 12,
+    letterSpacing: 0.4,
+    textAlign: 'center',
+  },
   statusActionBtn: {
     width: 28,
     height: 28,
     borderRadius: 999,
     borderWidth: 1,
   },
-  statusActionBtnInner: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  statusActionBtnInner: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   totalTopRight: {
     fontWeight: '900',
     fontSize: 14,
@@ -388,4 +461,3 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 });
-

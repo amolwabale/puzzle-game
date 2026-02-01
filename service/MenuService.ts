@@ -1,5 +1,10 @@
 import supabase from './SupabaseClient';
-import type { FileInput, Ticket, TicketChat, TicketStatus } from './ticketTypes';
+import type {
+  FileInput,
+  Ticket,
+  TicketChat,
+  TicketStatus,
+} from './ticketTypes';
 
 export type UserProfile = {
   created_at: string;
@@ -27,7 +32,9 @@ export async function fetchUserProfile(): Promise<UserProfile | null> {
   // 1) Primary: match by auth user id (recommended).
   const { data: byUserId, error: errUserId } = await supabase
     .from('User')
-    .select('id, user_id, created_at, first_name, last_name, mobile, email, address')
+    .select(
+      'id, user_id, created_at, first_name, last_name, mobile, email, address',
+    )
     .eq('user_id', userId)
     .maybeSingle();
 
@@ -39,7 +46,9 @@ export async function fetchUserProfile(): Promise<UserProfile | null> {
   if (email) {
     const { data: byEmail, error: errEmail } = await supabase
       .from('User')
-      .select('id, user_id, created_at, first_name, last_name, mobile, email, address')
+      .select(
+        'id, user_id, created_at, first_name, last_name, mobile, email, address',
+      )
       .eq('email', email)
       .maybeSingle();
 
@@ -84,9 +93,12 @@ export async function fetchUserProfile(): Promise<UserProfile | null> {
 
 export async function changePasswordAndLogout(newPassword: string) {
   const pwd = String(newPassword || '');
-  if (pwd.length < 6) throw new Error('Password must be at least 6 characters.');
+  if (pwd.length < 6)
+    throw new Error('Password must be at least 6 characters.');
 
-  const { error: updateErr } = await supabase.auth.updateUser({ password: pwd });
+  const { error: updateErr } = await supabase.auth.updateUser({
+    password: pwd,
+  });
   if (updateErr) throw updateErr;
 
   // After changing password, force re-login for security.
@@ -108,27 +120,39 @@ const getSafeFileName = (name: string) =>
     .replace(/\s+/g, '_')
     .slice(0, 80) || `upload.${getExt(name)}`;
 
-const uploadSupportFile = async (userId: string, ticketId: string, file: FileInput) => {
-  const safeName = getSafeFileName(file.name || `upload.${getExt(file.name || 'file')}`);
+const uploadSupportFile = async (
+  userId: string,
+  ticketId: string,
+  file: FileInput,
+) => {
+  const safeName = getSafeFileName(
+    file.name || `upload.${getExt(file.name || 'file')}`,
+  );
   // Required path: `${userId}/Support/support_id/image_name`
   const path = `${userId}/Support/${ticketId}/${safeName}`;
 
   const uri = file.uri.startsWith('file://') ? file.uri : `file://${file.uri}`;
   const res = await fetch(uri);
   const buffer = await res.arrayBuffer();
-  if (!buffer || buffer.byteLength === 0) throw new Error('Selected file is empty or unreadable');
+  if (!buffer || buffer.byteLength === 0)
+    throw new Error('Selected file is empty or unreadable');
 
-  const { error } = await supabase.storage.from(SUPPORT_BUCKET).upload(path, buffer, {
-    upsert: true,
-    contentType: file.type || 'application/octet-stream',
-  });
+  const { error } = await supabase.storage
+    .from(SUPPORT_BUCKET)
+    .upload(path, buffer, {
+      upsert: true,
+      contentType: file.type || 'application/octet-stream',
+    });
   if (error) throw error;
 
   const { data } = supabase.storage.from(SUPPORT_BUCKET).getPublicUrl(path);
   return { path, publicUrl: data.publicUrl };
 };
 
-export async function createSignedUrlFromPublicUrl(fullUrl: string, expiresInSec = 60 * 60) {
+export async function createSignedUrlFromPublicUrl(
+  fullUrl: string,
+  expiresInSec = 60 * 60,
+) {
   // Reuse the same approach as TenantView: extract file path from the public URL.
   // Public URL contains ".../tenant-manager/<path>"
   const marker = `/${SUPPORT_BUCKET}/`;
@@ -160,7 +184,9 @@ export async function fetchSupportTickets(): Promise<Ticket[]> {
   return (data || []) as any;
 }
 
-export async function fetchSupportTicketById(ticketId: string): Promise<Ticket | null> {
+export async function fetchSupportTicketById(
+  ticketId: string,
+): Promise<Ticket | null> {
   const userId = await getCurrentUserId();
   const { data, error } = await supabase
     .from('ticket')
@@ -216,7 +242,9 @@ export async function createSupportTicket(input: {
   return created as any;
 }
 
-export async function fetchSupportTicketChat(ticketId: string): Promise<TicketChat[]> {
+export async function fetchSupportTicketChat(
+  ticketId: string,
+): Promise<TicketChat[]> {
   const userId = await getCurrentUserId();
   // Ensure ticket belongs to user (prevents leaking chat).
   const t = await fetchSupportTicketById(ticketId);
@@ -233,7 +261,10 @@ export async function fetchSupportTicketChat(ticketId: string): Promise<TicketCh
   return (data || []) as any;
 }
 
-export async function sendSupportTicketMessage(input: { ticketId: string; chat: string }): Promise<TicketChat> {
+export async function sendSupportTicketMessage(input: {
+  ticketId: string;
+  chat: string;
+}): Promise<TicketChat> {
   const userId = await getCurrentUserId();
   const chat = input.chat.trim();
   if (!chat) throw new Error('Message cannot be empty.');

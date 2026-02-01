@@ -19,7 +19,11 @@ import {
 } from 'react-native-paper';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { TenantStackParamList } from '../../navigation/StackParam';
-import { deleteTenant, fetchTenants, TenantRecord } from '../../service/tenantService';
+import {
+  deleteTenant,
+  fetchTenants,
+  TenantRecord,
+} from '../../service/tenantService';
 import { supabase } from '../../service/SupabaseClient';
 import { fetchRooms } from '../../service/RoomService';
 import { fetchActiveRoomForTenants } from '../../service/TenantRoomService';
@@ -44,7 +48,9 @@ export default function TenantScreen() {
   const [initialLoading, setInitialLoading] = React.useState(true);
   const [refreshing, setRefreshing] = React.useState(false);
   const [tenants, setTenants] = React.useState<TenantRecord[]>([]);
-  const [signedUrls, setSignedUrls] = React.useState<Record<number, string>>({});
+  const [signedUrls, setSignedUrls] = React.useState<Record<number, string>>(
+    {},
+  );
   const [assignmentByTenant, setAssignmentByTenant] = React.useState<
     Record<number, { roomName?: string; joiningDate?: string } | null>
   >({});
@@ -72,7 +78,7 @@ export default function TenantScreen() {
       generateSignedUrls(data || []);
 
       // room assignment for each tenant (active mapping = leaving_date is null)
-      const tenantIds = (data || []).map((t) => t.id);
+      const tenantIds = (data || []).map(t => t.id);
       const [rooms, activeMap] = await Promise.all([
         fetchRooms(),
         fetchActiveRoomForTenants(tenantIds),
@@ -83,8 +89,11 @@ export default function TenantScreen() {
         if (r?.id != null) roomNameById[r.id] = r.name || '-';
       });
 
-      const viewMap: Record<number, { roomName?: string; joiningDate?: string } | null> = {};
-      tenantIds.forEach((id) => {
+      const viewMap: Record<
+        number,
+        { roomName?: string; joiningDate?: string } | null
+      > = {};
+      tenantIds.forEach(id => {
         const a = activeMap?.[id];
         if (!a) {
           viewMap[id] = null;
@@ -104,7 +113,7 @@ export default function TenantScreen() {
   const generateSignedUrls = async (data: TenantRecord[]) => {
     const map: Record<number, string> = {};
     await Promise.all(
-      data.map(async (t) => {
+      data.map(async t => {
         const signed = await createSignedUrl((t as any).profile_photo_url);
         if (signed) map[t.id] = signed;
       }),
@@ -123,7 +132,9 @@ export default function TenantScreen() {
     if (assignment) {
       Alert.alert(
         'Cannot delete tenant',
-        `This tenant is assigned to ${assignment.roomName || 'a room'}. Remove the tenant from the room before deleting.`,
+        `This tenant is assigned to ${
+          assignment.roomName || 'a room'
+        }. Remove the tenant from the room before deleting.`,
       );
       return;
     }
@@ -160,15 +171,20 @@ export default function TenantScreen() {
           <ActivityIndicator size="large" />
         </View>
       ) : tenants.length === 0 ? (
-        <EmptyState onAdd={() => navigation.navigate('TenantForm', { mode: 'add' })} />
+        <EmptyState
+          onAdd={() => navigation.navigate('TenantForm', { mode: 'add' })}
+        />
       ) : (
         <FlatList
           data={tenants}
           renderItem={renderItem}
-          keyExtractor={(item) => item.id.toString()}
+          keyExtractor={item => item.id.toString()}
           contentContainerStyle={styles.listContent}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={() => loadTenants(true)} />
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => loadTenants(true)}
+            />
           }
         />
       )}
@@ -204,7 +220,11 @@ const TenantCard = ({
   return (
     <Surface style={[styles.card, { borderColor: outline }]} elevation={1}>
       <View style={styles.cardClip}>
-        <TouchableOpacity style={styles.cardContent} activeOpacity={0.85} onPress={onView}>
+        <TouchableOpacity
+          style={styles.cardContent}
+          activeOpacity={0.85}
+          onPress={onView}
+        >
           <AvatarDisplay uri={photoUrl} size={AVATAR_SIZE} />
 
           <View style={styles.cardBody}>
@@ -212,10 +232,14 @@ const TenantCard = ({
               {item.name || '-'}
             </Text>
             <Text style={styles.cardSubtitle} numberOfLines={1}>
-              Room: {assignment?.roomName ? assignment.roomName : 'Not assigned'}
+              Room:{' '}
+              {assignment?.roomName ? assignment.roomName : 'Not assigned'}
             </Text>
             <Text style={styles.cardCaption} numberOfLines={1}>
-              Joined {assignment?.joiningDate ? formatDate(assignment.joiningDate) : '—'}
+              Joined{' '}
+              {assignment?.joiningDate
+                ? formatDate(assignment.joiningDate)
+                : '—'}
             </Text>
           </View>
         </TouchableOpacity>
@@ -223,10 +247,14 @@ const TenantCard = ({
         {/* ACTION RAIL (Support-style: subtle, not loud) */}
         <View style={[styles.actionRail, { borderLeftColor: outline }]}>
           <TouchableOpacity style={styles.editAction} onPress={onEdit}>
-            <Text style={[styles.editText, { color: theme.colors.primary }]}>Edit</Text>
+            <Text style={[styles.editText, { color: theme.colors.primary }]}>
+              Edit
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.deleteAction} onPress={onDelete}>
-            <Text style={[styles.deleteText, { color: theme.colors.error }]}>Delete</Text>
+            <Text style={[styles.deleteText, { color: theme.colors.error }]}>
+              Delete
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -235,13 +263,21 @@ const TenantCard = ({
 };
 
 const AvatarDisplay = ({ uri, size }: { uri?: string; size: number }) =>
-  uri ? <Avatar.Image size={size} source={{ uri }} /> : <Avatar.Icon size={size} icon="account" />;
+  uri ? (
+    <Avatar.Image size={size} source={{ uri }} />
+  ) : (
+    <Avatar.Icon size={size} icon="account" />
+  );
 
 /* ---------------- EMPTY ---------------- */
 
 const EmptyState = ({ onAdd }: { onAdd: () => void }) => (
   <View style={styles.emptyState}>
-    <Avatar.Icon size={72} icon="account-group-outline" style={styles.emptyIcon} />
+    <Avatar.Icon
+      size={72}
+      icon="account-group-outline"
+      style={styles.emptyIcon}
+    />
     <Text variant="titleMedium" style={styles.emptyTitle}>
       No tenants yet
     </Text>
@@ -286,8 +322,18 @@ const styles = StyleSheet.create({
   cardBody: { flex: 1, paddingLeft: 14 },
   // Support-module typography
   cardTitle: { fontWeight: '900', fontSize: 16, color: '#111827' },
-  cardSubtitle: { color: '#6B7280', marginTop: 2, fontWeight: '800', fontSize: 13 },
-  cardCaption: { color: '#6B7280', fontSize: 12, marginTop: 6, fontWeight: '800' },
+  cardSubtitle: {
+    color: '#6B7280',
+    marginTop: 2,
+    fontWeight: '800',
+    fontSize: 13,
+  },
+  cardCaption: {
+    color: '#6B7280',
+    fontSize: 12,
+    marginTop: 6,
+    fontWeight: '800',
+  },
 
   /* ACTION RAIL */
   actionRail: {

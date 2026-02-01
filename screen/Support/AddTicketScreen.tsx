@@ -1,6 +1,8 @@
 import React from 'react';
 import { Alert, ScrollView, StyleSheet, View } from 'react-native';
-import DocumentPicker, { types as docTypes } from 'react-native-document-picker';
+import DocumentPicker, {
+  types as docTypes,
+} from 'react-native-document-picker';
 import {
   Button,
   HelperText,
@@ -23,7 +25,10 @@ export default function AddTicketScreen() {
   const [description, setDescription] = React.useState('');
   const [file, setFile] = React.useState<FileInput | null>(null);
   const [saving, setSaving] = React.useState(false);
-  const [errors, setErrors] = React.useState<{ title?: string; description?: string }>({});
+  const [errors, setErrors] = React.useState<{
+    title?: string;
+    description?: string;
+  }>({});
 
   const validate = React.useCallback(() => {
     const next: { title?: string; description?: string } = {};
@@ -36,7 +41,12 @@ export default function AddTicketScreen() {
   const pickFile = React.useCallback(async () => {
     try {
       const r = await DocumentPicker.pickSingle({
-        type: [docTypes.images, docTypes.pdf, docTypes.plainText, docTypes.allFiles],
+        type: [
+          docTypes.images,
+          docTypes.pdf,
+          docTypes.plainText,
+          docTypes.allFiles,
+        ],
         copyTo: 'cachesDirectory',
       });
       const uri = (r.fileCopyUri || r.uri) as string;
@@ -59,7 +69,8 @@ export default function AddTicketScreen() {
       Alert.alert('Ticket created', 'Your request has been sent to support.', [
         {
           text: 'Open Ticket',
-          onPress: () => navigation.replace('SupportTicketChat', { ticketId: created.id }),
+          onPress: () =>
+            navigation.replace('SupportTicketChat', { ticketId: created.id }),
         },
       ]);
     } catch (e: any) {
@@ -70,10 +81,19 @@ export default function AddTicketScreen() {
   }, [validate, title, description, file, navigation]);
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={styles.screen}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+    >
       <Surface style={styles.section} elevation={2}>
         <View style={styles.sectionTitleRow}>
-          <View style={[styles.sectionIcon, { backgroundColor: theme.colors.primaryContainer }]}>
+          <View
+            style={[
+              styles.sectionIcon,
+              { backgroundColor: theme.colors.primaryContainer },
+            ]}
+          >
             <Icon source="lifebuoy" size={18} color={theme.colors.primary} />
           </View>
           <View style={{ flex: 1, minWidth: 0 }}>
@@ -88,9 +108,9 @@ export default function AddTicketScreen() {
           <SmartTextInput
             label="Title *"
             value={title}
-            onChangeText={(t) => {
+            onChangeText={t => {
               setTitle(t);
-              setErrors((p) => ({ ...p, title: undefined }));
+              setErrors(p => ({ ...p, title: undefined }));
             }}
             error={!!errors.title}
             style={styles.inputSingle}
@@ -106,9 +126,9 @@ export default function AddTicketScreen() {
           <SmartTextInput
             label="Description *"
             value={description}
-            onChangeText={(t) => {
+            onChangeText={t => {
               setDescription(t);
-              setErrors((p) => ({ ...p, description: undefined }));
+              setErrors(p => ({ ...p, description: undefined }));
             }}
             multiline
             maxLines={8}
@@ -123,16 +143,31 @@ export default function AddTicketScreen() {
         </View>
 
         <View style={styles.attachRow}>
-          <Button mode="outlined" onPress={() => void pickFile()} icon="paperclip">
+          <Button
+            mode="outlined"
+            onPress={() => void pickFile()}
+            icon="paperclip"
+          >
             Attach file
           </Button>
           {file ? (
             <View style={styles.filePill}>
-              <Icon source="file-outline" size={16} color={theme.colors.primary} />
-              <Text style={[styles.fileName, { color: theme.colors.primary }]} numberOfLines={1}>
+              <Icon
+                source="file-outline"
+                size={16}
+                color={theme.colors.primary}
+              />
+              <Text
+                style={[styles.fileName, { color: theme.colors.primary }]}
+                numberOfLines={1}
+              >
                 {file.name}
               </Text>
-              <IconButton icon="close" size={16} onPress={() => setFile(null)} />
+              <IconButton
+                icon="close"
+                size={16}
+                onPress={() => setFile(null)}
+              />
             </View>
           ) : null}
         </View>
@@ -156,10 +191,26 @@ const styles = StyleSheet.create({
   content: { padding: 16, paddingBottom: 24 },
 
   section: { borderRadius: 16, padding: 14, backgroundColor: '#FFFFFF' },
-  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
-  sectionIcon: { width: 36, height: 36, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+  },
+  sectionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   sectionTitle: { fontWeight: '900', fontSize: 16, color: '#111827' },
-  sectionSub: { marginTop: 2, color: '#6B7280', fontWeight: '800', fontSize: 13 },
+  sectionSub: {
+    marginTop: 2,
+    color: '#6B7280',
+    fontWeight: '800',
+    fontSize: 13,
+  },
 
   field: { marginBottom: 10 },
   inputSingle: { minHeight: 48 },
@@ -181,4 +232,3 @@ const styles = StyleSheet.create({
 
   primaryBtn: { marginTop: 12 },
 });
-

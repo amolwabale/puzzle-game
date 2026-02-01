@@ -1,4 +1,3 @@
-
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTheme } from 'react-native-paper';
 import RoomScreen from '../screen/Room/RoomScreen';
@@ -7,7 +6,6 @@ import { RoomStackParamList } from './StackParam';
 import RoomViewScreen from '../screen/Room/RoomViewScreen';
 import { TopMenuButton } from './TopMenuButton.tsx';
 import { TopBackButton } from './TopBackButton';
-
 
 const Stack = createNativeStackNavigator<RoomStackParamList>();
 
@@ -30,7 +28,12 @@ export function RoomStack() {
           headerBackVisible: false,
           headerBackTitleVisible: false,
           headerLeft: () =>
-            showBack ? <TopBackButton label="Rooms" onPress={() => navigation.goBack()} /> : null,
+            showBack ? (
+              <TopBackButton
+                label="Rooms"
+                onPress={() => navigation.goBack()}
+              />
+            ) : null,
         };
       }}
     >
@@ -60,4 +63,3 @@ export function RoomStack() {
     </Stack.Navigator>
   );
 }
-

@@ -12,11 +12,11 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
-    storage: AsyncStorage,        
-    autoRefreshToken: true,       
-    persistSession: true,         
-    detectSessionInUrl: false,    
+    storage: AsyncStorage,
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: false,
   },
-}); 
+});
 
 export default supabase;

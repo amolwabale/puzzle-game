@@ -1,4 +1,3 @@
-
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTheme } from 'react-native-paper';
 import { TenantStackParamList } from './StackParam';
@@ -25,14 +24,20 @@ export default function TenantStack() {
     <Stack.Navigator
       screenOptions={({ navigation, route }) => {
         const showBack = route.name !== 'TenantList';
-        const backLabel = route.name === 'TenantDocument' ? 'Tenant' : 'Tenants';
+        const backLabel =
+          route.name === 'TenantDocument' ? 'Tenant' : 'Tenants';
         return {
           ...baseHeader,
           // Hide default back (arrow + label) so only our styled button shows.
           headerBackVisible: false,
           headerBackTitleVisible: false,
           headerLeft: () =>
-            showBack ? <TopBackButton label={backLabel} onPress={() => navigation.goBack()} /> : null,
+            showBack ? (
+              <TopBackButton
+                label={backLabel}
+                onPress={() => navigation.goBack()}
+              />
+            ) : null,
         };
       }}
     >
@@ -70,4 +75,3 @@ export default function TenantStack() {
     </Stack.Navigator>
   );
 }
-

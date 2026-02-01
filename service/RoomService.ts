@@ -126,9 +126,4 @@ const deleteRoom = async (roomId: number) => {
 
 /* ===================== EXPORTS ===================== */
 
-export {
-  fetchRooms,
-  fetchRoomById,
-  saveRoom,
-  deleteRoom,
-};
+export { fetchRooms, fetchRoomById, saveRoom, deleteRoom };

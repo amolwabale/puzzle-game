@@ -7,7 +7,15 @@ export type AuthStackParamList = {
 export type RootStackParamList = {
   AuthStack: undefined;
   MainTabs: undefined;
-  MenuTabs: { screen?: 'MenuHome' | 'MenuProfile' | 'MenuChangePassword' | 'MenuSupport' } | undefined;
+  MenuTabs:
+    | {
+        screen?:
+          | 'MenuHome'
+          | 'MenuProfile'
+          | 'MenuChangePassword'
+          | 'MenuSupport';
+      }
+    | undefined;
 };
 
 export type TenantStackParamList = {
@@ -19,7 +27,7 @@ export type TenantStackParamList = {
 
 export type RoomStackParamList = {
   RoomList: undefined;
-  RoomView: { roomId: number; };
+  RoomView: { roomId: number };
   RoomForm: { mode: 'add' | 'edit'; roomId?: number };
 };
 

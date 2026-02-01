@@ -60,31 +60,30 @@ export default function AuthScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      justifyContent: 'center',
-      padding: 24,
-    },
-    card: {
-      padding: 28,
-      borderRadius: 16,
-      alignItems: 'center',
-    },
-    title: {
-      marginBottom: 8,
-      fontWeight: '700',
-    },
-    subtitle: {
-      textAlign: 'center',
-      marginBottom: 32,
-      opacity: 0.7,
-    },
-    button: {
-      width: '100%',
-      marginBottom: 12,
-    },
-    buttonContent: {
-      paddingVertical: 8,
-    },
-  });
-  
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: 24,
+  },
+  card: {
+    padding: 28,
+    borderRadius: 16,
+    alignItems: 'center',
+  },
+  title: {
+    marginBottom: 8,
+    fontWeight: '700',
+  },
+  subtitle: {
+    textAlign: 'center',
+    marginBottom: 32,
+    opacity: 0.7,
+  },
+  button: {
+    width: '100%',
+    marginBottom: 12,
+  },
+  buttonContent: {
+    paddingVertical: 8,
+  },
+});

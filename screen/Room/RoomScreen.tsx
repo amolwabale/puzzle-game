@@ -46,7 +46,9 @@ const formatDate = (d?: string | null) =>
 const formatMoney = (n?: number | string | null) => {
   const v = Math.round(Number(n || 0));
   try {
-    return `₹${new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(v)}`;
+    return `₹${new Intl.NumberFormat('en-IN', {
+      maximumFractionDigits: 0,
+    }).format(v)}`;
   } catch {
     return `₹${String(v).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
   }
@@ -62,11 +64,7 @@ const formatMoneyCompact = (n?: number | string | null) => {
 };
 
 const getInitials = (name?: string | null) => {
-  const parts = (name || '')
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2);
+  const parts = (name || '').trim().split(/\s+/).filter(Boolean).slice(0, 2);
   if (parts.length === 0) return 'T';
   return parts.map(p => p[0]?.toUpperCase()).join('');
 };
@@ -107,7 +105,7 @@ export default function RoomScreen() {
       setRooms(data || []);
 
       // Load occupant (active tenant) for each room in one call
-      const map = await fetchActiveTenantsForRooms((data || []).map((r) => r.id));
+      const map = await fetchActiveTenantsForRooms((data || []).map(r => r.id));
       setActiveByRoom(map);
 
       // Signed URLs for occupant profile photos
@@ -116,7 +114,10 @@ export default function RoomScreen() {
         Object.entries(map).map(async ([roomIdStr, occ]) => {
           if (!occ) return;
           const roomId = Number(roomIdStr);
-          const fullUrl = (occ.tenant as any)?.profile_photo_url as string | null | undefined;
+          const fullUrl = (occ.tenant as any)?.profile_photo_url as
+            | string
+            | null
+            | undefined;
           const signed = await createSignedUrl(fullUrl);
           if (signed) photoMap[roomId] = signed;
         }),
@@ -146,7 +147,10 @@ export default function RoomScreen() {
         return;
       }
     } catch (err: any) {
-      Alert.alert('Delete check failed', err?.message || 'Could not validate room occupancy');
+      Alert.alert(
+        'Delete check failed',
+        err?.message || 'Could not validate room occupancy',
+      );
       return;
     }
 
@@ -194,12 +198,14 @@ export default function RoomScreen() {
           <ActivityIndicator size="large" />
         </View>
       ) : rooms.length === 0 ? (
-        <EmptyState onAdd={() => navigation.navigate('RoomForm', { mode: 'add' })} />
+        <EmptyState
+          onAdd={() => navigation.navigate('RoomForm', { mode: 'add' })}
+        />
       ) : (
         <FlatList
           data={rooms}
           renderItem={renderItem}
-          keyExtractor={(item) => item.id.toString()}
+          keyExtractor={item => item.id.toString()}
           contentContainerStyle={styles.listContent}
           refreshControl={
             <RefreshControl
@@ -268,7 +274,10 @@ const RoomCard = ({
           <View style={styles.occupantAvatarWrap}>
             {occupant ? (
               occupantPhotoUrl ? (
-                <Avatar.Image size={OCCUPANT_AVATAR_SIZE} source={{ uri: occupantPhotoUrl }} />
+                <Avatar.Image
+                  size={OCCUPANT_AVATAR_SIZE}
+                  source={{ uri: occupantPhotoUrl }}
+                />
               ) : (
                 <Avatar.Text
                   size={OCCUPANT_AVATAR_SIZE}
@@ -290,7 +299,11 @@ const RoomCard = ({
 
         <View style={styles.cardBody}>
           <View style={styles.titleRow}>
-            <Text variant="titleMedium" style={styles.cardTitle} numberOfLines={1}>
+            <Text
+              variant="titleMedium"
+              style={styles.cardTitle}
+              numberOfLines={1}
+            >
               {item.name || '-'}
             </Text>
 
@@ -317,7 +330,8 @@ const RoomCard = ({
 
           <View style={styles.metaBlock}>
             <Text style={styles.cardSubtitle} numberOfLines={1}>
-              Rent: {formatMoney(item.rent)} | Deposit: {formatMoneyCompact(item.deposit)}
+              Rent: {formatMoney(item.rent)} | Deposit:{' '}
+              {formatMoneyCompact(item.deposit)}
             </Text>
           </View>
 

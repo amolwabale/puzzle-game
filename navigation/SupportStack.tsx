@@ -30,7 +30,12 @@ export default function SupportStack() {
           headerBackVisible: false,
           headerBackTitleVisible: false,
           headerLeft: () =>
-            showBack ? <TopBackButton label="Support" onPress={() => navigation.goBack()} /> : null,
+            showBack ? (
+              <TopBackButton
+                label="Support"
+                onPress={() => navigation.goBack()}
+              />
+            ) : null,
         };
       }}
     >
@@ -52,9 +57,10 @@ export default function SupportStack() {
       <Stack.Screen
         name="SupportDocument"
         component={SupportDocumentViewScreen}
-        options={({ route }) => ({ title: route.params?.title || 'Attachment' })}
+        options={({ route }) => ({
+          title: route.params?.title || 'Attachment',
+        })}
       />
     </Stack.Navigator>
   );
 }
-

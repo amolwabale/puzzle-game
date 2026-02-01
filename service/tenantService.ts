@@ -156,16 +156,39 @@ const saveTenant = async (payload: SavePayload) => {
     const updates: Partial<TenantRecord> = {};
 
     if (payload.files.profile?.file)
-      updates.profile_photo_url = (await uploadFile(userId, tenantId, 'profile_photo', payload.files.profile.file)).publicUrl;
+      updates.profile_photo_url = (
+        await uploadFile(
+          userId,
+          tenantId,
+          'profile_photo',
+          payload.files.profile.file,
+        )
+      ).publicUrl;
 
     if (payload.files.pan?.file)
-      updates.pan_card_url = (await uploadFile(userId, tenantId, 'pan_card', payload.files.pan.file)).publicUrl;
+      updates.pan_card_url = (
+        await uploadFile(userId, tenantId, 'pan_card', payload.files.pan.file)
+      ).publicUrl;
 
     if (payload.files.adhar?.file)
-      updates.adhar_card_url = (await uploadFile(userId, tenantId, 'adhar_card', payload.files.adhar.file)).publicUrl;
+      updates.adhar_card_url = (
+        await uploadFile(
+          userId,
+          tenantId,
+          'adhar_card',
+          payload.files.adhar.file,
+        )
+      ).publicUrl;
 
     if (payload.files.agreement?.file)
-      updates.agreement_url = (await uploadFile(userId, tenantId, 'agreement', payload.files.agreement.file)).publicUrl;
+      updates.agreement_url = (
+        await uploadFile(
+          userId,
+          tenantId,
+          'agreement',
+          payload.files.agreement.file,
+        )
+      ).publicUrl;
 
     if (Object.keys(updates).length) {
       const { data, error: updErr } = await supabase
@@ -192,25 +215,45 @@ const saveTenant = async (payload: SavePayload) => {
     let agreementUrl = payload.files.agreement?.url ?? null;
 
     if (payload.files.profile?.file) {
-      const u = await uploadFile(userId, tenantId, 'profile_photo', payload.files.profile.file);
+      const u = await uploadFile(
+        userId,
+        tenantId,
+        'profile_photo',
+        payload.files.profile.file,
+      );
       uploadedPaths.push(u.path);
       profileUrl = u.publicUrl;
     }
 
     if (payload.files.pan?.file) {
-      const u = await uploadFile(userId, tenantId, 'pan_card', payload.files.pan.file);
+      const u = await uploadFile(
+        userId,
+        tenantId,
+        'pan_card',
+        payload.files.pan.file,
+      );
       uploadedPaths.push(u.path);
       panUrl = u.publicUrl;
     }
 
     if (payload.files.adhar?.file) {
-      const u = await uploadFile(userId, tenantId, 'adhar_card', payload.files.adhar.file);
+      const u = await uploadFile(
+        userId,
+        tenantId,
+        'adhar_card',
+        payload.files.adhar.file,
+      );
       uploadedPaths.push(u.path);
       adharUrl = u.publicUrl;
     }
 
     if (payload.files.agreement?.file) {
-      const u = await uploadFile(userId, tenantId, 'agreement', payload.files.agreement.file);
+      const u = await uploadFile(
+        userId,
+        tenantId,
+        'agreement',
+        payload.files.agreement.file,
+      );
       uploadedPaths.push(u.path);
       agreementUrl = u.publicUrl;
     }
@@ -237,7 +280,6 @@ const saveTenant = async (payload: SavePayload) => {
 
     if (error) throw error;
     return data as TenantRecord;
-
   } catch (err) {
     // 🔥 ROLLBACK uploaded files
     if (uploadedPaths.length) {

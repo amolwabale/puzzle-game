@@ -25,7 +25,11 @@ export function TopMenuButton() {
           },
         ]}
       >
-        <MaterialCommunityIcons name="menu" size={22} color={theme.colors.primary} />
+        <MaterialCommunityIcons
+          name="menu"
+          size={22}
+          color={theme.colors.primary}
+        />
       </View>
     </TouchableRipple>
   );
@@ -45,4 +49,3 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
 });
-

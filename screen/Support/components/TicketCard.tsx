@@ -13,7 +13,13 @@ const formatDate = (iso?: string | null) =>
       })
     : '-';
 
-export function TicketCard({ ticket, onPress }: { ticket: Ticket; onPress: () => void }) {
+export function TicketCard({
+  ticket,
+  onPress,
+}: {
+  ticket: Ticket;
+  onPress: () => void;
+}) {
   const theme = useTheme();
   return (
     <Card style={styles.card} mode="elevated" onPress={onPress}>
@@ -36,7 +42,10 @@ export function TicketCard({ ticket, onPress }: { ticket: Ticket; onPress: () =>
         )}
 
         {!!ticket.upload_url && (
-          <Text style={[styles.attachment, { color: theme.colors.primary }]} numberOfLines={1}>
+          <Text
+            style={[styles.attachment, { color: theme.colors.primary }]}
+            numberOfLines={1}
+          >
             Attachment added
           </Text>
         )}
@@ -60,7 +69,12 @@ const styles = StyleSheet.create({
   },
   title: { flex: 1, fontWeight: '900', fontSize: 16, color: '#111827' },
   meta: { marginTop: 8, color: '#6B7280', fontWeight: '800', fontSize: 12 },
-  preview: { marginTop: 6, color: '#374151', fontWeight: '700', fontSize: 13, lineHeight: 18 },
+  preview: {
+    marginTop: 6,
+    color: '#374151',
+    fontWeight: '700',
+    fontSize: 13,
+    lineHeight: 18,
+  },
   attachment: { marginTop: 8, fontWeight: '900', fontSize: 12 },
 });
-

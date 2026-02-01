@@ -1,4 +1,3 @@
-
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTheme } from 'react-native-paper';
 import SettingScreen from '../screen/Setting/SettingScreen';
@@ -28,4 +27,3 @@ export default function SettingsStack() {
     </Stack.Navigator>
   );
 }
-

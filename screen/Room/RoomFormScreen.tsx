@@ -1,4 +1,8 @@
-import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
+import {
+  useFocusEffect,
+  useNavigation,
+  useRoute,
+} from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React from 'react';
 import {
@@ -61,20 +65,28 @@ const formatDate = (d?: string | null) =>
 
 const getInitials = (name?: string | null) => {
   const parts = (name || '').trim().split(/\s+/).slice(0, 2);
-  return parts.length ? parts.map(p => p[0]).join('').toUpperCase() : 'R';
+  return parts.length
+    ? parts
+        .map(p => p[0])
+        .join('')
+        .toUpperCase()
+    : 'R';
 };
 
 const scalePaperThemeFonts = (t: any, scale: number) => {
   const s = Number.isFinite(scale) ? scale : 1;
   const fonts = t?.fonts ?? {};
   const nextFonts: Record<string, any> = { ...fonts };
-  Object.keys(nextFonts).forEach((k) => {
+  Object.keys(nextFonts).forEach(k => {
     const v = nextFonts[k];
     if (!v || typeof v !== 'object') return;
     const nv: any = { ...v };
-    if (typeof nv.fontSize === 'number') nv.fontSize = Math.round(nv.fontSize * s);
-    if (typeof nv.lineHeight === 'number') nv.lineHeight = Math.round(nv.lineHeight * s);
-    if (typeof nv.letterSpacing === 'number') nv.letterSpacing = Number((nv.letterSpacing * s).toFixed(2));
+    if (typeof nv.fontSize === 'number')
+      nv.fontSize = Math.round(nv.fontSize * s);
+    if (typeof nv.lineHeight === 'number')
+      nv.lineHeight = Math.round(nv.lineHeight * s);
+    if (typeof nv.letterSpacing === 'number')
+      nv.letterSpacing = Number((nv.letterSpacing * s).toFixed(2));
     nextFonts[k] = nv;
   });
   return { ...t, fonts: nextFonts };
@@ -86,7 +98,10 @@ export default function RoomFormScreen() {
   const navigation = useNavigation();
   const route = useRoute<Props['route']>();
   const theme = useTheme();
-  const scaledTheme = React.useMemo(() => scalePaperThemeFonts(theme, 1.15), [theme]);
+  const scaledTheme = React.useMemo(
+    () => scalePaperThemeFonts(theme, 1.15),
+    [theme],
+  );
 
   const mode = route.params?.mode ?? 'add';
   const roomId = mode === 'edit' ? route.params?.roomId : undefined;
@@ -104,11 +119,15 @@ export default function RoomFormScreen() {
   const [errors, setErrors] = React.useState<Record<string, string>>({});
 
   /* TENANT */
-  const [activeTenant, setActiveTenant] = React.useState<TenantRoomRecord | null>(null);
-  const [tenantHistory, setTenantHistory] = React.useState<TenantHistoryRecord[]>([]);
+  const [activeTenant, setActiveTenant] =
+    React.useState<TenantRoomRecord | null>(null);
+  const [tenantHistory, setTenantHistory] = React.useState<
+    TenantHistoryRecord[]
+  >([]);
   const [allTenants, setAllTenants] = React.useState<TenantRecord[]>([]);
   const [tenantQuery, setTenantQuery] = React.useState('');
-  const [selectedTenant, setSelectedTenant] = React.useState<TenantRecord | null>(null);
+  const [selectedTenant, setSelectedTenant] =
+    React.useState<TenantRecord | null>(null);
   const [editingOccupancy, setEditingOccupancy] = React.useState(false);
 
   /* DATE */
@@ -117,9 +136,15 @@ export default function RoomFormScreen() {
 
   /* METER READING */
   const [meterReading, setMeterReading] = React.useState('');
-  const [meterReadingId, setMeterReadingId] = React.useState<number | null>(null);
-  const [meterReadingPrevUnit, setMeterReadingPrevUnit] = React.useState<number | null>(null);
-  const [activeMeterUnit, setActiveMeterUnit] = React.useState<number | null>(null);
+  const [meterReadingId, setMeterReadingId] = React.useState<number | null>(
+    null,
+  );
+  const [meterReadingPrevUnit, setMeterReadingPrevUnit] = React.useState<
+    number | null
+  >(null);
+  const [activeMeterUnit, setActiveMeterUnit] = React.useState<number | null>(
+    null,
+  );
 
   /* ---------------- LOAD ---------------- */
 
@@ -187,7 +212,11 @@ export default function RoomFormScreen() {
     }
   }, [mode, roomId]);
 
-  useFocusEffect(React.useCallback(() => { load(); }, [load]));
+  useFocusEffect(
+    React.useCallback(() => {
+      load();
+    }, [load]),
+  );
 
   /* ---------------- VALIDATE ---------------- */
 
@@ -227,13 +256,18 @@ export default function RoomFormScreen() {
       const normalized = name.trim().toLowerCase();
       const existing = await fetchRooms();
       const duplicate = (existing || []).find((r: any) => {
-        const rn = String(r?.name || '').trim().toLowerCase();
+        const rn = String(r?.name || '')
+          .trim()
+          .toLowerCase();
         if (!rn) return false;
         if (mode === 'edit' && roomId != null && r?.id === roomId) return false;
         return rn === normalized;
       });
       if (duplicate) {
-        setErrors((prev) => ({ ...prev, name: 'Room with same name already exists' }));
+        setErrors(prev => ({
+          ...prev,
+          name: 'Room with same name already exists',
+        }));
         return;
       }
 
@@ -274,7 +308,10 @@ export default function RoomFormScreen() {
             // Edit existing occupancy
             if (selectedTenant!.id === activeTenant.tenant_id) {
               if (meterReadingId) {
-                await updateMeterReading({ id: meterReadingId, unit: meterUnit });
+                await updateMeterReading({
+                  id: meterReadingId,
+                  unit: meterUnit,
+                });
               } else {
                 // If no existing reading found, create one
                 await createMeterReading({
@@ -285,7 +322,10 @@ export default function RoomFormScreen() {
               }
 
               // Same tenant: update joining date on mapping
-              await updateJoiningDate(activeTenant.id, joiningDate!.toISOString());
+              await updateJoiningDate(
+                activeTenant.id,
+                joiningDate!.toISOString(),
+              );
             } else {
               // Different tenant: vacate current and create new mapping
               await vacateRoom(activeTenant.id);
@@ -307,10 +347,17 @@ export default function RoomFormScreen() {
           // rollback meter reading if mapping fails
           if (createdReadingRow?.id) {
             await deleteMeterReading(createdReadingRow.id);
-          } else if (isEditSameTenant && meterReadingId && meterReadingPrevUnit != null) {
+          } else if (
+            isEditSameTenant &&
+            meterReadingId &&
+            meterReadingPrevUnit != null
+          ) {
             // restore previous unit if we updated an existing row
             try {
-              await updateMeterReading({ id: meterReadingId, unit: meterReadingPrevUnit });
+              await updateMeterReading({
+                id: meterReadingId,
+                unit: meterReadingPrevUnit,
+              });
             } catch {
               // ignore rollback failure
             }
@@ -340,7 +387,11 @@ export default function RoomFormScreen() {
   };
 
   if (loading) {
-    return <View style={styles.loader}><ActivityIndicator size="large" /></View>;
+    return (
+      <View style={styles.loader}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
   }
 
   const filteredTenants =
@@ -355,316 +406,385 @@ export default function RoomFormScreen() {
   return (
     <>
       <PaperProvider theme={scaledTheme}>
-        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-
-          {/* ===== ROOM DETAILS (ENHANCED) ===== */}
-          <Surface style={styles.roomHero} elevation={2}>
-            <View style={styles.roomHeroHeader}>
-              <Avatar.Icon
-                size={52}
-                icon="home-city-outline"
-                style={{ backgroundColor: theme.colors.primaryContainer }}
-                color={theme.colors.primary}
-              />
-              <View style={{ marginLeft: 14 }}>
-                <Text variant="titleLarge" style={{ fontWeight: '800' }}>
-                  Room Details
-                </Text>
-                <Text style={{ color: '#666' }}>
-                  Configuration & pricing
-                </Text>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <ScrollView
+            contentContainerStyle={styles.container}
+            keyboardShouldPersistTaps="handled"
+          >
+            {/* ===== ROOM DETAILS (ENHANCED) ===== */}
+            <Surface style={styles.roomHero} elevation={2}>
+              <View style={styles.roomHeroHeader}>
+                <Avatar.Icon
+                  size={52}
+                  icon="home-city-outline"
+                  style={{ backgroundColor: theme.colors.primaryContainer }}
+                  color={theme.colors.primary}
+                />
+                <View style={{ marginLeft: 14 }}>
+                  <Text variant="titleLarge" style={{ fontWeight: '800' }}>
+                    Room Details
+                  </Text>
+                  <Text style={{ color: '#666' }}>Configuration & pricing</Text>
+                </View>
               </View>
-            </View>
 
-            <FormInput label="Room Name *" value={name} onChange={setName} error={errors.name} icon="home-outline" />
-            <FormInput label="Room Type *" value={type} onChange={setType} error={errors.type} icon="shape-outline" />
-            <FormInput label="Area (sq ft)" value={area} onChange={setArea} icon="ruler-square" />
+              <FormInput
+                label="Room Name *"
+                value={name}
+                onChange={setName}
+                error={errors.name}
+                icon="home-outline"
+              />
+              <FormInput
+                label="Room Type *"
+                value={type}
+                onChange={setType}
+                error={errors.type}
+                icon="shape-outline"
+              />
+              <FormInput
+                label="Area (sq ft)"
+                value={area}
+                onChange={setArea}
+                icon="ruler-square"
+              />
 
-            <View style={styles.moneyRow}>
-              <MoneyInput label="Rent (₹)" value={rent} onChange={setRent} error={errors.rent} />
-              <MoneyInput label="Deposit (₹)" value={deposit} onChange={setDeposit} error={errors.deposit} />
-            </View>
-          </Surface>
+              <View style={styles.moneyRow}>
+                <MoneyInput
+                  label="Rent (₹)"
+                  value={rent}
+                  onChange={setRent}
+                  error={errors.rent}
+                />
+                <MoneyInput
+                  label="Deposit (₹)"
+                  value={deposit}
+                  onChange={setDeposit}
+                  error={errors.deposit}
+                />
+              </View>
+            </Surface>
 
-          {/* ===== TENANT OCCUPANCY ===== */}
-          <Surface style={styles.section} elevation={2}>
-            <Text variant="titleMedium" style={styles.sectionTitle}>
-              Tenant Occupancy
-            </Text>
+            {/* ===== TENANT OCCUPANCY ===== */}
+            <Surface style={styles.section} elevation={2}>
+              <Text variant="titleMedium" style={styles.sectionTitle}>
+                Tenant Occupancy
+              </Text>
 
-            {activeTenant && !editingOccupancy ? (
-              <>
-                <Surface style={styles.occupancyCard} elevation={1}>
-                  <View style={styles.occupancyHeader}>
-                    <Avatar.Text
-                      size={44}
-                      label={getInitials(activeTenant.tenant.name)}
-                      style={{ backgroundColor: theme.colors.primaryContainer }}
-                      color={theme.colors.primary}
-                    />
-
-                    <View style={styles.occupancyHeaderText}>
-                      <Text variant="titleMedium" style={styles.occupancyName}>
-                        {activeTenant.tenant.name}
-                      </Text>
-                      <Text style={styles.occupancySub}>Active tenant</Text>
-                    </View>
-
-                    <View
-                      style={[
-                        styles.statusPill,
-                        { backgroundColor: theme.colors.secondaryContainer },
-                      ]}
-                    >
-                      <Text style={[styles.statusPillText, { color: theme.colors.secondary }]}>
-                        Occupied
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.occupancyMetaRow}>
-                    <View style={styles.metaRow}>
-                      <IconButton icon="counter" size={18} style={styles.metaIcon} />
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.metaLabel}>Joining Meter reading</Text>
-                        <Text style={styles.metaValue}>
-                          {activeMeterUnit != null ? String(activeMeterUnit) : '-'}
-                        </Text>
-                      </View>
-                    </View>
-
-                    <View style={[styles.metaRow, { marginTop: 10 }]}>
-                      <IconButton icon="calendar" size={18} style={styles.metaIcon} />
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.metaLabel}>Joining date</Text>
-                        <Text style={styles.metaValue}>{formatDate(activeTenant.joining_date)}</Text>
-                      </View>
-                    </View>
-                  </View>
-                </Surface>
-
-                <Button
-                  mode="outlined"
-                  icon="pencil-outline"
-                  style={{ marginTop: 12 }}
-                  onPress={async () => {
-                    setEditingOccupancy(true);
-                    setSelectedTenant(activeTenant.tenant);
-                    setJoiningDate(new Date(activeTenant.joining_date));
-                    try {
-                      const latest = await fetchLatestMeterReading({
-                        roomId: roomId as number,
-                        tenantId: activeTenant.tenant_id,
-                      });
-                      setMeterReading(latest?.unit != null ? String(latest.unit) : '');
-                      setMeterReadingId(latest?.id ?? null);
-                      setMeterReadingPrevUnit(latest?.unit ?? null);
-                    } catch {
-                      setMeterReading('');
-                      setMeterReadingId(null);
-                      setMeterReadingPrevUnit(null);
-                    }
-                    setTenantQuery('');
-                    setErrors((prev) => ({
-                      ...prev,
-                      meterReading: '',
-                      joiningDate: '',
-                    }));
-                  }}
-                >
-                  Edit Occupancy
-                </Button>
-
-                <Button
-                  mode="contained-tonal"
-                  icon="home-remove-outline"
-                  style={{ marginTop: 12 }}
-                  onPress={() =>
-                    Alert.alert('Mark Vacant', 'Confirm tenant vacated?', [
-                      { text: 'Cancel', style: 'cancel' },
-                      {
-                        text: 'Confirm',
-                        style: 'destructive',
-                        onPress: async () => {
-                          await vacateRoom(activeTenant.id);
-                          load();
-                        },
-                      },
-                    ])
-                  }
-                >
-                  Mark Vacant
-                </Button>
-              </>
-            ) : (
-              <>
-                {!selectedTenant && (
-                  <>
-                    <Surface style={styles.occupancyHint} elevation={0}>
-                      <Avatar.Icon
-                        size={40}
-                        icon="account-plus-outline"
-                        style={{ backgroundColor: theme.colors.primaryContainer }}
+              {activeTenant && !editingOccupancy ? (
+                <>
+                  <Surface style={styles.occupancyCard} elevation={1}>
+                    <View style={styles.occupancyHeader}>
+                      <Avatar.Text
+                        size={44}
+                        label={getInitials(activeTenant.tenant.name)}
+                        style={{
+                          backgroundColor: theme.colors.primaryContainer,
+                        }}
                         color={theme.colors.primary}
                       />
-                      <View style={{ flex: 1, marginLeft: 12 }}>
-                        <Text style={{ fontWeight: '700' }}>No tenant assigned</Text>
-                        <Text style={{ color: '#666', marginTop: 2 }}>
-                          Search and select a tenant to occupy this room.
+
+                      <View style={styles.occupancyHeaderText}>
+                        <Text
+                          variant="titleMedium"
+                          style={styles.occupancyName}
+                        >
+                          {activeTenant.tenant.name}
+                        </Text>
+                        <Text style={styles.occupancySub}>Active tenant</Text>
+                      </View>
+
+                      <View
+                        style={[
+                          styles.statusPill,
+                          { backgroundColor: theme.colors.secondaryContainer },
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.statusPillText,
+                            { color: theme.colors.secondary },
+                          ]}
+                        >
+                          Occupied
                         </Text>
                       </View>
-                    </Surface>
-
-                    <TextInput
-                      label="Search Tenant"
-                      value={tenantQuery}
-                      onChangeText={setTenantQuery}
-                      mode="outlined"
-                      left={<TextInput.Icon icon="magnify" />}
-                    />
-
-                    {filteredTenants.length > 0 && (
-                      <Surface style={styles.dropdown} elevation={2}>
-                        {filteredTenants.map(t => (
-                          <TouchableOpacity
-                            key={t.id}
-                            style={styles.dropdownItem}
-                            onPress={() => {
-                              setSelectedTenant(t);
-                              setTenantQuery('');
-                            }}
-                          >
-                            <Text>{t.name}</Text>
-                          </TouchableOpacity>
-                        ))}
-                      </Surface>
-                    )}
-                  </>
-                )}
-
-                {selectedTenant && (
-                  <Surface style={styles.selectedTenant} elevation={1}>
-                    <Avatar.Text
-                      size={40}
-                      label={getInitials(selectedTenant.name)}
-                      style={{ backgroundColor: theme.colors.primaryContainer }}
-                      color={theme.colors.primary}
-                    />
-
-                    <View style={{ flex: 1, marginLeft: 12 }}>
-                      <Text style={{ fontWeight: '800' }}>{selectedTenant.name}</Text>
-                      <Text style={{ color: '#666', marginTop: 2 }}>
-                        Selected tenant
-                      </Text>
                     </View>
 
-                    <IconButton
-                      icon="close"
-                      onPress={() => setSelectedTenant(null)}
-                      accessibilityLabel="Remove selected tenant"
-                    />
+                    <View style={styles.occupancyMetaRow}>
+                      <View style={styles.metaRow}>
+                        <IconButton
+                          icon="counter"
+                          size={18}
+                          style={styles.metaIcon}
+                        />
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.metaLabel}>
+                            Joining Meter reading
+                          </Text>
+                          <Text style={styles.metaValue}>
+                            {activeMeterUnit != null
+                              ? String(activeMeterUnit)
+                              : '-'}
+                          </Text>
+                        </View>
+                      </View>
+
+                      <View style={[styles.metaRow, { marginTop: 10 }]}>
+                        <IconButton
+                          icon="calendar"
+                          size={18}
+                          style={styles.metaIcon}
+                        />
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.metaLabel}>Joining date</Text>
+                          <Text style={styles.metaValue}>
+                            {formatDate(activeTenant.joining_date)}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
                   </Surface>
-                )}
 
-                {selectedTenant && (
-                  <>
-                    <TextInput
-                      label="Joining Meter Reading *"
-                      value={meterReading}
-                      onChangeText={(text) => {
-                        const next = text.replace(/[^\d]/g, '');
-                        setMeterReading(next);
-                        setErrors((prev) => ({ ...prev, meterReading: '' }));
-                      }}
-                      mode="outlined"
-                      keyboardType="number-pad"
-                      left={<TextInput.Icon icon="counter" />}
-                      error={!!errors.meterReading}
-                      style={{ marginTop: 12 }}
-                    />
-                    {!!errors.meterReading && (
-                      <HelperText type="error" visible>
-                        {errors.meterReading}
-                      </HelperText>
-                    )}
-                  </>
-                )}
-
-                <Button
-                  mode="contained-tonal"
-                  icon="calendar"
-                  style={{ marginTop: 12 }}
-                  onPress={() => setDateModalOpen(true)}
-                >
-                  {joiningDate
-                    ? `Joining Date: ${formatDate(joiningDate.toISOString())}`
-                    : 'Select Joining Date'}
-                </Button>
-
-                {!!errors.joiningDate && (
-                  <HelperText type="error" visible>
-                    {errors.joiningDate}
-                  </HelperText>
-                )}
-
-                {editingOccupancy && activeTenant && (
                   <Button
                     mode="outlined"
-                    icon="close"
-                    onPress={() => {
-                      setEditingOccupancy(false);
-                      setSelectedTenant(null);
-                      setJoiningDate(null);
-                      setMeterReading('');
+                    icon="pencil-outline"
+                    style={{ marginTop: 12 }}
+                    onPress={async () => {
+                      setEditingOccupancy(true);
+                      setSelectedTenant(activeTenant.tenant);
+                      setJoiningDate(new Date(activeTenant.joining_date));
+                      try {
+                        const latest = await fetchLatestMeterReading({
+                          roomId: roomId as number,
+                          tenantId: activeTenant.tenant_id,
+                        });
+                        setMeterReading(
+                          latest?.unit != null ? String(latest.unit) : '',
+                        );
+                        setMeterReadingId(latest?.id ?? null);
+                        setMeterReadingPrevUnit(latest?.unit ?? null);
+                      } catch {
+                        setMeterReading('');
+                        setMeterReadingId(null);
+                        setMeterReadingPrevUnit(null);
+                      }
                       setTenantQuery('');
-                      setMeterReadingId(null);
-                      setMeterReadingPrevUnit(null);
-                      setErrors((prev) => ({
+                      setErrors(prev => ({
                         ...prev,
                         meterReading: '',
                         joiningDate: '',
                       }));
                     }}
-                    textColor="#D32F2F"
-                    style={{
-                      marginTop: 12,
-                      borderColor: '#F3B5B5',
-                      backgroundColor: '#FFF5F5',
-                    }}
                   >
-                    Cancel occupancy edit
+                    Edit Occupancy
                   </Button>
-                )}
-              </>
-            )}
-          </Surface>
 
-          {/* ===== TENANT HISTORY ===== */}
-          {tenantHistory.length > 0 && (
-            <Surface style={styles.section} elevation={2}>
-              <Text variant="titleMedium" style={styles.sectionTitle}>
-                Tenant History
-              </Text>
+                  <Button
+                    mode="contained-tonal"
+                    icon="home-remove-outline"
+                    style={{ marginTop: 12 }}
+                    onPress={() =>
+                      Alert.alert('Mark Vacant', 'Confirm tenant vacated?', [
+                        { text: 'Cancel', style: 'cancel' },
+                        {
+                          text: 'Confirm',
+                          style: 'destructive',
+                          onPress: async () => {
+                            await vacateRoom(activeTenant.id);
+                            load();
+                          },
+                        },
+                      ])
+                    }
+                  >
+                    Mark Vacant
+                  </Button>
+                </>
+              ) : (
+                <>
+                  {!selectedTenant && (
+                    <>
+                      <Surface style={styles.occupancyHint} elevation={0}>
+                        <Avatar.Icon
+                          size={40}
+                          icon="account-plus-outline"
+                          style={{
+                            backgroundColor: theme.colors.primaryContainer,
+                          }}
+                          color={theme.colors.primary}
+                        />
+                        <View style={{ flex: 1, marginLeft: 12 }}>
+                          <Text style={{ fontWeight: '700' }}>
+                            No tenant assigned
+                          </Text>
+                          <Text style={{ color: '#666', marginTop: 2 }}>
+                            Search and select a tenant to occupy this room.
+                          </Text>
+                        </View>
+                      </Surface>
 
-              {tenantHistory.map((h, i) => (
-                <Surface key={i} style={styles.historyCard} elevation={1}>
-                  <Avatar.Icon size={36} icon="account" />
-                  <View style={{ marginLeft: 12 }}>
-                    <Text style={{ fontWeight: '600' }}>{h.tenant_name}</Text>
-                    <Text style={{ color: '#666' }}>
-                      {formatDate(h.joining_date)} → {formatDate(h.leaving_date)}
-                    </Text>
-                  </View>
-                </Surface>
-              ))}
+                      <TextInput
+                        label="Search Tenant"
+                        value={tenantQuery}
+                        onChangeText={setTenantQuery}
+                        mode="outlined"
+                        left={<TextInput.Icon icon="magnify" />}
+                      />
+
+                      {filteredTenants.length > 0 && (
+                        <Surface style={styles.dropdown} elevation={2}>
+                          {filteredTenants.map(t => (
+                            <TouchableOpacity
+                              key={t.id}
+                              style={styles.dropdownItem}
+                              onPress={() => {
+                                setSelectedTenant(t);
+                                setTenantQuery('');
+                              }}
+                            >
+                              <Text>{t.name}</Text>
+                            </TouchableOpacity>
+                          ))}
+                        </Surface>
+                      )}
+                    </>
+                  )}
+
+                  {selectedTenant && (
+                    <Surface style={styles.selectedTenant} elevation={1}>
+                      <Avatar.Text
+                        size={40}
+                        label={getInitials(selectedTenant.name)}
+                        style={{
+                          backgroundColor: theme.colors.primaryContainer,
+                        }}
+                        color={theme.colors.primary}
+                      />
+
+                      <View style={{ flex: 1, marginLeft: 12 }}>
+                        <Text style={{ fontWeight: '800' }}>
+                          {selectedTenant.name}
+                        </Text>
+                        <Text style={{ color: '#666', marginTop: 2 }}>
+                          Selected tenant
+                        </Text>
+                      </View>
+
+                      <IconButton
+                        icon="close"
+                        onPress={() => setSelectedTenant(null)}
+                        accessibilityLabel="Remove selected tenant"
+                      />
+                    </Surface>
+                  )}
+
+                  {selectedTenant && (
+                    <>
+                      <TextInput
+                        label="Joining Meter Reading *"
+                        value={meterReading}
+                        onChangeText={text => {
+                          const next = text.replace(/[^\d]/g, '');
+                          setMeterReading(next);
+                          setErrors(prev => ({ ...prev, meterReading: '' }));
+                        }}
+                        mode="outlined"
+                        keyboardType="number-pad"
+                        left={<TextInput.Icon icon="counter" />}
+                        error={!!errors.meterReading}
+                        style={{ marginTop: 12 }}
+                      />
+                      {!!errors.meterReading && (
+                        <HelperText type="error" visible>
+                          {errors.meterReading}
+                        </HelperText>
+                      )}
+                    </>
+                  )}
+
+                  <Button
+                    mode="contained-tonal"
+                    icon="calendar"
+                    style={{ marginTop: 12 }}
+                    onPress={() => setDateModalOpen(true)}
+                  >
+                    {joiningDate
+                      ? `Joining Date: ${formatDate(joiningDate.toISOString())}`
+                      : 'Select Joining Date'}
+                  </Button>
+
+                  {!!errors.joiningDate && (
+                    <HelperText type="error" visible>
+                      {errors.joiningDate}
+                    </HelperText>
+                  )}
+
+                  {editingOccupancy && activeTenant && (
+                    <Button
+                      mode="outlined"
+                      icon="close"
+                      onPress={() => {
+                        setEditingOccupancy(false);
+                        setSelectedTenant(null);
+                        setJoiningDate(null);
+                        setMeterReading('');
+                        setTenantQuery('');
+                        setMeterReadingId(null);
+                        setMeterReadingPrevUnit(null);
+                        setErrors(prev => ({
+                          ...prev,
+                          meterReading: '',
+                          joiningDate: '',
+                        }));
+                      }}
+                      textColor="#D32F2F"
+                      style={{
+                        marginTop: 12,
+                        borderColor: '#F3B5B5',
+                        backgroundColor: '#FFF5F5',
+                      }}
+                    >
+                      Cancel occupancy edit
+                    </Button>
+                  )}
+                </>
+              )}
             </Surface>
-          )}
 
+            {/* ===== TENANT HISTORY ===== */}
+            {tenantHistory.length > 0 && (
+              <Surface style={styles.section} elevation={2}>
+                <Text variant="titleMedium" style={styles.sectionTitle}>
+                  Tenant History
+                </Text>
+
+                {tenantHistory.map((h, i) => (
+                  <Surface key={i} style={styles.historyCard} elevation={1}>
+                    <Avatar.Icon size={36} icon="account" />
+                    <View style={{ marginLeft: 12 }}>
+                      <Text style={{ fontWeight: '600' }}>{h.tenant_name}</Text>
+                      <Text style={{ color: '#666' }}>
+                        {formatDate(h.joining_date)} →{' '}
+                        {formatDate(h.leaving_date)}
+                      </Text>
+                    </View>
+                  </Surface>
+                ))}
+              </Surface>
+            )}
           </ScrollView>
         </KeyboardAvoidingView>
 
-        <FAB icon="content-save" style={styles.fab} loading={saving} onPress={save} />
+        <FAB
+          icon="content-save"
+          style={styles.fab}
+          loading={saving}
+          onPress={save}
+        />
 
         <DatePickerModal
           locale="en"
@@ -694,7 +814,9 @@ const FormInput = ({ label, value, onChange, error, icon }: any) => (
       left={<TextInput.Icon icon={icon} />}
       error={!!error}
     />
-    <HelperText type="error" visible={!!error}>{error || ' '}</HelperText>
+    <HelperText type="error" visible={!!error}>
+      {error || ' '}
+    </HelperText>
   </>
 );
 
@@ -709,7 +831,9 @@ const MoneyInput = ({ label, value, onChange, error }: any) => (
       left={<TextInput.Icon icon="currency-inr" />}
       error={!!error}
     />
-    <HelperText type="error" visible={!!error}>{error || ' '}</HelperText>
+    <HelperText type="error" visible={!!error}>
+      {error || ' '}
+    </HelperText>
   </View>
 );
 

@@ -1,4 +1,8 @@
-import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
+import {
+  useFocusEffect,
+  useNavigation,
+  useRoute,
+} from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React from 'react';
 import { Alert, ScrollView, Share, StyleSheet, View } from 'react-native';
@@ -36,9 +40,13 @@ export default function TenantViewScreen() {
   const theme = useTheme();
 
   const [tenant, setTenant] = React.useState<TenantRecord | null>(null);
-  const [profileSignedUrl, setProfileSignedUrl] = React.useState<string | undefined>();
+  const [profileSignedUrl, setProfileSignedUrl] = React.useState<
+    string | undefined
+  >();
   const [roomName, setRoomName] = React.useState<string>('No room assigned');
-  const [joiningDateLine, setJoiningDateLine] = React.useState<string | undefined>();
+  const [joiningDateLine, setJoiningDateLine] = React.useState<
+    string | undefined
+  >();
   const [loading, setLoading] = React.useState(false);
   const skipNextReloadRef = React.useRef(false);
   const [sharingLabel, setSharingLabel] = React.useState<string | null>(null);
@@ -142,7 +150,10 @@ export default function TenantViewScreen() {
     try {
       const signed = await createSignedUrl(url);
       if (!signed) {
-        Alert.alert('Open failed', 'Could not generate a secure link. Please try again.');
+        Alert.alert(
+          'Open failed',
+          'Could not generate a secure link. Please try again.',
+        );
         return;
       }
       skipNextReloadRef.current = true;
@@ -161,7 +172,10 @@ export default function TenantViewScreen() {
       setSharingLabel(label);
       const signed = await createSignedUrl(url);
       if (!signed) {
-        Alert.alert('Share failed', 'Could not generate a secure link. Please try again.');
+        Alert.alert(
+          'Share failed',
+          'Could not generate a secure link. Please try again.',
+        );
         return;
       }
 
@@ -180,7 +194,10 @@ export default function TenantViewScreen() {
       const fileName = `${safeBase}_${tenantId}.${ext}`;
       const destPath = `${RNBlobUtil.fs.dirs.CacheDir}/${fileName}`;
 
-      await RNBlobUtil.config({ path: destPath, fileCache: true }).fetch('GET', signed);
+      await RNBlobUtil.config({ path: destPath, fileCache: true }).fetch(
+        'GET',
+        signed,
+      );
       const fileUrl = `file://${destPath}`;
 
       await Share.share({
@@ -215,7 +232,11 @@ export default function TenantViewScreen() {
         {/* PERSONAL INFO */}
         <Section title="Personal Information">
           <InfoRow icon="phone" label="Mobile" value={tenant.mobile} />
-          <InfoRow icon="phone-plus" label="Alternate Mobile" value={tenant.alternate_mobile} />
+          <InfoRow
+            icon="phone-plus"
+            label="Alternate Mobile"
+            value={tenant.alternate_mobile}
+          />
           <InfoRow
             icon="account-group"
             label="Family Members"
@@ -226,7 +247,11 @@ export default function TenantViewScreen() {
         {/* ADDRESS */}
         <Section title="Address & Work">
           <InfoRow icon="map-marker" label="Address" value={tenant.address} />
-          <InfoRow icon="office-building" label="Company" value={tenant.company_name} />
+          <InfoRow
+            icon="office-building"
+            label="Company"
+            value={tenant.company_name}
+          />
         </Section>
 
         {/* DOCUMENTS */}
@@ -360,7 +385,11 @@ const DocTile = ({
             ]}
           />
           <IconButton
-            icon={sharing ? () => <ActivityIndicator size={16} color={shareTone.icon} /> : 'share-variant'}
+            icon={
+              sharing
+                ? () => <ActivityIndicator size={16} color={shareTone.icon} />
+                : 'share-variant'
+            }
             size={18}
             onPress={onShare}
             disabled={sharing}

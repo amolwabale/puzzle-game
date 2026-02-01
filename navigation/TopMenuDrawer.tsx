@@ -1,6 +1,12 @@
 import React from 'react';
 import { Alert, Animated, Pressable, StyleSheet, View } from 'react-native';
-import { Portal, Surface, Text, TouchableRipple, useTheme } from 'react-native-paper';
+import {
+  Portal,
+  Surface,
+  Text,
+  TouchableRipple,
+  useTheme,
+} from 'react-native-paper';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import supabase from '../service/SupabaseClient';
@@ -98,13 +104,17 @@ export function TopMenuProvider({
         <Portal>
           <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
             <Pressable style={styles.backdrop} onPress={closeMenu} />
-            <Animated.View style={[styles.panelWrap, { transform: [{ translateY }] }]}>
+            <Animated.View
+              style={[styles.panelWrap, { transform: [{ translateY }] }]}
+            >
               <Surface
                 style={[
                   styles.panel,
                   {
                     backgroundColor: theme.colors.surface,
-                    borderColor: (theme.colors as any).outlineVariant ?? theme.colors.outline,
+                    borderColor:
+                      (theme.colors as any).outlineVariant ??
+                      theme.colors.outline,
                     paddingTop: styles.panel.paddingTop + insets.top,
                   },
                 ]}
@@ -113,10 +123,18 @@ export function TopMenuProvider({
                 <View
                   style={[
                     styles.handle,
-                    { backgroundColor: (theme.colors as any).outlineVariant ?? theme.colors.outline },
+                    {
+                      backgroundColor:
+                        (theme.colors as any).outlineVariant ??
+                        theme.colors.outline,
+                    },
                   ]}
                 />
-                <Text style={[styles.panelTitle, { color: theme.colors.onSurface }]}>Menu</Text>
+                <Text
+                  style={[styles.panelTitle, { color: theme.colors.onSurface }]}
+                >
+                  Menu
+                </Text>
 
                 <MenuItem
                   icon="account-circle-outline"
@@ -126,7 +144,9 @@ export function TopMenuProvider({
                 <MenuItem
                   icon="lock-reset"
                   label="Change password"
-                  onPress={() => go('MenuTabs', { screen: 'MenuChangePassword' })}
+                  onPress={() =>
+                    go('MenuTabs', { screen: 'MenuChangePassword' })
+                  }
                 />
                 <MenuItem
                   icon="lifebuoy"
@@ -137,7 +157,11 @@ export function TopMenuProvider({
                 <View
                   style={[
                     styles.divider,
-                    { backgroundColor: (theme.colors as any).outlineVariant ?? theme.colors.outline },
+                    {
+                      backgroundColor:
+                        (theme.colors as any).outlineVariant ??
+                        theme.colors.outline,
+                    },
                   ]}
                 />
 
@@ -169,25 +193,32 @@ function MenuItem({
 }) {
   const theme = useTheme();
   const color = tone === 'danger' ? theme.colors.error : theme.colors.onSurface;
-  const iconColor = tone === 'danger' ? theme.colors.error : theme.colors.primary;
-  const chevronColor = (theme.colors as any).onSurfaceVariant ?? theme.colors.onSurface;
+  const iconColor =
+    tone === 'danger' ? theme.colors.error : theme.colors.primary;
+  const chevronColor =
+    (theme.colors as any).onSurfaceVariant ?? theme.colors.onSurface;
   const itemBg =
-    tone === 'danger'
-      ? theme.colors.surface
-      : theme.colors.surface;
-  const itemBorder = (theme.colors as any).outlineVariant ?? theme.colors.outline;
+    tone === 'danger' ? theme.colors.surface : theme.colors.surface;
+  const itemBorder =
+    (theme.colors as any).outlineVariant ?? theme.colors.outline;
   const iconBg =
-    tone === 'danger'
-      ? theme.colors.surface
-      : theme.colors.surface;
+    tone === 'danger' ? theme.colors.surface : theme.colors.surface;
 
   return (
     <TouchableRipple
       onPress={onPress}
-      style={[styles.item, { backgroundColor: itemBg, borderColor: itemBorder }]}
+      style={[
+        styles.item,
+        { backgroundColor: itemBg, borderColor: itemBorder },
+      ]}
     >
       <View style={styles.itemInner}>
-        <View style={[styles.itemIconWrap, { backgroundColor: iconBg, borderColor: itemBorder }]}>
+        <View
+          style={[
+            styles.itemIconWrap,
+            { backgroundColor: iconBg, borderColor: itemBorder },
+          ]}
+        >
           <MaterialCommunityIcons name={icon} size={18} color={iconColor} />
         </View>
 
@@ -195,14 +226,21 @@ function MenuItem({
           {label}
         </Text>
 
-        <MaterialCommunityIcons name="chevron-right" size={20} color={chevronColor} />
+        <MaterialCommunityIcons
+          name="chevron-right"
+          size={20}
+          color={chevronColor}
+        />
       </View>
     </TouchableRipple>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(15, 23, 42, 0.18)' },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(15, 23, 42, 0.18)',
+  },
   panelWrap: { position: 'absolute', left: 0, right: 0, top: 0 },
   panel: {
     borderBottomLeftRadius: 20,
@@ -220,7 +258,12 @@ const styles = StyleSheet.create({
     opacity: 0.35,
     marginBottom: 8,
   },
-  panelTitle: { fontWeight: '900', fontSize: 16, marginBottom: 10, textAlign: 'left' },
+  panelTitle: {
+    fontWeight: '900',
+    fontSize: 16,
+    marginBottom: 10,
+    textAlign: 'left',
+  },
   item: {
     borderRadius: 14,
     overflow: 'hidden',
@@ -245,4 +288,3 @@ const styles = StyleSheet.create({
   itemText: { flex: 1, fontWeight: '800', fontSize: 15 },
   divider: { height: StyleSheet.hairlineWidth, marginVertical: 6 },
 });
-

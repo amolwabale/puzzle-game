@@ -11,16 +11,11 @@ const formatTime = (iso?: string | null) =>
       })
     : '';
 
-export function ChatBubble({
-  msg,
-  isMe,
-}: {
-  msg: TicketChat;
-  isMe: boolean;
-}) {
+export function ChatBubble({ msg, isMe }: { msg: TicketChat; isMe: boolean }) {
   const theme = useTheme();
   const bubbleBg = isMe ? theme.colors.primaryContainer : '#FFFFFF';
-  const bubbleBorder = (theme.colors as any).outlineVariant ?? theme.colors.outline;
+  const bubbleBorder =
+    (theme.colors as any).outlineVariant ?? theme.colors.outline;
   const textColor = theme.colors.onSurface;
 
   return (
@@ -56,6 +51,11 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
   },
   chatText: { fontSize: 14, fontWeight: '700', lineHeight: 20 },
-  timeText: { marginTop: 4, fontSize: 11, fontWeight: '800', color: '#6B7280', alignSelf: 'flex-end' },
+  timeText: {
+    marginTop: 4,
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#6B7280',
+    alignSelf: 'flex-end',
+  },
 });
-

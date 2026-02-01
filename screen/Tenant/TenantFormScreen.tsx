@@ -1,4 +1,8 @@
-import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
+import {
+  useFocusEffect,
+  useNavigation,
+  useRoute,
+} from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React from 'react';
 import {
@@ -14,14 +18,15 @@ import {
   Avatar,
   Button,
   FAB,
-  HelperText,
   IconButton,
   Surface,
   Text,
-  TextInput,
+  TouchableRipple,
   useTheme,
 } from 'react-native-paper';
-import DocumentPicker, { types as docTypes } from 'react-native-document-picker';
+import DocumentPicker, {
+  types as docTypes,
+} from 'react-native-document-picker';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { TenantStackParamList } from '../../navigation/StackParam';
 import {
@@ -32,6 +37,7 @@ import {
   TenantRecord,
 } from '../../service/tenantService';
 import { supabase } from '../../service/SupabaseClient';
+import { FormInput } from '../../components/FormInput';
 
 type FileState = { file?: FileInput | null; url?: string | null };
 type Props = NativeStackScreenProps<TenantStackParamList, 'TenantForm'>;
@@ -40,6 +46,7 @@ const isNumeric = (v: string) => /^\d+$/.test(v);
 const isMobile = (v: string) => /^\d{10}$/.test(v);
 
 export default function TenantFormScreen() {
+  const theme = useTheme();
   const navigation = useNavigation();
   const route = useRoute<Props['route']>();
   const { mode, tenantId } = route.params || { mode: 'add' as const };
@@ -55,7 +62,9 @@ export default function TenantFormScreen() {
   const [company, setCompany] = React.useState('');
 
   const [profile, setProfile] = React.useState<FileState>({});
-  const [profileSignedUrl, setProfileSignedUrl] = React.useState<string | undefined>();
+  const [profileSignedUrl, setProfileSignedUrl] = React.useState<
+    string | undefined
+  >();
 
   const [adhar, setAdhar] = React.useState<FileState>({});
   const [pan, setPan] = React.useState<FileState>({});
@@ -106,9 +115,7 @@ export default function TenantFormScreen() {
 
       setProfile({ url: (t as any).profile_photo_url });
 
-      const signed = await createSignedUrl(
-        (t as any).profile_photo_url
-      );
+      const signed = await createSignedUrl((t as any).profile_photo_url);
       setProfileSignedUrl(signed);
 
       setAdhar({ url: t.adhar_card_url });
@@ -130,14 +137,19 @@ export default function TenantFormScreen() {
     if (!name.trim()) e.name = 'Required';
     if (!address.trim()) e.address = 'Required';
     if (!isMobile(mobile)) e.mobile = 'Invalid mobile';
-    if (alternateMobile && !isNumeric(alternateMobile)) e.alternateMobile = 'Numbers only';
-    if (familyMembers && !isNumeric(familyMembers)) e.familyMembers = 'Numbers only';
+    if (alternateMobile && !isNumeric(alternateMobile))
+      e.alternateMobile = 'Numbers only';
+    if (familyMembers && !isNumeric(familyMembers))
+      e.familyMembers = 'Numbers only';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
   const pickPhoto = async () => {
-    const r = await launchImageLibrary({ mediaType: 'photo', selectionLimit: 1 });
+    const r = await launchImageLibrary({
+      mediaType: 'photo',
+      selectionLimit: 1,
+    });
     const a = r.assets?.[0];
     if (!a?.uri) return;
 
@@ -175,13 +187,19 @@ export default function TenantFormScreen() {
       const normalized = name.trim().toLowerCase();
       const existing = await fetchTenants();
       const duplicate = (existing || []).find((t: any) => {
-        const tn = String(t?.name || '').trim().toLowerCase();
+        const tn = String(t?.name || '')
+          .trim()
+          .toLowerCase();
         if (!tn) return false;
-        if (mode === 'edit' && tenantId != null && t?.id === tenantId) return false;
+        if (mode === 'edit' && tenantId != null && t?.id === tenantId)
+          return false;
         return tn === normalized;
       });
       if (duplicate) {
-        setErrors((prev) => ({ ...prev, name: 'Tenant with same name already exists' }));
+        setErrors(prev => ({
+          ...prev,
+          name: 'Tenant with same name already exists',
+        }));
         return;
       }
 
@@ -211,59 +229,130 @@ export default function TenantFormScreen() {
     );
   }
 
-  const avatarUri = profile.file
-    ? profile.file.uri
-    : profileSignedUrl;
+  const avatarUri = profile.file ? profile.file.uri : profileSignedUrl;
 
   return (
     <>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
         <ScrollView contentContainerStyle={styles.container}>
           {/* HERO */}
           <Surface style={styles.hero} elevation={4}>
             <AvatarDisplay uri={avatarUri} size={88} />
-            <View style={{ marginLeft: 16 }}>
+
+            <View style={{ marginLeft: 16, flex: 1 }}>
               <Text variant="titleLarge" style={styles.heroTitle}>
                 {mode === 'edit' ? 'Edit Tenant' : 'Add Tenant'}
               </Text>
-              <Button mode="text" onPress={pickPhoto} labelStyle={styles.heroLinkLabel}>
-                {profile.file || profile.url ? 'Change Photo' : 'Upload Photo'}
-              </Button>
+
+              <TouchableRipple
+                onPress={pickPhoto}
+                borderless
+                style={[
+                  styles.photoAction,
+                  {
+                    borderColor: theme.colors.primary,
+                    backgroundColor: theme.colors.primaryContainer,
+                  },
+                ]}
+              >
+                <View style={styles.photoActionContent}>
+                  <IconButton
+                    icon={
+                      profile.file || profile.url
+                        ? 'camera-outline'
+                        : 'upload-outline'
+                    }
+                    size={18}
+                    style={styles.photoIcon}
+                  />
+                  <Text style={styles.photoActionText}>
+                    {profile.file || profile.url
+                      ? 'Change photo'
+                      : 'Upload photo'}
+                  </Text>
+                </View>
+              </TouchableRipple>
             </View>
           </Surface>
 
           {/* PERSONAL */}
           <Section title="Personal Information">
-            <Input label="Full Name *" value={name} onChange={setName} error={errors.name} />
-            <Input label="Mobile *" value={mobile} onChange={setMobile} error={errors.mobile} keyboard="number-pad" />
-            <Input label="Alternate Mobile" value={alternateMobile} onChange={setAlternateMobile} />
-            <Input label="Family Members" value={familyMembers} onChange={setFamilyMembers} keyboard="number-pad" />
+            <FormInput
+              label="Full Name *"
+              value={name}
+              onChange={setName}
+              error={errors.name}
+            />
+            <FormInput
+              label="Mobile *"
+              value={mobile}
+              onChange={setMobile}
+              error={errors.mobile}
+              keyboard="number-pad"
+            />
+            <FormInput
+              label="Alternate Mobile"
+              value={alternateMobile}
+              onChange={setAlternateMobile}
+            />
+            <FormInput
+              label="Family Members"
+              value={familyMembers}
+              onChange={setFamilyMembers}
+              keyboard="number-pad"
+            />
           </Section>
 
           {/* ADDRESS */}
           <Section title="Address & Work">
-            <Input
+            <FormInput
               label="Address *"
               value={address}
               onChange={setAddress}
               error={errors.address}
-              multiline
             />
-            <Input label="Company Name" value={company} onChange={setCompany} />
+            <FormInput
+              label="Company Name"
+              value={company}
+              onChange={setCompany}
+            />
           </Section>
 
           {/* DOCUMENTS */}
           <Section title="Documents">
             <View style={styles.docGrid}>
-              <DocTile icon="card-account-details" label="Aadhaar" state={adhar} onPick={() => pickFile(setAdhar)} />
-              <DocTile icon="card-bulleted" label="PAN" state={pan} onPick={() => pickFile(setPan)} />
-              <DocTile icon="file-document" label="Agreement" state={agreement} onPick={() => pickFile(setAgreement)} />
+              <DocTile
+                icon="card-account-details"
+                label="Aadhaar"
+                state={adhar}
+                onPick={() => pickFile(setAdhar)}
+              />
+              <DocTile
+                icon="card-bulleted"
+                label="PAN"
+                state={pan}
+                onPick={() => pickFile(setPan)}
+              />
+              <DocTile
+                icon="file-document"
+                label="Agreement"
+                state={agreement}
+                onPick={() => pickFile(setAgreement)}
+              />
             </View>
           </Section>
         </ScrollView>
       </KeyboardAvoidingView>
 
-      <FAB icon="content-save" style={styles.fab} loading={saving} onPress={save} />
+      <FAB
+        icon="content-save"
+        style={styles.fab}
+        loading={saving}
+        onPress={save}
+      />
     </>
   );
 }
@@ -272,47 +361,12 @@ export default function TenantFormScreen() {
 
 const Section = ({ title, children }: any) => (
   <Surface style={styles.section} elevation={2}>
-    <Text variant="titleMedium" style={styles.sectionTitle}>{title}</Text>
+    <Text variant="titleMedium" style={styles.sectionTitle}>
+      {title}
+    </Text>
     {children}
   </Surface>
 );
-
-const Input = ({ label, value, onChange, error, keyboard, multiline }: any) => {
-  const theme = useTheme();
-  const inputTheme = React.useMemo(
-    () =>
-      ({
-        ...theme,
-        fonts: {
-          ...(theme as any).fonts,
-          // MD3: labelLarge is used for TextInput label, bodyLarge for input text.
-          labelLarge: { ...(theme as any).fonts?.labelLarge, fontSize: 16 },
-          bodyLarge: { ...(theme as any).fonts?.bodyLarge, fontSize: 18 },
-        },
-      }) as any,
-    [theme],
-  );
-
-  return (
-    <>
-      <TextInput
-        label={label}
-        value={value}
-        onChangeText={onChange}
-        mode="outlined"
-        keyboardType={keyboard}
-        multiline={multiline}
-        style={styles.input}
-        contentStyle={styles.inputContent}
-        theme={inputTheme}
-        error={!!error}
-      />
-      <HelperText type="error" visible={!!error} style={styles.helperText}>
-        {error || ' '}
-      </HelperText>
-    </>
-  );
-};
 
 const DocTile = ({ icon, label, state, onPick }: any) => (
   <Surface style={styles.docTile} elevation={2}>
@@ -325,7 +379,11 @@ const DocTile = ({ icon, label, state, onPick }: any) => (
 );
 
 const AvatarDisplay = ({ uri, size }: any) =>
-  uri ? <Avatar.Image size={size} source={{ uri }} /> : <Avatar.Icon size={size} icon="account" />;
+  uri ? (
+    <Avatar.Image size={size} source={{ uri }} />
+  ) : (
+    <Avatar.Icon size={size} icon="account" />
+  );
 
 /* ---------------- STYLES ---------------- */
 
@@ -341,6 +399,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 16,
+    backgroundColor: '#FFFFFF',
   },
   // ~15% typography bump
   heroTitle: { fontWeight: '700', fontSize: 25 },
@@ -349,15 +408,13 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
+    backgroundColor: '#FFFFFF',
   },
   sectionTitle: {
     fontWeight: '600',
     marginBottom: 12,
     fontSize: 18,
   },
-  input: { marginBottom: 4 },
-  inputContent: { fontSize: 18 },
-  helperText: { fontSize: 14 },
   docGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -368,6 +425,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 12,
     alignItems: 'center',
+    backgroundColor: '#FFFFFF',
   },
   docLabel: {
     fontWeight: '600',
@@ -384,5 +442,28 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  photoAction: {
+    alignSelf: 'flex-start',
+    marginTop: 6,
+    borderRadius: 20,
+  },
+
+  photoActionContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+  },
+
+  photoIcon: {
+    margin: 0,
+    marginRight: 4,
+  },
+
+  photoActionText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#374151',
   },
 });

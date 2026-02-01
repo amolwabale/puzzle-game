@@ -1,4 +1,8 @@
-import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
+import {
+  useFocusEffect,
+  useNavigation,
+  useRoute,
+} from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React from 'react';
 import { Alert, ScrollView, StyleSheet, View } from 'react-native';
@@ -32,11 +36,7 @@ const formatDate = (d?: string | null) =>
     : '-';
 
 const getInitials = (name?: string | null) => {
-  const parts = (name || '')
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2);
+  const parts = (name || '').trim().split(/\s+/).filter(Boolean).slice(0, 2);
   if (parts.length === 0) return 'T';
   return parts.map(p => p[0]?.toUpperCase()).join('');
 };
@@ -47,9 +47,14 @@ export default function RoomViewScreen() {
   const { roomId } = route.params;
 
   const [room, setRoom] = React.useState<RoomRecord | null>(null);
-  const [activeTenant, setActiveTenant] = React.useState<TenantRoomRecord | null>(null);
-  const [activeMeterUnit, setActiveMeterUnit] = React.useState<number | null>(null);
-  const [tenantHistory, setTenantHistory] = React.useState<TenantHistoryRecord[]>([]);
+  const [activeTenant, setActiveTenant] =
+    React.useState<TenantRoomRecord | null>(null);
+  const [activeMeterUnit, setActiveMeterUnit] = React.useState<number | null>(
+    null,
+  );
+  const [tenantHistory, setTenantHistory] = React.useState<
+    TenantHistoryRecord[]
+  >([]);
   const [loading, setLoading] = React.useState(false);
 
   const load = React.useCallback(async () => {
@@ -122,9 +127,21 @@ export default function RoomViewScreen() {
 
         {/* HIGHLIGHTS */}
         <View style={styles.highlightRow}>
-          <HighlightCard icon="ruler-square" label="Area (sq ft)" value={`${room.area ?? '-'}`} />
-          <HighlightCard icon="currency-inr" label="Rent (₹)" value={`₹${room.rent ?? '-'}`} />
-          <HighlightCard icon="bank" label="Deposit (₹)" value={`₹${room.deposit ?? '-'}`} />
+          <HighlightCard
+            icon="ruler-square"
+            label="Area (sq ft)"
+            value={`${room.area ?? '-'}`}
+          />
+          <HighlightCard
+            icon="currency-inr"
+            label="Rent (₹)"
+            value={`₹${room.rent ?? '-'}`}
+          />
+          <HighlightCard
+            icon="bank"
+            label="Deposit (₹)"
+            value={`₹${room.deposit ?? '-'}`}
+          />
         </View>
 
         {/* DETAILS */}
@@ -132,7 +149,11 @@ export default function RoomViewScreen() {
           <Text variant="titleMedium" style={styles.sectionTitle}>
             Additional Details
           </Text>
-          <InfoRow icon="comment-text-outline" label="Comment" value={room.comment} />
+          <InfoRow
+            icon="comment-text-outline"
+            label="Comment"
+            value={room.comment}
+          />
         </Surface>
 
         {/* TENANT OCCUPANCY (VIEW ONLY) */}
@@ -163,7 +184,11 @@ export default function RoomViewScreen() {
 
               <View style={styles.occupancyMetaRow}>
                 <View style={styles.metaRow}>
-                  <IconButton icon="counter" size={18} style={styles.metaIcon} />
+                  <IconButton
+                    icon="counter"
+                    size={18}
+                    style={styles.metaIcon}
+                  />
                   <View style={{ flex: 1 }}>
                     <Text style={styles.metaLabel}>Joining Meter reading</Text>
                     <Text style={styles.metaValue}>
@@ -173,7 +198,11 @@ export default function RoomViewScreen() {
                 </View>
 
                 <View style={[styles.metaRow, { marginTop: 10 }]}>
-                  <IconButton icon="calendar" size={18} style={styles.metaIcon} />
+                  <IconButton
+                    icon="calendar"
+                    size={18}
+                    style={styles.metaIcon}
+                  />
                   <View style={{ flex: 1 }}>
                     <Text style={styles.metaLabel}>Joining date</Text>
                     <Text style={styles.metaValue}>
@@ -260,7 +289,7 @@ const styles = StyleSheet.create({
   },
 
   scrollContent: {
-    flexGrow: 1,            // ✅ KEY FIX
+    flexGrow: 1, // ✅ KEY FIX
     padding: 16,
     paddingBottom: 120,
   },
