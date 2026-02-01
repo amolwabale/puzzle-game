@@ -17,9 +17,12 @@ import {
   ActivityIndicator,
   Avatar,
   Button,
+  Chip,
+  Dialog,
   FAB,
   Icon,
   IconButton,
+  Portal,
   Surface,
   Text,
   useTheme,
@@ -49,6 +52,34 @@ const formatMonth = (d: Date) =>
     month: 'short',
     year: 'numeric',
   });
+
+function normalizeBillingMonth(d: Date) {
+  // Store as a single datetime representing the month (1st day).
+  // Use UTC noon to avoid timezone edge-cases around day/month boundaries.
+  return new Date(Date.UTC(d.getFullYear(), d.getMonth(), 1, 12, 0, 0));
+}
+
+const MONTHS: Array<{ label: string; idx: number }> = [
+  { label: 'Jan', idx: 0 },
+  { label: 'Feb', idx: 1 },
+  { label: 'Mar', idx: 2 },
+  { label: 'Apr', idx: 3 },
+  { label: 'May', idx: 4 },
+  { label: 'Jun', idx: 5 },
+  { label: 'Jul', idx: 6 },
+  { label: 'Aug', idx: 7 },
+  { label: 'Sep', idx: 8 },
+  { label: 'Oct', idx: 9 },
+  { label: 'Nov', idx: 10 },
+  { label: 'Dec', idx: 11 },
+];
+
+function formatBillingMonthLabel(d: Date) {
+  const monthIdx = d.getUTCMonth();
+  const year = d.getUTCFullYear();
+  const m = MONTHS[monthIdx]?.label ?? formatMonth(d);
+  return `${m} ${year}`;
+}
 
 function getPrevAndCurrMonthLabels(date?: Date) {
   const base = date ?? new Date();
@@ -93,6 +124,18 @@ export default function PaymentFormScreen() {
   );
   const [selectedTenant, setSelectedTenant] =
     React.useState<TenantRecord | null>(null);
+
+  const [billingMonth, setBillingMonth] = React.useState<Date>(() =>
+    normalizeBillingMonth(new Date()),
+  );
+  const [billingMonthOpen, setBillingMonthOpen] = React.useState(false);
+  const [billingMonthDraft, setBillingMonthDraft] = React.useState<{
+    year: number;
+    monthIdx: number;
+  }>(() => {
+    const d = normalizeBillingMonth(new Date());
+    return { year: d.getUTCFullYear(), monthIdx: d.getUTCMonth() };
+  });
 
   const [previousMeter, setPreviousMeter] = React.useState<number>(0);
   const [currentMeter, setCurrentMeter] = React.useState('');
@@ -159,8 +202,12 @@ export default function PaymentFormScreen() {
           b.ad_hoc_amount != null ? String(Number(b.ad_hoc_amount || 0)) : '',
         );
         setAdHocComment(b.ad_hoc_comment || '');
+
+        const bmBase = b.billing_month ? new Date(b.billing_month) : new Date(b.created_at);
+        setBillingMonth(normalizeBillingMonth(bmBase));
       } else {
         setEditingBill(null);
+        setBillingMonth(normalizeBillingMonth(new Date()));
       }
     } catch (e: any) {
       Alert.alert('Load Failed', e.message || 'Could not load payment form');
@@ -236,6 +283,7 @@ export default function PaymentFormScreen() {
 
       const prev = previousMeter;
       const curr = Number(currentMeter);
+      const billingMonthIso = normalizeBillingMonth(billingMonth).toISOString();
 
       if (isEdit && billId) {
         const paidAmount =
@@ -250,6 +298,7 @@ export default function PaymentFormScreen() {
           billId,
           tenantId: selectedTenant.id,
           roomId: selectedRoom.id,
+          billingMonth: billingMonthIso,
           rent,
           water,
           previousMeter: prev,
@@ -288,6 +337,7 @@ export default function PaymentFormScreen() {
       await createBill({
         tenantId: selectedTenant.id,
         roomId: selectedRoom.id,
+        billingMonth: billingMonthIso,
         rent,
         water,
         previousMeter: prev,
@@ -481,6 +531,64 @@ export default function PaymentFormScreen() {
                     )}
                   </Surface>
                 )}
+
+                {/* Billing month */}
+                <TouchableOpacity
+                  onPress={() => {
+                    const bm = normalizeBillingMonth(billingMonth);
+                    setBillingMonthDraft({
+                      year: bm.getUTCFullYear(),
+                      monthIdx: bm.getUTCMonth(),
+                    });
+                    setBillingMonthOpen(true);
+                  }}
+                  activeOpacity={0.85}
+                  style={[styles.billingMonthRow, { borderColor: (theme.colors as any).outlineVariant ?? theme.colors.outline }]}
+                >
+                  <View
+                    style={[
+                      styles.billingMonthIcon,
+                      { backgroundColor: theme.colors.primaryContainer },
+                    ]}
+                  >
+                    <Icon
+                      source="calendar-month-outline"
+                      size={18}
+                      color={theme.colors.primary}
+                    />
+                  </View>
+                  <View style={{ flex: 1, minWidth: 0 }}>
+                    <Text style={styles.billingMonthLabel} numberOfLines={1}>
+                      Billing month
+                    </Text>
+                    <View style={styles.billingMonthValueRow}>
+                      <Chip
+                        compact
+                        showSelectedCheck={false}
+                        style={[
+                          styles.billingMonthChip,
+                          { backgroundColor: theme.colors.primaryContainer },
+                        ]}
+                        textStyle={[
+                          styles.billingMonthChipText,
+                          { color: theme.colors.primary },
+                        ]}
+                      >
+                        {formatBillingMonthLabel(billingMonth)}
+                      </Chip>
+                      <Text
+                        style={[
+                          styles.billingMonthHint,
+                          { color: theme.colors.onSurfaceVariant },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        Tap to change
+                      </Text>
+                    </View>
+                  </View>
+                  <Icon source="chevron-right" size={20} color="#6B7280" />
+                </TouchableOpacity>
               </Surface>
 
               {/* METER + ADHOC */}
@@ -674,8 +782,159 @@ export default function PaymentFormScreen() {
           loading={saving}
           onPress={save}
         />
+
+        <Portal>
+          <Dialog
+            visible={billingMonthOpen}
+            onDismiss={() => setBillingMonthOpen(false)}
+            style={styles.billingDialog}
+          >
+            <Dialog.Title>Billing month</Dialog.Title>
+            <Dialog.Content>
+              <Text style={styles.billingDialogHint}>
+                Select month and year.
+              </Text>
+
+              <View
+                style={[
+                  styles.billingSelectedRow,
+                  { borderColor: (theme.colors as any).outlineVariant ?? theme.colors.outline },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.billingSelectedIcon,
+                    { backgroundColor: theme.colors.primaryContainer },
+                  ]}
+                >
+                  <Icon
+                    source="calendar-month-outline"
+                    size={18}
+                    color={theme.colors.primary}
+                  />
+                </View>
+                <Text style={[styles.billingSelectedLabel, { color: theme.colors.onSurfaceVariant }]}>
+                  Selected
+                </Text>
+                <Chip
+                  compact
+                  showSelectedCheck={false}
+                  style={[
+                    styles.billingSelectedChip,
+                    { backgroundColor: theme.colors.primaryContainer },
+                  ]}
+                  textStyle={{ fontWeight: '900', color: theme.colors.primary }}
+                >
+                  {MONTHS[billingMonthDraft.monthIdx]?.label} {billingMonthDraft.year}
+                </Chip>
+              </View>
+
+              <Text style={styles.billingDialogLabel}>Month</Text>
+              <View style={styles.billingChipGrid}>
+                {MONTHS.map((m) => (
+                  (() => {
+                    const selected = billingMonthDraft.monthIdx === m.idx;
+                    const outline =
+                      (theme.colors as any).outlineVariant ?? theme.colors.outline;
+                    return (
+                  <Chip
+                    key={m.idx}
+                    compact
+                    showSelectedCheck={false}
+                    selected={billingMonthDraft.monthIdx === m.idx}
+                    onPress={() =>
+                      setBillingMonthDraft((p) => ({ ...p, monthIdx: m.idx }))
+                    }
+                    style={[
+                      styles.billingChip,
+                      {
+                        borderWidth: 1,
+                        borderColor: selected ? theme.colors.primary : outline,
+                        backgroundColor: selected
+                          ? theme.colors.primaryContainer
+                          : theme.colors.surface,
+                      },
+                    ]}
+                    textStyle={[
+                      styles.billingChipText,
+                      { color: selected ? theme.colors.primary : theme.colors.onSurface },
+                    ]}
+                  >
+                    {m.label}
+                  </Chip>
+                    );
+                  })()
+                ))}
+              </View>
+
+              <Text style={styles.billingDialogLabel}>Year</Text>
+              <View style={styles.billingChipGrid}>
+                {getYearOptions(billingMonthDraft.year).map((y) => (
+                  (() => {
+                    const selected = billingMonthDraft.year === y;
+                    const outline =
+                      (theme.colors as any).outlineVariant ?? theme.colors.outline;
+                    return (
+                  <Chip
+                    key={y}
+                    compact
+                    showSelectedCheck={false}
+                    selected={billingMonthDraft.year === y}
+                    onPress={() =>
+                      setBillingMonthDraft((p) => ({ ...p, year: y }))
+                    }
+                    style={[
+                      styles.billingChip,
+                      {
+                        borderWidth: 1,
+                        borderColor: selected ? theme.colors.primary : outline,
+                        backgroundColor: selected
+                          ? theme.colors.primaryContainer
+                          : theme.colors.surface,
+                      },
+                    ]}
+                    textStyle={[
+                      styles.billingChipText,
+                      { color: selected ? theme.colors.primary : theme.colors.onSurface },
+                    ]}
+                  >
+                    {String(y)}
+                  </Chip>
+                    );
+                  })()
+                ))}
+              </View>
+            </Dialog.Content>
+            <Dialog.Actions>
+              <Button onPress={() => setBillingMonthOpen(false)}>Cancel</Button>
+              <Button
+                mode="contained"
+                onPress={() => {
+                  const next = normalizeBillingMonth(
+                    new Date(
+                      billingMonthDraft.year,
+                      billingMonthDraft.monthIdx,
+                      1,
+                    ),
+                  );
+                  setBillingMonth(next);
+                  setBillingMonthOpen(false);
+                }}
+              >
+                Done
+              </Button>
+            </Dialog.Actions>
+          </Dialog>
+        </Portal>
     </>
   );
+}
+
+function getYearOptions(centerYear: number) {
+  // Keep it compact and predictable. Also works well for scrolling bills.
+  const years: number[] = [];
+  for (let y = centerYear - 2; y <= centerYear + 2; y += 1) years.push(y);
+  return years;
 }
 
 const SummaryTile = ({
@@ -863,6 +1122,53 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
+
+  billingMonthRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 14,
+    padding: 12,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+  },
+  billingMonthIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  billingMonthLabel: { fontWeight: '900', fontSize: 14, color: '#111827' },
+  billingMonthValueRow: { marginTop: 6, flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
+  billingMonthChip: { borderRadius: 999 },
+  billingMonthChipText: { fontSize: 12, fontWeight: '900' },
+  billingMonthHint: { fontSize: 12, fontWeight: '800' },
+
+  billingDialog: { borderRadius: 16 },
+  billingDialogHint: { marginTop: -2, marginBottom: 10, color: '#6B7280', fontWeight: '700' },
+  billingDialogLabel: { marginTop: 6, marginBottom: 8, fontWeight: '900', color: '#111827' },
+  billingSelectedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 12,
+    marginBottom: 10,
+  },
+  billingSelectedIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  billingSelectedLabel: { fontWeight: '800', marginRight: 10 },
+  billingSelectedChip: { borderRadius: 999 },
+  billingChipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  billingChip: { marginBottom: 8 },
+  billingChipText: { fontSize: 12, fontWeight: '800' },
 
   occupancyHint: {
     flexDirection: 'row',

@@ -4,6 +4,7 @@ export type BillRecord = {
   id: number;
   created_at: string;
   modified_at: string | null;
+  billing_month?: string | null;
   user_id: string | null;
   tenant_id: number | null;
   room_id: number | null;
@@ -23,6 +24,8 @@ export type BillRecord = {
 export type CreateBillPayload = {
   tenantId: number;
   roomId: number;
+  /** ISO datetime representing the billing month (1st day of month) */
+  billingMonth: string;
   rent: number;
   water: number;
   previousMeter: number;
@@ -39,6 +42,8 @@ export type UpdateBillPayload = {
   billId: number;
   tenantId: number;
   roomId: number;
+  /** ISO datetime representing the billing month (1st day of month) */
+  billingMonth: string;
   rent: number;
   water: number;
   previousMeter: number;
@@ -116,6 +121,7 @@ export async function createBill(
       user_id: userId,
       tenant_id: payload.tenantId,
       room_id: payload.roomId,
+      billing_month: payload.billingMonth,
       rent: payload.rent,
       water: payload.water,
       previous_month_meter_reading: payload.previousMeter,
@@ -145,6 +151,7 @@ export async function updateBill(
     .update({
       tenant_id: payload.tenantId,
       room_id: payload.roomId,
+      billing_month: payload.billingMonth,
       rent: payload.rent,
       water: payload.water,
       previous_month_meter_reading: payload.previousMeter,

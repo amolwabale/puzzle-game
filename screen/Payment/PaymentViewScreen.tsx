@@ -306,9 +306,11 @@ export default function PaymentViewScreen() {
     units > 0 ? twoDp(electricity / units) : settings.electricity_unit || 0;
   const propertyName = settings.property_name || 'Property';
   const propertyAddress = settings.property_address || '';
-  const billMonthShort = formatMonth(new Date(bill.created_at)).toUpperCase();
+  const billMonthShort = formatMonthYear(bill.billing_month ?? bill.created_at);
 
-  const { prevLabel, currLabel } = getPrevAndCurrMonthLabels(bill.created_at);
+  const { prevLabel, currLabel } = getPrevAndCurrMonthLabels(
+    bill.billing_month ?? bill.created_at,
+  );
   const billMonth = formatMonthYear(bill.created_at);
 
   const canEditBill = paid <= 0;
@@ -367,7 +369,7 @@ export default function PaymentViewScreen() {
   const buildShareHtml = () => {
     const propName = settings.property_name || 'Property';
     const propAddr = settings.property_address || '';
-    const monthShort = formatMonth(new Date(bill.created_at)).toUpperCase();
+    const monthShort = formatMonthYear(bill.billing_month ?? bill.created_at);
     const tName = tenantName || 'Tenant';
     const rName = roomName || 'Room';
     const paidAmt = bill.paid_amount || 0;
@@ -816,7 +818,7 @@ export default function PaymentViewScreen() {
                     ]}
                     numberOfLines={1}
                   >
-                    {billMonth}
+                    {billMonthShort}
                   </Text>
                 </Surface>
               </View>

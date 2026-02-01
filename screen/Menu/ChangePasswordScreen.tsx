@@ -107,12 +107,13 @@ export default function ChangePasswordScreen() {
               value={confirmPassword}
               error={errors.confirmPassword}
               onChange={(t) => setConfirmPassword(t)}
-              secureTextEntry
+              secureTextEntry={true}
               autoCapitalize="none"
               autoCorrect={false}
               textContentType="newPassword"
               autoComplete="password-new"
               maxLength={64}
+              multiline={false}
             />
           </View>
 
