@@ -16,6 +16,8 @@ export default function MainTabs() {
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
+        // WhatsApp-like composer behavior: avoid tab bar + keyboard overlap.
+        tabBarHideOnKeyboard: true,
         tabBarStyle: {
           paddingTop: 8,
           paddingBottom: 10,

@@ -6,8 +6,9 @@ import {
 import React from 'react';
 import {
   Alert,
+  Animated,
   FlatList,
-  KeyboardAvoidingView,
+  Keyboard,
   Platform,
   StyleSheet,
   View,
@@ -58,6 +59,9 @@ export default function TicketChatScreen() {
   const [sending, setSending] = React.useState(false);
   const [input, setInput] = React.useState('');
   const [detailsOpen, setDetailsOpen] = React.useState(false);
+  const [composerHeight, setComposerHeight] = React.useState(0);
+  const [keyboardHeight, setKeyboardHeight] = React.useState(0);
+  const keyboardAnim = React.useRef(new Animated.Value(0)).current;
 
   const listRef = React.useRef<FlatList<TicketChat>>(null);
 
@@ -126,6 +130,43 @@ export default function TicketChatScreen() {
     }
   }, [loading, messages.length, scrollToLatest]);
 
+  // WhatsApp-like composer: move the input bar by actual keyboard height.
+  // This avoids inconsistencies with KeyboardAvoidingView + tab bars.
+  React.useEffect(() => {
+    const showEvt =
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvt =
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const onShow = (e: any) => {
+      const h = e?.endCoordinates?.height
+        ? Number(e.endCoordinates.height)
+        : 0;
+      setKeyboardHeight(h);
+      Animated.timing(keyboardAnim, {
+        toValue: h,
+        duration: typeof e?.duration === 'number' ? e.duration : 220,
+        useNativeDriver: true,
+      }).start();
+    };
+
+    const onHide = (e: any) => {
+      setKeyboardHeight(0);
+      Animated.timing(keyboardAnim, {
+        toValue: 0,
+        duration: typeof e?.duration === 'number' ? e.duration : 180,
+        useNativeDriver: true,
+      }).start();
+    };
+
+    const s1 = Keyboard.addListener(showEvt as any, onShow);
+    const s2 = Keyboard.addListener(hideEvt as any, onHide);
+    return () => {
+      s1.remove();
+      s2.remove();
+    };
+  }, [keyboardAnim]);
+
   const canChat = ticket?.status !== 'CLOSED';
 
   const onSend = async () => {
@@ -168,11 +209,7 @@ export default function TicketChatScreen() {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.screen}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
-    >
+    <View style={styles.screen}>
       {/* 🔒 PINNED HEADER */}
       <Surface style={styles.pinnedHeader} elevation={3}>
         <TouchableRipple onPress={() => setDetailsOpen(v => !v)} borderless>
@@ -283,41 +320,70 @@ export default function TicketChatScreen() {
         )}
       </Surface>
 
-      {/* 💬 CHAT LIST */}
-      <FlatList
-        ref={listRef}
-        data={messages}
-        keyExtractor={m => m.id}
-        renderItem={({ item }) => (
-          <ChatBubble msg={item} isMe={item.user_role === 'USER'} />
-        )}
-        contentContainerStyle={styles.chatContent}
-        refreshing={refreshing}
-        onRefresh={() => load(true)}
-        onContentSizeChange={() => scrollToLatest(false)}
-      />
-
-      {/* ⌨️ INPUT BAR */}
-      <Surface style={styles.inputBar} elevation={2}>
-        <TextInput
-          mode="outlined"
-          placeholder={canChat ? 'Type a message…' : 'Ticket closed'}
-          value={input}
-          onChangeText={setInput}
-          editable={canChat && !sending}
-          dense
-          style={{ flex: 1 }}
+      <View style={styles.body}>
+        {/* 💬 CHAT LIST */}
+        <FlatList
+          ref={listRef}
+          style={styles.list}
+          data={messages}
+          keyExtractor={m => m.id}
+          renderItem={({ item }) => (
+            <ChatBubble msg={item} isMe={item.user_role === 'USER'} />
+          )}
+          contentContainerStyle={[
+            styles.chatContent,
+            // Reserve space so the last message is never hidden behind the composer
+            // (and so resizing feels WhatsApp-like).
+            { paddingBottom: Math.max(12, composerHeight) + 12 + keyboardHeight },
+          ]}
+          refreshing={refreshing}
+          onRefresh={() => load(true)}
+          onContentSizeChange={() => scrollToLatest(false)}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
         />
-        <Button
-          mode="contained"
-          onPress={onSend}
-          disabled={!canChat || sending || !input.trim()}
-          loading={sending}
+
+        {/* ⌨️ INPUT BAR */}
+        <Animated.View
+          style={[
+            styles.composerWrap,
+            {
+              transform: [{ translateY: Animated.multiply(keyboardAnim, -1) }],
+            },
+          ]}
         >
-          Send
-        </Button>
-      </Surface>
-    </KeyboardAvoidingView>
+          <Surface
+            style={[
+              styles.inputBar,
+              {
+                borderColor:
+                  (theme.colors as any).outlineVariant ?? theme.colors.outline,
+              },
+            ]}
+            elevation={2}
+            onLayout={(e) => setComposerHeight(e.nativeEvent.layout.height)}
+          >
+            <TextInput
+              mode="outlined"
+              placeholder={canChat ? 'Type a message…' : 'Ticket closed'}
+              value={input}
+              onChangeText={setInput}
+              editable={canChat && !sending}
+              dense
+              style={{ flex: 1 }}
+            />
+            <Button
+              mode="contained"
+              onPress={onSend}
+              disabled={!canChat || sending || !input.trim()}
+              loading={sending}
+            >
+              Send
+            </Button>
+          </Surface>
+        </Animated.View>
+      </View>
+    </View>
   );
 }
 
@@ -383,6 +449,14 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
 
+  body: { flex: 1 },
+  list: { flex: 1 },
+  composerWrap: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
   inputBar: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -106,6 +106,8 @@ export default function MenuTabs() {
         // Match MainTabs: hide the tab header and rely on native-stack headers
         // so height/padding matches Home and the rest of the app.
         headerShown: false,
+        // WhatsApp-like composer behavior: avoid tab bar + keyboard overlap.
+        tabBarHideOnKeyboard: true,
         tabBarStyle: {
           paddingTop: 8,
           paddingBottom: 10,
