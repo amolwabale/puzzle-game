@@ -197,6 +197,7 @@ export default function TenantScreen() {
             <View style={styles.listHeader}>
               <Searchbar
                 placeholder="Search tenants"
+                placeholderTextColor="#9CA3AF"
                 value={query}
                 onChangeText={setQuery}
                 style={styles.search}

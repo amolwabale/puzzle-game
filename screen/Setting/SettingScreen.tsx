@@ -254,12 +254,13 @@ export default function SettingScreen() {
             value={propertyName}
             onChange={setPropertyName}
             error={errors.propertyName}
+            maxLength={70}
           />
           <FormInput
             label="Property Address"
             value={propertyAddress}
             onChange={setPropertyAddress}
-            multiline
+            maxLength={100}
           />
         </Section>
 

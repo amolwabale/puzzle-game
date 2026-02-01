@@ -12,6 +12,7 @@ import {
   Avatar,
   Button,
   FAB,
+  Searchbar,
   Text,
 } from 'react-native-paper';
 import { listTickets } from '../../service/ticketService';
@@ -23,6 +24,7 @@ export default function SupportScreen() {
   const [loading, setLoading] = React.useState(true);
   const [refreshing, setRefreshing] = React.useState(false);
   const [tickets, setTickets] = React.useState<Ticket[]>([]);
+  const [query, setQuery] = React.useState('');
 
   const load = React.useCallback(async (isRefresh = false) => {
     try {
@@ -46,6 +48,15 @@ export default function SupportScreen() {
   const goChat = (ticketId: string) =>
     navigation.navigate('SupportTicketChat', { ticketId });
 
+  const visibleTickets = React.useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return tickets;
+    return (tickets || []).filter((t) => {
+      const hay = `${String((t as any)?.title ?? '')} ${String((t as any)?.description ?? '')}`.toLowerCase();
+      return hay.includes(q);
+    });
+  }, [tickets, query]);
+
   return (
     <View style={styles.container}>
       {loading ? (
@@ -67,11 +78,34 @@ export default function SupportScreen() {
         </View>
       ) : (
         <FlatList
-          data={tickets}
+          data={visibleTickets}
           keyExtractor={t => t.id}
           contentContainerStyle={styles.listContent}
+          ListHeaderComponent={
+            tickets.length > 1 ? (
+              <View style={styles.listHeader}>
+                <Searchbar
+                  placeholder="Search tickets"
+                  placeholderTextColor="#9CA3AF"
+                  value={query}
+                  onChangeText={setQuery}
+                  style={styles.search}
+                  inputStyle={styles.searchInput}
+                />
+              </View>
+            ) : null
+          }
+          ListEmptyComponent={
+            query.trim().length ? (
+              <View style={styles.noResults}>
+                <Text style={styles.noResultsText}>
+                  No tickets match your search.
+                </Text>
+              </View>
+            ) : null
+          }
           renderItem={({ item }) => (
-            <TicketCard ticket={item} onPress={() => goChat(item.id)} />
+            <TicketCard ticket={item} onPress={() => goChat(item.id)} query={query} />
           )}
           refreshControl={
             <RefreshControl
@@ -92,6 +126,17 @@ const styles = StyleSheet.create({
   listContent: { padding: 16, paddingBottom: 120 },
   loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   fab: { position: 'absolute', right: 16, bottom: 24 },
+
+  listHeader: { marginBottom: 12 },
+  search: {
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  searchInput: { fontSize: 15, fontWeight: '800' },
+  noResults: { paddingVertical: 18, alignItems: 'center' },
+  noResultsText: { color: '#6B7280', fontWeight: '800' },
 
   emptyState: {
     flex: 1,

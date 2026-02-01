@@ -239,6 +239,7 @@ export default function RoomScreen() {
             <View style={styles.listHeader}>
               <Searchbar
                 placeholder="Search rooms"
+                          placeholderTextColor="#9CA3AF"
                 value={query}
                 onChangeText={setQuery}
                 style={styles.search}
