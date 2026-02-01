@@ -1076,6 +1076,7 @@ export default function PaymentViewScreen() {
                     <View
                       style={[
                         styles.statusPill,
+                        styles.billStatusPill,
                         {
                           backgroundColor: statusTone.bg,
                           borderColor: statusTone.border,
@@ -1087,6 +1088,7 @@ export default function PaymentViewScreen() {
                           styles.statusPillText,
                           { color: statusTone.text },
                         ]}
+                        numberOfLines={1}
                       >
                         {status}
                       </Text>
@@ -1888,6 +1890,12 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 999,
     borderWidth: StyleSheet.hairlineWidth,
+  },
+  // Fixed width only for the main bill card status (symmetry across PAID/PARTIAL/UNPAID).
+  billStatusPill: {
+    width: 92,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   statusPillText: {
     fontWeight: '900',
