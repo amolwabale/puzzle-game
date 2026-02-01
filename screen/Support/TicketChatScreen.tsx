@@ -344,33 +344,26 @@ export default function TicketChatScreen() {
         )}
       </Surface>
 
-      <Animated.View
-        style={[
-          styles.body,
-          Platform.OS === 'ios'
-            ? {
-                transform: [
-                  { translateY: Animated.multiply(keyboardAnim, -1) },
-                ],
-              }
-            : null,
-        ]}
-      >
+      <View style={styles.body}>
         {/* 💬 CHAT LIST */}
         <FlatList
           ref={listRef}
-          style={styles.list}
+          style={[
+            styles.list,
+            // Shrink the visible chat area so it always ends ABOVE
+            // the composer + keyboard (WhatsApp behavior) without moving under the header.
+            { marginBottom: composerHeight + keyboardHeight },
+          ]}
           data={messages}
           keyExtractor={m => m.id}
           renderItem={({ item }) => (
             <ChatBubble msg={item} isMe={item.user_role === 'USER'} />
           )}
-          contentContainerStyle={[
-            styles.chatContent,
-            // Reserve space so the last message is never hidden behind the composer
-            // (and so resizing feels WhatsApp-like).
-            { paddingBottom: Math.max(12, composerHeight) + 12 },
-          ]}
+          contentContainerStyle={styles.chatContent}
+          // IMPORTANT: use a real footer spacer instead of paddingBottom.
+          // Some RN versions don't include contentContainer padding in scrollToEnd,
+          // which can make it stop with the LAST message partially hidden.
+          ListFooterComponent={<View style={{ height: 12 }} />}
           refreshing={refreshing}
           onRefresh={() => load(true)}
           onContentSizeChange={() => scrollToLatest(false)}
@@ -379,7 +372,12 @@ export default function TicketChatScreen() {
         />
 
         {/* ⌨️ INPUT BAR */}
-        <View style={styles.composerWrap}>
+        <Animated.View
+          style={[
+            styles.composerWrap,
+            { transform: [{ translateY: Animated.multiply(keyboardAnim, -1) }] },
+          ]}
+        >
           <Surface
             style={[
               styles.inputBar,
@@ -413,8 +411,8 @@ export default function TicketChatScreen() {
               Send
             </Button>
           </Surface>
-        </View>
-      </Animated.View>
+        </Animated.View>
+      </View>
     </View>
   );
 }
