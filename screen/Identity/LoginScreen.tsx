@@ -13,10 +13,9 @@ import {
 } from 'react-native';
 import {
   Button,
+  Icon,
   Text,
   Surface,
-  TextInput,
-  HelperText,
   useTheme,
   ActivityIndicator,
 } from 'react-native-paper';
@@ -26,6 +25,7 @@ import {
   RootStackParamList,
 } from '../../navigation/StackParam';
 import { Login } from '../../service/IdentityService';
+import { FormInput } from '../../components/FormInput';
 
 type AuthNav = NativeStackNavigationProp<AuthStackParamList, 'LoginScreen'>;
 type RootNav = NativeStackNavigationProp<RootStackParamList>;
@@ -94,54 +94,61 @@ export default function LoginScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.inner}>
-          <Surface style={styles.card} elevation={4}>
-            <Text
-              variant="headlineMedium"
-              style={[styles.title, { color: theme.colors.primary }]}
-            >
-              Login
-            </Text>
+          {/* HERO (Room/Tenant standard) */}
+          <Surface style={[styles.hero, { borderColor: outlineColor(theme) }]} elevation={2}>
+            <View style={[styles.heroIconWrap, { backgroundColor: theme.colors.primaryContainer }]}>
+              <Icon source="lock-outline" size={18} color={theme.colors.primary} />
+            </View>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={styles.heroTitle} numberOfLines={1}>
+                Welcome back
+              </Text>
+              <Text style={styles.heroSub} numberOfLines={2}>
+                Sign in to manage tenants, rooms, and payments.
+              </Text>
+            </View>
+          </Surface>
 
-            <Text variant="bodyMedium" style={styles.subtitle}>
-              Enter your credentials to continue
-            </Text>
-
-            {/* Email */}
-            <View style={styles.field}>
-              <TextInput
-                label="Email *"
-                mode="outlined"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                value={email}
-                onChangeText={text => {
-                  setEmail(text);
-                  setErrors({ ...errors, email: '' });
-                }}
-                error={!!errors.email}
-              />
-              <HelperText type="error" visible style={styles.helperTight}>
-                {errors.email || ' '}
-              </HelperText>
+          {/* FORM */}
+          <Surface style={[styles.card, { borderColor: outlineColor(theme) }]} elevation={2}>
+            <View style={styles.sectionTitleRow}>
+              <View style={[styles.sectionIcon, { backgroundColor: theme.colors.primaryContainer }]}>
+                <Icon source="account-circle-outline" size={18} color={theme.colors.primary} />
+              </View>
+              <Text style={styles.sectionTitle}>Login</Text>
             </View>
 
-            {/* Password */}
-            <View style={styles.field}>
-              <TextInput
-                label="Password *"
-                mode="outlined"
-                secureTextEntry
-                value={password}
-                onChangeText={text => {
-                  setPassword(text);
-                  setErrors({ ...errors, password: '' });
-                }}
-                error={!!errors.password}
-              />
-              <HelperText type="error" visible style={styles.helperTight}>
-                {errors.password || ' '}
-              </HelperText>
-            </View>
+            <FormInput
+              label="Email *"
+              value={email}
+              onChange={(t) => {
+                setEmail(t);
+                setErrors((p) => ({ ...p, email: '' }));
+              }}
+              error={errors.email}
+              keyboard="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              textContentType="username"
+              autoComplete="email"
+              maxLength={50}
+            />
+
+            <FormInput
+              label="Password *"
+              value={password}
+              onChange={(t) => {
+                setPassword(t);
+                setErrors((p) => ({ ...p, password: '' }));
+              }}
+              error={errors.password}
+              secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
+              textContentType="password"
+              autoComplete="password"
+              maxLength={50}
+            />
 
             <View style={styles.buttonRow}>
               <Button
@@ -160,12 +167,11 @@ export default function LoginScreen() {
                 style={styles.primaryButton}
                 contentStyle={styles.buttonContent}
                 disabled={loading}
+                loading={loading}
               >
                 Login
               </Button>
             </View>
-
-            {loading && <ActivityIndicator style={{ marginTop: 16 }} />}
           </Surface>
         </View>
       </ScrollView>
@@ -173,43 +179,56 @@ export default function LoginScreen() {
   );
 }
 
+function outlineColor(theme: any) {
+  return (theme.colors as any).outlineVariant ?? theme.colors.outline;
+}
+
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
+    backgroundColor: '#F4F6FA',
   },
   scroll: {
     flex: 1,
   },
   container: {
     flexGrow: 1,
-    padding: 24,
+    padding: 16,
+    paddingBottom: 120,
   },
   inner: {
     flex: 1,
     justifyContent: 'center',
   },
+
+  hero: {
+    borderRadius: 18,
+    padding: 14,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+  },
+  heroIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  heroTitle: { fontWeight: '900', fontSize: 16, color: '#111827' },
+  heroSub: { marginTop: 2, color: '#6B7280', fontWeight: '800', fontSize: 13 },
+
   card: {
-    padding: 28,
+    marginTop: 14,
     borderRadius: 16,
+    padding: 14,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
   },
-  title: {
-    fontWeight: '700',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  subtitle: {
-    textAlign: 'center',
-    marginBottom: 24,
-    opacity: 0.7,
-  },
-  field: {
-    marginBottom: 8, // slightly tighter, still readable
-  },
-  helperTight: {
-    paddingVertical: 0,
-    marginTop: 2,
-    marginBottom: 0,
-  },
+  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
+  sectionIcon: { width: 36, height: 36, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  sectionTitle: { fontWeight: '900', fontSize: 16, color: '#111827' },
+
   button: {
     marginTop: 16,
   },
@@ -219,7 +238,7 @@ const styles = StyleSheet.create({
   buttonRow: {
     flexDirection: 'row',
     gap: 12, // RN >= 0.71
-    marginTop: 10,
+    marginTop: 4,
   },
   primaryButton: {
     flex: 1,

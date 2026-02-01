@@ -11,15 +11,14 @@ import {
 } from 'react-native';
 import {
   Button,
+  Icon,
   Text,
   Surface,
-  TextInput,
-  HelperText,
   useTheme,
 } from 'react-native-paper';
 import { AuthStackParamList } from '../../navigation/StackParam';
 import { RegisterUser } from '../../service/IdentityService';
-import { RegisterPayload } from '../../model/Register';
+import { FormInput } from '../../components/FormInput';
 
 export default function RegisterScreen() {
   const theme = useTheme();
@@ -104,12 +103,12 @@ export default function RegisterScreen() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.screen}
+      style={[styles.screen, { backgroundColor: theme.colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
     >
       <ScrollView
-        style={styles.scroll}
+        style={[styles.scroll, { backgroundColor: theme.colors.background }]}
         contentContainerStyle={styles.container}
         // Note: using BOTH KeyboardAvoidingView + automaticallyAdjustKeyboardInsets can feel jumpy on long forms.
         // We rely on KeyboardAvoidingView + natural scrolling for smoother behavior.
@@ -121,129 +120,190 @@ export default function RegisterScreen() {
         keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'none'}
         showsVerticalScrollIndicator={false}
       >
-        <Surface style={styles.card} elevation={4}>
-          <Text
-            variant="headlineMedium"
-            style={[styles.title, { color: theme.colors.primary }]}
-          >
-            Create Account
-          </Text>
+        {/* HERO */}
+        <Surface
+          style={[
+            styles.hero,
+            {
+              borderColor: outlineColor(theme),
+              backgroundColor: theme.colors.surface,
+            },
+          ]}
+          elevation={2}
+        >
+          <View style={styles.heroRow}>
+            <View
+              style={[
+                styles.heroIconWrap,
+                { backgroundColor: theme.colors.primaryContainer },
+              ]}
+            >
+              <Icon
+                source="account-plus-outline"
+                size={18}
+                color={theme.colors.primary}
+              />
+            </View>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text
+                style={[styles.heroTitle, { color: theme.colors.onSurface }]}
+                numberOfLines={1}
+              >
+                Create account
+              </Text>
+              <Text
+                style={[styles.heroSub, { color: theme.colors.onSurfaceVariant }]}
+                numberOfLines={2}
+              >
+                Set up your profile to get started.
+              </Text>
+            </View>
+          </View>
+        </Surface>
 
-          {/* First Name */}
-          <TextInput
-            label="First Name *"
-            mode="outlined"
-            value={firstName}
-            onChangeText={text => {
-              setFirstName(text);
-              setErrors({ ...errors, firstName: '' });
-            }}
-            error={!!errors.firstName}
-            style={styles.input}
-          />
-          <HelperText type="error" visible={!!errors.firstName}>
-            {errors.firstName}
-          </HelperText>
+        {/* FORM */}
+        <Surface
+          style={[
+            styles.card,
+            {
+              borderColor: outlineColor(theme),
+              backgroundColor: theme.colors.surface,
+            },
+          ]}
+          elevation={2}
+        >
+          <View style={styles.sectionTitleRow}>
+            <View
+              style={[
+                styles.sectionIcon,
+                { backgroundColor: theme.colors.primaryContainer },
+              ]}
+            >
+              <Icon
+                source="form-textbox"
+                size={18}
+                color={theme.colors.primary}
+              />
+            </View>
+            <Text style={[styles.sectionTitle, { color: theme.colors.onSurface }]}>
+              Registration
+            </Text>
+          </View>
 
-          {/* Last Name */}
-          <TextInput
-            label="Last Name *"
-            mode="outlined"
-            value={lastName}
-            onChangeText={text => {
-              setLastName(text);
-              setErrors({ ...errors, lastName: '' });
-            }}
-            error={!!errors.lastName}
-            style={styles.input}
-          />
-          <HelperText type="error" visible={!!errors.lastName}>
-            {errors.lastName}
-          </HelperText>
+          <View style={styles.twoColRow}>
+            <View style={{ flex: 1 }}>
+              <FormInput
+                label="First name *"
+                value={firstName}
+                onChange={(t) => {
+                  setFirstName(t);
+                  setErrors((p) => ({ ...p, firstName: '' }));
+                }}
+                error={errors.firstName}
+                maxLength={50}
+                autoCapitalize="words"
+                autoCorrect={false}
+                textContentType="givenName"
+                autoComplete="name-given"
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <FormInput
+                label="Last name *"
+                value={lastName}
+                onChange={(t) => {
+                  setLastName(t);
+                  setErrors((p) => ({ ...p, lastName: '' }));
+                }}
+                error={errors.lastName}
+                maxLength={50}
+                autoCapitalize="words"
+                autoCorrect={false}
+                textContentType="familyName"
+                autoComplete="name-family"
+              />
+            </View>
+          </View>
 
-          {/* Email */}
-          <TextInput
+          <FormInput
             label="Email *"
-            mode="outlined"
-            keyboardType="email-address"
-            autoCapitalize="none"
             value={email}
-            onChangeText={text => {
-              setEmail(text);
-              setErrors({ ...errors, email: '' });
+            onChange={(t) => {
+              setEmail(t);
+              setErrors((p) => ({ ...p, email: '' }));
             }}
-            error={!!errors.email}
-            style={styles.input}
+            error={errors.email}
+            keyboard="email-address"
+            maxLength={254}
+            autoCapitalize="none"
+            autoCorrect={false}
+            textContentType="username"
+            autoComplete="email"
           />
-          <HelperText type="error" visible={!!errors.email}>
-            {errors.email}
-          </HelperText>
 
-          {/* Mobile */}
-          <TextInput
-            label="Mobile Number *"
-            mode="outlined"
-            keyboardType="phone-pad"
-            maxLength={10}
+          <FormInput
+            label="Mobile number *"
             value={mobile}
-            onChangeText={text => {
-              setMobile(text);
-              setErrors({ ...errors, mobile: '' });
+            onChange={(t) => {
+              const next = String(t ?? '').replace(/[^\d]/g, '').slice(0, 10);
+              setMobile(next);
+              setErrors((p) => ({ ...p, mobile: '' }));
             }}
-            error={!!errors.mobile}
-            style={styles.input}
+            error={errors.mobile}
+            keyboard="phone-pad"
+            maxLength={10}
+            autoCapitalize="none"
+            autoCorrect={false}
+            textContentType="telephoneNumber"
+            autoComplete="tel"
           />
-          <HelperText type="error" visible={!!errors.mobile}>
-            {errors.mobile}
-          </HelperText>
 
-          {/* Address */}
-          <TextInput
-            label="Address"
-            mode="outlined"
-            multiline
-            numberOfLines={3}
+          <FormInput
+            label="Address (optional)"
             value={address}
-            onChangeText={setAddress}
-            style={styles.input}
+            onChange={(t) => setAddress(t)}
+            maxLength={120}
+            autoCapitalize="words"
+            autoCorrect={false}
+            textContentType="fullStreetAddress"
           />
-          <HelperText type="error" visible={false}>
-            Address is required
-          </HelperText>
 
-          {/* Password */}
-          <TextInput
-            label="Password *"
-            mode="outlined"
-            secureTextEntry
-            value={password}
-            onChangeText={text => {
-              setPassword(text);
-              setErrors({ ...errors, password: '' });
-            }}
-            error={!!errors.password}
-            style={styles.input}
-          />
-          <HelperText type="error" visible={!!errors.password}>
-            {errors.password}
-          </HelperText>
-
-          {/* Confirm Password */}
-          <TextInput
-            label="Confirm Password *"
-            mode="outlined"
-            secureTextEntry
-            value={confirmPassword}
-            onChangeText={text => {
-              setConfirmPassword(text);
-              setErrors({ ...errors, confirmPassword: '' });
-            }}
-            error={!!errors.confirmPassword}
-            style={styles.input}
-          />
-          <HelperText type="error" visible={!!errors.confirmPassword}>
-            {errors.confirmPassword}
-          </HelperText>
+          <View style={styles.twoColRow}>
+            <View style={{ flex: 1 }}>
+              <FormInput
+                label="Password *"
+                value={password}
+                onChange={(t) => {
+                  setPassword(t);
+                  setErrors((p) => ({ ...p, password: '' }));
+                }}
+                error={errors.password}
+                secureTextEntry
+                maxLength={64}
+                autoCapitalize="none"
+                autoCorrect={false}
+                textContentType="newPassword"
+                autoComplete="password-new"
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <FormInput
+                label="Confirm *"
+                value={confirmPassword}
+                onChange={(t) => {
+                  setConfirmPassword(t);
+                  setErrors((p) => ({ ...p, confirmPassword: '' }));
+                }}
+                error={errors.confirmPassword}
+                secureTextEntry
+                maxLength={64}
+                autoCapitalize="none"
+                autoCorrect={false}
+                textContentType="newPassword"
+                autoComplete="password-new"
+              />
+            </View>
+          </View>
 
           <View style={styles.buttonRow}>
             <Button
@@ -272,6 +332,10 @@ export default function RegisterScreen() {
   );
 }
 
+function outlineColor(theme: any) {
+  return (theme.colors as any).outlineVariant ?? theme.colors.outline;
+}
+
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
@@ -280,36 +344,57 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   container: {
-    padding: 24,
-    paddingBottom: 32,
+    flexGrow: 1,
+    padding: 16,
+    paddingBottom: 120,
   },
+
+  hero: {
+    borderRadius: 18,
+    padding: 14,
+    borderWidth: 1,
+  },
+  heroRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  heroIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroTitle: { fontWeight: '900', fontSize: 16 },
+  heroSub: { marginTop: 2, fontWeight: '800', fontSize: 13 },
+
   card: {
-    padding: 28,
+    marginTop: 14,
     borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
   },
-  title: {
-    marginBottom: 8,
-    fontWeight: '700',
-    textAlign: 'center',
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
   },
-  subtitle: {
-    textAlign: 'center',
-    marginBottom: 24,
-    opacity: 0.7,
+  sectionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  input: {
-    marginBottom: 0,
-  },
-  button: {
-    marginTop: 16,
-  },
+  sectionTitle: { fontWeight: '900', fontSize: 16 },
+
+  twoColRow: { flexDirection: 'row', gap: 12 },
+
   buttonContent: {
     paddingVertical: 8,
   },
   buttonRow: {
     flexDirection: 'row',
     gap: 12, // RN >= 0.71
-    marginTop: 16,
+    marginTop: 4,
   },
   primaryButton: {
     flex: 1,

@@ -17,6 +17,11 @@ type Props = {
   keyboard?: any;
   multiline?: boolean;
   maxLength?: number;
+  secureTextEntry?: boolean;
+  autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
+  autoCorrect?: boolean;
+  textContentType?: any;
+  autoComplete?: any;
   /** Optional: pass a style used for the TextInput wrapper */
   style?: StyleProp<ViewStyle>;
   /** Optional: pass a style used for the TextInput content */
@@ -39,6 +44,11 @@ export function FormInput({
   keyboard,
   multiline,
   maxLength,
+  secureTextEntry,
+  autoCapitalize,
+  autoCorrect,
+  textContentType,
+  autoComplete,
   style,
   contentStyle,
   placeholder,
@@ -98,6 +108,11 @@ export function FormInput({
           multiline={!multiline}
           maxLength={maxLength}
           placeholder={placeholder}
+          secureTextEntry={!!secureTextEntry}
+          autoCapitalize={autoCapitalize}
+          autoCorrect={autoCorrect}
+          textContentType={textContentType}
+          autoComplete={autoComplete}
           {...(multiline
             ? {
                 numberOfLines: 4,
