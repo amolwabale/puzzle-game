@@ -11,8 +11,10 @@ import {
   ActivityIndicator,
   Avatar,
   Button,
+  Chip,
   FAB,
   Icon,
+  Searchbar,
   Surface,
   Text,
   TouchableRipple,
@@ -61,6 +63,10 @@ export default function PaymentScreen() {
   const [initialLoading, setInitialLoading] = React.useState(true);
   const [refreshing, setRefreshing] = React.useState(false);
   const [bills, setBills] = React.useState<BillRecord[]>([]);
+  const [query, setQuery] = React.useState('');
+  const [paymentFilter, setPaymentFilter] = React.useState<
+    'ALL' | 'PAID' | 'UNPAID' | 'PARTIAL'
+  >('ALL');
   const [tenantNameById, setTenantNameById] = React.useState<
     Record<number, string>
   >({});
@@ -144,6 +150,47 @@ export default function PaymentScreen() {
     }, [load]),
   );
 
+  const baseBills = React.useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return bills;
+    return (bills || []).filter((b) => {
+      const tenantName =
+        b.tenant_id != null ? tenantNameById[b.tenant_id] : undefined;
+      const roomName = b.room_id != null ? roomNameById[b.room_id] : undefined;
+      const hay = `${String(tenantName ?? '')} ${String(roomName ?? '')}`.toLowerCase();
+      return hay.includes(q);
+    });
+  }, [bills, query, tenantNameById, roomNameById]);
+
+  const normalizeStatus = React.useCallback((b: BillRecord) => {
+    const s = String(b.status || 'UNPAID').toUpperCase();
+    if (s === 'PAID' || s === 'PARTIAL') return s as 'PAID' | 'PARTIAL';
+    return 'UNPAID' as const;
+  }, []);
+
+  const counts = React.useMemo(() => {
+    let paid = 0;
+    let partial = 0;
+    let unpaid = 0;
+    (baseBills || []).forEach((b) => {
+      const s = normalizeStatus(b);
+      if (s === 'PAID') paid += 1;
+      else if (s === 'PARTIAL') partial += 1;
+      else unpaid += 1;
+    });
+    return {
+      all: baseBills.length,
+      paid,
+      partial,
+      unpaid,
+    };
+  }, [baseBills, normalizeStatus]);
+
+  const visibleBills = React.useMemo(() => {
+    if (paymentFilter === 'ALL') return baseBills;
+    return (baseBills || []).filter((b) => normalizeStatus(b) === paymentFilter);
+  }, [baseBills, paymentFilter, normalizeStatus]);
+
   const renderItem = ({ item }: { item: BillRecord }) => (
     <PaymentCard
       item={item}
@@ -172,10 +219,128 @@ export default function PaymentScreen() {
         <EmptyState onAdd={() => navigation.navigate('PaymentForm')} />
       ) : (
         <FlatList
-          data={bills}
+          data={visibleBills}
           renderItem={renderItem}
           keyExtractor={i => i.id.toString()}
           contentContainerStyle={styles.listContent}
+          ListHeaderComponent={
+            <View style={styles.listHeader}>
+              <Searchbar
+                placeholder="Search payments"
+                placeholderTextColor="#9CA3AF"
+                value={query}
+                onChangeText={setQuery}
+                style={styles.search}
+                inputStyle={styles.searchInput}
+              />
+
+              <View style={styles.pillRow}>
+                <Chip
+                  compact
+                  selected={paymentFilter === 'ALL'}
+                  showSelectedCheck={false}
+                  onPress={() => setPaymentFilter('ALL')}
+                  style={[
+                    styles.pill,
+                    {
+                      backgroundColor:
+                        paymentFilter === 'ALL'
+                          ? theme.colors.primaryContainer
+                          : '#FFFFFF',
+                      borderColor:
+                        paymentFilter === 'ALL'
+                          ? theme.colors.primary
+                          : '#E5E7EB',
+                    },
+                  ]}
+                  textStyle={[
+                    styles.pillText,
+                    {
+                      color:
+                        paymentFilter === 'ALL'
+                          ? theme.colors.primary
+                          : '#6B7280',
+                    },
+                  ]}
+                >
+                  All-{counts.all}
+                </Chip>
+
+                <Chip
+                  compact
+                  selected={paymentFilter === 'PAID'}
+                  showSelectedCheck={false}
+                  onPress={() => setPaymentFilter('PAID')}
+                  style={[
+                    styles.pill,
+                    {
+                      backgroundColor:
+                        paymentFilter === 'PAID' ? '#ECFDF3' : '#FFFFFF',
+                      borderColor:
+                        paymentFilter === 'PAID' ? '#16A34A' : '#E5E7EB',
+                    },
+                  ]}
+                  textStyle={[
+                    styles.pillText,
+                    { color: paymentFilter === 'PAID' ? '#16A34A' : '#6B7280' },
+                  ]}
+                >
+                  Paid-{counts.paid}
+                </Chip>
+
+                <Chip
+                  compact
+                  selected={paymentFilter === 'UNPAID'}
+                  showSelectedCheck={false}
+                  onPress={() => setPaymentFilter('UNPAID')}
+                  style={[
+                    styles.pill,
+                    {
+                      backgroundColor:
+                        paymentFilter === 'UNPAID' ? '#FFF5F5' : '#FFFFFF',
+                      borderColor:
+                        paymentFilter === 'UNPAID' ? '#EF4444' : '#E5E7EB',
+                    },
+                  ]}
+                  textStyle={[
+                    styles.pillText,
+                    { color: paymentFilter === 'UNPAID' ? '#EF4444' : '#6B7280' },
+                  ]}
+                >
+                  Unpaid-{counts.unpaid}
+                </Chip>
+
+                <Chip
+                  compact
+                  selected={paymentFilter === 'PARTIAL'}
+                  showSelectedCheck={false}
+                  onPress={() => setPaymentFilter('PARTIAL')}
+                  style={[
+                    styles.pill,
+                    {
+                      backgroundColor:
+                        paymentFilter === 'PARTIAL' ? '#FFF7ED' : '#FFFFFF',
+                      borderColor:
+                        paymentFilter === 'PARTIAL' ? '#F97316' : '#E5E7EB',
+                    },
+                  ]}
+                  textStyle={[
+                    styles.pillText,
+                    { color: paymentFilter === 'PARTIAL' ? '#F97316' : '#6B7280' },
+                  ]}
+                >
+                  Partial-{counts.partial}
+                </Chip>
+              </View>
+            </View>
+          }
+          ListEmptyComponent={
+            <View style={styles.noResults}>
+              <Text style={styles.noResultsText}>
+                No payments match your search/filter.
+              </Text>
+            </View>
+          }
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -335,6 +500,25 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F4F6FA' },
   listContent: { padding: 16, paddingBottom: 120 },
   loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+
+  listHeader: { marginBottom: 12 },
+  search: {
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  searchInput: { fontSize: 15, fontWeight: '800' },
+  pillRow: { flexDirection: 'row', gap: 8, marginTop: 10 },
+  pill: {
+    flex: 1,
+    minWidth: 0,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
+  pillText: { fontWeight: '900', fontSize: 11, textAlign: 'center' },
+  noResults: { paddingVertical: 18, alignItems: 'center' },
+  noResultsText: { color: '#6B7280', fontWeight: '800' },
 
   card: {
     borderRadius: 16,

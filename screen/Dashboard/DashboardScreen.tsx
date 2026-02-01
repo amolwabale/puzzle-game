@@ -1369,7 +1369,7 @@ export default function DashboardScreen() {
               color={theme.colors.primary}
               sub="Charges"
             />
-          </View>
+    </View>
         </Surface>
       </Surface>
 

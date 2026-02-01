@@ -1183,6 +1183,8 @@ export default function PaymentViewScreen() {
                 </Surface>
               </Surface>
 
+              <Text style={styles.breakdownTitle}>Rent Summary</Text>
+
               {/* Charges & meters (RoomView-style: flat rows + dividers, no tiny tiles) */}
               <Surface
                 style={[
@@ -1931,8 +1933,15 @@ const styles = StyleSheet.create({
   },
 
   // RoomView-style breakdown list (replaces tile grid on main UI)
-  breakdownList: {
+  breakdownTitle: {
     marginTop: 14,
+    marginHorizontal: 14,
+    fontWeight: '900',
+    fontSize: 16,
+    color: '#111827',
+  },
+  breakdownList: {
+    marginTop: 10,
     marginHorizontal: 14,
     borderRadius: 14,
     borderWidth: 1,

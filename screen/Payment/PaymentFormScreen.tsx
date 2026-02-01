@@ -18,13 +18,10 @@ import {
   Avatar,
   Button,
   FAB,
-  HelperText,
   Icon,
   IconButton,
-  Provider as PaperProvider,
   Surface,
   Text,
-  TextInput,
   useTheme,
 } from 'react-native-paper';
 import {
@@ -67,31 +64,8 @@ function getPrevAndCurrMonthLabels(date?: Date) {
   return { prevLabel, currLabel };
 }
 
-const scalePaperThemeFonts = (t: any, scale: number) => {
-  const s = Number.isFinite(scale) ? scale : 1;
-  const fonts = t?.fonts ?? {};
-  const nextFonts: Record<string, any> = { ...fonts };
-  Object.keys(nextFonts).forEach(k => {
-    const v = nextFonts[k];
-    if (!v || typeof v !== 'object') return;
-    const nv: any = { ...v };
-    if (typeof nv.fontSize === 'number')
-      nv.fontSize = Math.round(nv.fontSize * s);
-    if (typeof nv.lineHeight === 'number')
-      nv.lineHeight = Math.round(nv.lineHeight * s);
-    if (typeof nv.letterSpacing === 'number')
-      nv.letterSpacing = Number((nv.letterSpacing * s).toFixed(2));
-    nextFonts[k] = nv;
-  });
-  return { ...t, fonts: nextFonts };
-};
-
 export default function PaymentFormScreen() {
   const theme = useTheme();
-  const scaledTheme = React.useMemo(
-    () => scalePaperThemeFonts(theme, 1.15),
-    [theme],
-  );
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const billId: number | undefined = route.params?.billId;
@@ -343,49 +317,69 @@ export default function PaymentFormScreen() {
 
   if (loading) {
     return (
-      <PaperProvider theme={scaledTheme}>
-        <View style={styles.loader}>
-          <ActivityIndicator size="large" />
-        </View>
-      </PaperProvider>
+      <View style={styles.loader}>
+        <ActivityIndicator size="large" />
+      </View>
     );
   }
 
   return (
     <>
-      <PaperProvider theme={scaledTheme}>
-        <KeyboardAvoidingView
-          style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView
+          contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <ScrollView
-            contentContainerStyle={styles.container}
-            keyboardShouldPersistTaps="handled"
-          >
-            <View>
-              {/* HERO */}
-              <Surface style={styles.hero} elevation={2}>
-                <Avatar.Icon
-                  size={52}
-                  icon="file-document-outline"
-                  style={{ backgroundColor: theme.colors.primaryContainer }}
-                  color={theme.colors.primary}
-                />
-                <View style={{ marginLeft: 14 }}>
-                  <Text variant="titleLarge" style={{ fontWeight: '800' }}>
-                    {isEdit ? 'Edit Payment' : 'Add Payment'}
+          <View>
+            {/* HERO (RoomForm-style) */}
+            <Surface style={styles.hero} elevation={2}>
+              <View style={styles.sectionTitleRow}>
+                <View
+                  style={[
+                    styles.sectionIcon,
+                    { backgroundColor: theme.colors.primaryContainer },
+                  ]}
+                >
+                  <Icon
+                    source="file-document-outline"
+                    size={18}
+                    color={theme.colors.primary}
+                  />
+                </View>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={styles.sectionTitle} numberOfLines={1}>
+                    {isEdit ? 'Edit payment' : 'Add payment'}
                   </Text>
-                  <Text style={{ color: '#666', marginTop: 2 }}>
+                  <Text style={styles.sectionSub} numberOfLines={1}>
                     {isEdit ? 'Update this bill' : 'Capture rent & utilities'}
                   </Text>
                 </View>
-              </Surface>
+              </View>
+            </Surface>
 
               {/* SELECTION */}
               <Surface style={styles.section} elevation={2}>
-                <Text variant="titleMedium" style={styles.sectionTitle}>
-                  Select Tenant & Room
-                </Text>
+                <View style={styles.sectionTitleRow}>
+                  <View
+                    style={[
+                      styles.sectionIcon,
+                      { backgroundColor: theme.colors.primaryContainer },
+                    ]}
+                  >
+                    <Icon
+                      source="swap-horizontal"
+                      size={18}
+                      color={theme.colors.primary}
+                    />
+                  </View>
+                  <Text style={styles.sectionTitle} numberOfLines={1}>
+                    Select tenant & room
+                  </Text>
+                </View>
 
                 {!selectedRoom || !selectedTenant ? (
                   <>
@@ -408,23 +402,18 @@ export default function PaymentFormScreen() {
                       </View>
                     </Surface>
 
-                    <TextInput
-                      label="Search Room - Tenant *"
-                      mode="outlined"
+                    <FormInput
+                      label="Search room - tenant *"
                       value={pairQuery}
-                      onChangeText={t => {
+                      onChange={(t) => {
                         setPairQuery(t);
                         setErrors(p => ({ ...p, pair: '' }));
                       }}
-                      left={<TextInput.Icon icon="magnify" />}
-                      error={!!errors.pair}
+                      error={errors.pair}
                     />
-                    <HelperText type="error" visible={!!errors.pair}>
-                      {errors.pair || ' '}
-                    </HelperText>
 
                     {filteredPairs.length > 0 && (
-                      <Surface style={styles.dropdown} elevation={2}>
+                      <Surface style={styles.dropdown} elevation={0}>
                         <View style={styles.dropdownClip}>
                           {filteredPairs.slice(0, 8).map(({ room, tenant }) => (
                             <TouchableOpacity
@@ -496,9 +485,23 @@ export default function PaymentFormScreen() {
 
               {/* METER + ADHOC */}
               <Surface style={styles.section} elevation={2}>
-                <Text variant="titleMedium" style={styles.sectionTitle}>
-                  Meter & Charges
-                </Text>
+                <View style={styles.sectionTitleRow}>
+                  <View
+                    style={[
+                      styles.sectionIcon,
+                      { backgroundColor: theme.colors.primaryContainer },
+                    ]}
+                  >
+                    <Icon
+                      source="counter"
+                      size={18}
+                      color={theme.colors.primary}
+                    />
+                  </View>
+                  <Text style={styles.sectionTitle} numberOfLines={1}>
+                    Meter & charges
+                  </Text>
+                </View>
 
                 <Surface style={styles.readingRow} elevation={0}>
                   <Icon
@@ -551,14 +554,28 @@ export default function PaymentFormScreen() {
 
               {/* SUMMARY */}
               <Surface style={styles.section} elevation={2}>
-                <Text variant="titleMedium" style={styles.sectionTitle}>
-                  Summary
-                </Text>
+                <View style={styles.sectionTitleRow}>
+                  <View
+                    style={[
+                      styles.sectionIcon,
+                      { backgroundColor: theme.colors.primaryContainer },
+                    ]}
+                  >
+                    <Icon
+                      source="receipt"
+                      size={18}
+                      color={theme.colors.primary}
+                    />
+                  </View>
+                  <Text style={styles.sectionTitle} numberOfLines={1}>
+                    Summary
+                  </Text>
+                </View>
 
                 <Surface
                   style={[
                     styles.summaryHero,
-                    { backgroundColor: theme.colors.primaryContainer },
+                    { backgroundColor: theme.colors.surface },
                   ]}
                   elevation={0}
                 >
@@ -570,59 +587,86 @@ export default function PaymentFormScreen() {
                       </Text>
                     </View>
 
-                    <View style={styles.statusPill}>
-                      <Text style={styles.statusPillText}>UNPAID</Text>
+                    <View
+                      style={[
+                        styles.statusPill,
+                        {
+                          backgroundColor: theme.colors.errorContainer,
+                          borderColor: theme.colors.error,
+                        },
+                      ]}
+                    >
+                      <Text style={[styles.statusPillText, { color: theme.colors.error }]}>
+                        UNPAID
+                      </Text>
                     </View>
                   </View>
                 </Surface>
 
-                <View style={styles.tileGrid}>
-                  <SummaryTile
+                <Text style={styles.rentSummaryTitle}>Rent Summary</Text>
+
+                <Surface
+                  style={[
+                    styles.rentSummaryList,
+                    {
+                      borderColor:
+                        (theme.colors as any).outlineVariant ?? theme.colors.outline,
+                      backgroundColor: theme.colors.surface,
+                    },
+                  ]}
+                  elevation={0}
+                >
+                  <RentSummaryRow
                     icon="home-city-outline"
                     label="Rent"
                     value={formatMoney(rent)}
                   />
-                  <SummaryTile
+                  <View style={[styles.rentSummaryDivider, { backgroundColor: (theme.colors as any).outlineVariant ?? theme.colors.outline }]} />
+
+                  <RentSummaryRow
                     icon="water-outline"
                     label="Water"
                     value={formatMoney(water)}
                   />
-                  <SummaryTile
+                  <View style={[styles.rentSummaryDivider, { backgroundColor: (theme.colors as any).outlineVariant ?? theme.colors.outline }]} />
+
+                  <RentSummaryRow
                     icon="flash-outline"
                     label="Electricity"
-                    value={formatMoney(electricity)}
                     sub={`${diffUnits} × ${settings.electricity_unit}`}
+                    value={formatMoney(electricity)}
                   />
-                  <SummaryTile
+                  <View style={[styles.rentSummaryDivider, { backgroundColor: (theme.colors as any).outlineVariant ?? theme.colors.outline }]} />
+
+                  <RentSummaryRow
                     icon="cash-plus"
                     label="Ad-hoc"
-                    value={formatMoney(adHoc)}
                     sub={adHocComment?.trim() ? adHocComment.trim() : undefined}
+                    value={formatMoney(adHoc)}
                   />
-                </View>
+                  <View style={[styles.rentSummaryDivider, { backgroundColor: (theme.colors as any).outlineVariant ?? theme.colors.outline }]} />
 
-                <View style={styles.meterSection}>
-                  <View style={styles.meterGrid}>
-                    <MeterTile
-                      kind="prev"
-                      title="Previous"
-                      month={prevLabel}
-                      value={previousMeter}
-                    />
-                    <MeterTile
-                      kind="curr"
-                      title="Current"
-                      month={currLabel}
-                      value={
-                        currentMeter.trim().length > 0 ? currentMeterNum : null
-                      }
-                    />
-                  </View>
-                </View>
+                  <RentSummaryRow
+                    icon="counter"
+                    label="Prev meter"
+                    sub={prevLabel}
+                    value={String(previousMeter)}
+                  />
+                  <View style={[styles.rentSummaryDivider, { backgroundColor: (theme.colors as any).outlineVariant ?? theme.colors.outline }]} />
+
+                  <RentSummaryRow
+                    icon="counter"
+                    label="Curr meter"
+                    sub={currLabel}
+                    value={
+                      currentMeter.trim().length > 0 ? String(currentMeterNum) : '-'
+                    }
+                  />
+                </Surface>
               </Surface>
             </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
         <FAB
           icon="content-save"
@@ -630,7 +674,6 @@ export default function PaymentFormScreen() {
           loading={saving}
           onPress={save}
         />
-      </PaperProvider>
     </>
   );
 }
@@ -645,31 +688,34 @@ const SummaryTile = ({
   label: string;
   value: string;
   sub?: string;
-}) => (
-  <Surface style={styles.summaryTile} elevation={0}>
-    <View style={{ flex: 1 }}>
-      <View style={styles.tileTop}>
-        <Icon source={icon} size={20} color="#1A73E8" />
-        <Text style={styles.tileLabel} numberOfLines={1}>
-          {label}
+}) => {
+  const theme = useTheme();
+  return (
+    <Surface style={styles.summaryTile} elevation={0}>
+      <View style={{ flex: 1 }}>
+        <View style={styles.tileTop}>
+          <Icon source={icon} size={20} color={theme.colors.primary} />
+          <Text style={styles.tileLabel} numberOfLines={1}>
+            {label}
+          </Text>
+        </View>
+        <Text style={styles.tileValue} numberOfLines={1}>
+          {value}
+        </Text>
+        <Text
+          style={[styles.tileSub, !sub && styles.tileSubPlaceholder]}
+          numberOfLines={1}
+        >
+          {sub || ' '}
         </Text>
       </View>
-      <Text style={styles.tileValue} numberOfLines={1}>
-        {value}
-      </Text>
-      <Text
-        style={[styles.tileSub, !sub && styles.tileSubPlaceholder]}
-        numberOfLines={1}
-      >
-        {sub || ' '}
-      </Text>
-    </View>
-  </Surface>
-);
+    </Surface>
+  );
+};
 
 const MetaPill = ({ icon, label }: { icon: string; label: string }) => (
   <Surface style={styles.metaPill} elevation={0}>
-    <Icon source={icon} size={16} color="#1A73E8" />
+    <IconWithTheme source={icon} size={16} />
     <Text style={styles.metaPillText} numberOfLines={1}>
       {label}
     </Text>
@@ -686,33 +732,82 @@ const MeterTile = ({
   title: string;
   month: string;
   value: number | null;
-}) => (
-  <Surface
-    style={[
-      styles.meterTile,
-      kind === 'curr' ? styles.meterTileCurr : styles.meterTilePrev,
-    ]}
-    elevation={0}
-  >
-    <View style={{ flex: 1 }}>
-      <View style={styles.tileTop}>
-        <Icon source="counter" size={20} color="#1A73E8" />
-        <Text style={styles.tileLabel} numberOfLines={1}>
-          {title}
+}) => {
+  const theme = useTheme();
+  const monthColor = kind === 'curr' ? theme.colors.secondary : theme.colors.primary;
+  return (
+    <Surface
+      style={[
+        styles.meterTile,
+        kind === 'curr' ? styles.meterTileCurr : styles.meterTilePrev,
+      ]}
+      elevation={0}
+    >
+      <View style={{ flex: 1 }}>
+        <View style={styles.tileTop}>
+          <Icon source="counter" size={20} color={theme.colors.primary} />
+          <Text style={styles.tileLabel} numberOfLines={1}>
+            {title}
+          </Text>
+        </View>
+        <Text style={styles.tileValue} numberOfLines={1}>
+          {value != null ? String(value) : '-'}
+        </Text>
+        <Text
+          style={[
+            styles.tileSub,
+            { color: monthColor },
+            !month && styles.tileSubPlaceholder,
+          ]}
+          numberOfLines={1}
+        >
+          {month || ' '}
         </Text>
       </View>
-      <Text style={styles.tileValue} numberOfLines={1}>
-        {value != null ? String(value) : '-'}
-      </Text>
-      <Text
-        style={[styles.tileSub, !month && styles.tileSubPlaceholder]}
-        numberOfLines={1}
-      >
-        {month || ' '}
+    </Surface>
+  );
+};
+
+const IconWithTheme = ({ source, size }: { source: string; size: number }) => {
+  const theme = useTheme();
+  return <Icon source={source} size={size} color={theme.colors.primary} />;
+};
+
+const RentSummaryRow = ({
+  icon,
+  label,
+  sub,
+  value,
+}: {
+  icon: string;
+  label: string;
+  sub?: string;
+  value: string;
+}) => {
+  const theme = useTheme();
+  const outline = (theme.colors as any).outlineVariant ?? theme.colors.outline;
+  const badgeBg = (theme.colors as any).surfaceVariant ?? theme.colors.surface;
+  return (
+    <View style={styles.rentSummaryRow}>
+      <View style={[styles.rentSummaryIconBadge, { borderColor: outline, backgroundColor: badgeBg }]}>
+        <Icon source={icon} size={16} color="#6B7280" />
+      </View>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text style={styles.rentSummaryLabel} numberOfLines={1}>
+          {label}
+        </Text>
+        {sub ? (
+          <Text style={styles.rentSummarySub} numberOfLines={1}>
+            {sub}
+          </Text>
+        ) : null}
+      </View>
+      <Text style={styles.rentSummaryValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
+        {value}
       </Text>
     </View>
-  </Surface>
-);
+  );
+};
 
 const styles = StyleSheet.create({
   container: { padding: 16, paddingBottom: 120, backgroundColor: '#F4F6FA' },
@@ -720,25 +815,32 @@ const styles = StyleSheet.create({
 
   hero: {
     borderRadius: 18,
-    padding: 18,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
+    padding: 14,
+    marginBottom: 14,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
 
   section: {
     borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
+    padding: 14,
+    marginBottom: 14,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
-  sectionTitle: {
-    fontWeight: '600',
-    marginBottom: 12,
-  },
+  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
+  sectionIcon: { width: 36, height: 36, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  sectionTitle: { fontWeight: '900', fontSize: 16, color: '#111827' },
+  sectionSub: { marginTop: 2, color: '#6B7280', fontWeight: '800', fontSize: 13 },
 
   dropdown: {
     borderRadius: 12,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
   },
   dropdownClip: {
     borderRadius: 12,
@@ -757,7 +859,9 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 12,
     marginBottom: 12,
-    backgroundColor: '#EEF2FF',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
 
   occupancyHint: {
@@ -765,7 +869,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 14,
     padding: 12,
-    backgroundColor: '#F6F8FF',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
     marginBottom: 12,
   },
 
@@ -774,7 +880,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 14,
     padding: 12,
-    backgroundColor: '#F6F8FF',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
     marginBottom: 12,
   },
 
@@ -782,6 +890,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 14,
     marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
   summaryHeroRow: {
     flexDirection: 'row',
@@ -809,14 +919,50 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: '#FFF5F5',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#F3B5B5',
+    borderWidth: 1,
   },
   statusPillText: {
-    color: '#D32F2F',
     fontWeight: '900',
     fontSize: 14,
+  },
+
+  // Match PaymentViewScreen breakdown list
+  rentSummaryTitle: {
+    marginTop: 14,
+    fontWeight: '900',
+    fontSize: 16,
+    color: '#111827',
+  },
+  rentSummaryList: {
+    marginTop: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  rentSummaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  rentSummaryDivider: { height: StyleSheet.hairlineWidth, opacity: 0.6 },
+  rentSummaryIconBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  rentSummaryLabel: { fontSize: 12, fontWeight: '900', color: '#6B7280' },
+  rentSummarySub: { marginTop: 3, fontSize: 12, fontWeight: '800', color: '#6B7280' },
+  rentSummaryValue: {
+    marginLeft: 10,
+    fontSize: 14,
+    fontWeight: '900',
+    color: '#111827',
+    fontVariant: ['tabular-nums'],
   },
   tileGrid: {
     flexDirection: 'row',
@@ -833,7 +979,7 @@ const styles = StyleSheet.create({
     minHeight: 92,
   },
   tileTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  tileLabel: { color: '#666', fontWeight: '800', flex: 1 },
+  tileLabel: { color: '#6B7280', fontWeight: '800', flex: 1 },
   tileValue: {
     marginTop: 10,
     fontWeight: '900',
@@ -843,7 +989,7 @@ const styles = StyleSheet.create({
   },
   tileSub: {
     marginTop: 4,
-    color: '#777',
+    color: '#6B7280',
     fontSize: 13,
     fontWeight: '700',
   },
