@@ -1,6 +1,15 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Button, Chip, Dialog, Icon, Portal, Text, useTheme } from 'react-native-paper';
+import {
+  Button,
+  Chip,
+  Dialog,
+  Icon,
+  Portal,
+  Text,
+  TouchableRipple,
+  useTheme,
+} from 'react-native-paper';
 
 export type BillingMonthDraft = { year: number; monthIdx: number };
 
@@ -169,6 +178,34 @@ export function BillingMonthPickerDialog({
                 </Chip>
               );
             })}
+
+            {/* Quick action: placed on the right side of the wrapped year row */}
+            <TouchableRipple
+              onPress={() => setDraft(billingMonthDraftFromDate(new Date()))}
+              borderless
+              style={[
+                styles.currentMonthInline,
+                styles.quickPill,
+                {
+                  backgroundColor: theme.colors.primaryContainer,
+                  borderColor: theme.colors.primary,
+                },
+              ]}
+            >
+              <View style={styles.quickPillInner}>
+                <Icon
+                  source="calendar-today"
+                  size={14}
+                  color={theme.colors.primary}
+                />
+                <Text
+                  style={[styles.quickPillText, { color: theme.colors.primary }]}
+                  numberOfLines={1}
+                >
+                  Current month
+                </Text>
+              </View>
+            </TouchableRipple>
           </View>
         </Dialog.Content>
         <Dialog.Actions>
@@ -203,8 +240,26 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   selectedLabel: { fontWeight: '900', marginRight: 10 },
-  selectedChip: { borderRadius: 999 },
+  selectedChip: { borderRadius: 999, overflow: 'hidden' },
+  currentMonthInline: {
+    marginLeft: 'auto',
+  },
+  quickPill: {
+    borderRadius: 999,
+    borderWidth: 1,
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+  quickPillInner: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    justifyContent: 'center',
+  },
+  quickPillText: { fontSize: 12, fontWeight: '900' },
   chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  chip: { marginBottom: 8, borderRadius: 999 },
+  chip: { marginBottom: 8, borderRadius: 999, overflow: 'hidden' },
 });
 
