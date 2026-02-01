@@ -8,6 +8,7 @@ import {
   Alert,
   Animated,
   FlatList,
+  InteractionManager,
   Keyboard,
   Platform,
   StyleSheet,
@@ -64,10 +65,22 @@ export default function TicketChatScreen() {
   const keyboardAnim = React.useRef(new Animated.Value(0)).current;
 
   const listRef = React.useRef<FlatList<TicketChat>>(null);
+  const inputRef = React.useRef<any>(null);
 
   const scrollToLatest = React.useCallback((animated = true) => {
-    requestAnimationFrame(() => {
-      listRef.current?.scrollToEnd({ animated });
+    // FlatList scroll-to-bottom can be flaky if called before layout settles
+    // (especially when keyboard height and composer height change).
+    InteractionManager.runAfterInteractions(() => {
+      requestAnimationFrame(() => {
+        // Small delay lets RN commit content size + inset changes first.
+        setTimeout(() => {
+          try {
+            listRef.current?.scrollToEnd({ animated });
+          } catch {
+            // ignore
+          }
+        }, 40);
+      });
     });
   }, []);
 
@@ -142,6 +155,8 @@ export default function TicketChatScreen() {
       const h = e?.endCoordinates?.height
         ? Number(e.endCoordinates.height)
         : 0;
+      // When typing, keep focus on conversation: collapse details.
+      setDetailsOpen(false);
       setKeyboardHeight(h);
       Animated.timing(keyboardAnim, {
         toValue: h,
@@ -183,9 +198,12 @@ export default function TicketChatScreen() {
       chat: text,
     };
 
+    // Clear the input immediately (WhatsApp-like) and keep focus.
     setInput('');
+    requestAnimationFrame(() => inputRef.current?.focus?.());
     setSending(true);
     setMessages(prev => [...prev, temp]);
+    // Scroll after the message is actually appended/rendered.
     scrollToLatest(true);
 
     try {
@@ -193,10 +211,16 @@ export default function TicketChatScreen() {
       setMessages(prev => prev.map(m => (m.id === temp.id ? saved : m)));
     } catch (e: any) {
       setMessages(prev => prev.filter(m => m.id !== temp.id));
-      setInput(text);
+      // If user already started typing the next message, don't overwrite it.
+      setInput((curr) => (curr.trim().length === 0 ? text : curr));
       Alert.alert('Send failed', e?.message || 'Could not send message');
     } finally {
       setSending(false);
+      // Keep focus for rapid consecutive messages and ensure we're at bottom.
+      requestAnimationFrame(() => {
+        if (canChat) inputRef.current?.focus?.();
+        scrollToLatest(true);
+      });
     }
   };
 
@@ -320,7 +344,18 @@ export default function TicketChatScreen() {
         )}
       </Surface>
 
-      <View style={styles.body}>
+      <Animated.View
+        style={[
+          styles.body,
+          Platform.OS === 'ios'
+            ? {
+                transform: [
+                  { translateY: Animated.multiply(keyboardAnim, -1) },
+                ],
+              }
+            : null,
+        ]}
+      >
         {/* 💬 CHAT LIST */}
         <FlatList
           ref={listRef}
@@ -334,7 +369,7 @@ export default function TicketChatScreen() {
             styles.chatContent,
             // Reserve space so the last message is never hidden behind the composer
             // (and so resizing feels WhatsApp-like).
-            { paddingBottom: Math.max(12, composerHeight) + 12 + keyboardHeight },
+            { paddingBottom: Math.max(12, composerHeight) + 12 },
           ]}
           refreshing={refreshing}
           onRefresh={() => load(true)}
@@ -344,14 +379,7 @@ export default function TicketChatScreen() {
         />
 
         {/* ⌨️ INPUT BAR */}
-        <Animated.View
-          style={[
-            styles.composerWrap,
-            {
-              transform: [{ translateY: Animated.multiply(keyboardAnim, -1) }],
-            },
-          ]}
-        >
+        <View style={styles.composerWrap}>
           <Surface
             style={[
               styles.inputBar,
@@ -364,12 +392,16 @@ export default function TicketChatScreen() {
             onLayout={(e) => setComposerHeight(e.nativeEvent.layout.height)}
           >
             <TextInput
+              ref={inputRef}
               mode="outlined"
               placeholder={canChat ? 'Type a message…' : 'Ticket closed'}
               value={input}
               onChangeText={setInput}
-              editable={canChat && !sending}
+              // WhatsApp-style: keep input editable even while a message is sending
+              // so the keyboard doesn't dismiss and the user can type the next message.
+              editable={canChat}
               dense
+              blurOnSubmit={false}
               style={{ flex: 1 }}
             />
             <Button
@@ -381,8 +413,8 @@ export default function TicketChatScreen() {
               Send
             </Button>
           </Surface>
-        </Animated.View>
-      </View>
+        </View>
+      </Animated.View>
     </View>
   );
 }
