@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "753719167263",
+    "project_id": "tenantmanager-4d6ee",
+    "storage_bucket": "tenantmanager-4d6ee.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:753719167263:android:09446c8d77253df762c82a",
+        "android_client_info": {
+          "package_name": "com.tenantmanager"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB93Jzf8OW_bHpDrtMib5i5a-Vhv242WF4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

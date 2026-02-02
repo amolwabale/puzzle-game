@@ -15,6 +15,8 @@ import { RootStackParamList } from '../navigation/StackParam';
 import supabase from '../service/SupabaseClient';
 import { TopMenuProvider } from '../navigation/TopMenuDrawer';
 import { TopMenuButton } from '../navigation/TopMenuButton.tsx';
+import '@react-native-firebase/app';
+import analytics from '@react-native-firebase/analytics';
 
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 
@@ -27,6 +29,9 @@ export default function AppNavigator() {
   React.useEffect(() => {
     // 1️⃣ Restore session on app start
     supabase.auth.getSession().then(({ data, error }) => {
+      if (data.session) {
+        analytics().setUserId(data.session.user.id);
+      }
       if (!error) {
         setSession(data.session);
       }
