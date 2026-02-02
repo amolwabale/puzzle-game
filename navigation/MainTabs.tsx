@@ -6,6 +6,7 @@ import TenantStack from './TenantStack';
 import { RoomStack } from './RoomStack';
 import PaymentsStack from './PaymentsStack';
 import SettingsStack from './SettingsStack';
+import { trackScreen } from '../service/analyticsTracker.ts';
 
 const Tab = createBottomTabNavigator();
 
@@ -26,6 +27,17 @@ export default function MainTabs() {
         },
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.onSurfaceVariant,
+      }}
+      screenListeners={{
+        focus: e => {
+          const routeName = e.target
+            ?.split('-')
+            ?.shift();
+
+          if (routeName) {
+            trackScreen(`Tab_${routeName}`);
+          }
+        },
       }}
     >
       <Tab.Screen

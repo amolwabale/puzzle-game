@@ -13,6 +13,7 @@ import ProfileScreen from '../screen/Menu/ProfileScreen';
 import ChangePasswordScreen from '../screen/Menu/ChangePasswordScreen';
 import SupportStack from './SupportStack';
 import { TopMenuButton } from './TopMenuButton.tsx';
+import { trackScreen } from '../service/analyticsTracker.ts';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -116,6 +117,17 @@ export default function MenuTabs() {
         },
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.onSurfaceVariant,
+      }}
+      screenListeners={{
+        focus: e => {
+          const routeName = e.target
+            ?.split('-')
+            ?.shift();
+
+          if (routeName) {
+            trackScreen(`Tab_${routeName}`);
+          }
+        },
       }}
     >
       <Tab.Screen
