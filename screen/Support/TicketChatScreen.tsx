@@ -7,6 +7,7 @@ import React from 'react';
 import {
   Alert,
   Animated,
+  Easing,
   FlatList,
   InteractionManager,
   Keyboard,
@@ -72,14 +73,19 @@ export default function TicketChatScreen() {
     // (especially when keyboard height and composer height change).
     InteractionManager.runAfterInteractions(() => {
       requestAnimationFrame(() => {
-        // Small delay lets RN commit content size + inset changes first.
-        setTimeout(() => {
+        // Small delay lets RN commit content size + margin changes first.
+        const run = (anim: boolean) => {
           try {
-            listRef.current?.scrollToEnd({ animated });
+            listRef.current?.scrollToEnd({ animated: anim });
           } catch {
             // ignore
           }
-        }, 40);
+        };
+
+        // Pass 1: quick snap/animate.
+        setTimeout(() => run(animated), 40);
+        // Pass 2: after keyboard/tab-bar animations settle, ensure the LAST bubble is fully visible.
+        setTimeout(() => run(false), 220);
       });
     });
   }, []);
@@ -146,10 +152,10 @@ export default function TicketChatScreen() {
   // WhatsApp-like composer: move the input bar by actual keyboard height.
   // This avoids inconsistencies with KeyboardAvoidingView + tab bars.
   React.useEffect(() => {
-    const showEvt =
-      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const hideEvt =
-      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    // WhatsApp-like: on iOS follow keyboard animation using WillShow/WillHide + duration.
+    // On Android the window resizes (adjustResize), so DidShow/DidHide is sufficient.
+    const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvt = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
 
     const onShow = (e: any) => {
       const h = e?.endCoordinates?.height
@@ -158,20 +164,39 @@ export default function TicketChatScreen() {
       // When typing, keep focus on conversation: collapse details.
       setDetailsOpen(false);
       setKeyboardHeight(h);
-      Animated.timing(keyboardAnim, {
-        toValue: h,
-        duration: typeof e?.duration === 'number' ? e.duration : 220,
-        useNativeDriver: true,
-      }).start();
+      // Smoothly track keyboard (iOS), snap on Android.
+      keyboardAnim.stopAnimation();
+      if (Platform.OS === 'ios') {
+        Animated.timing(keyboardAnim, {
+          toValue: h,
+          duration: typeof e?.duration === 'number' ? e.duration : 260,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }).start();
+      } else {
+        keyboardAnim.setValue(h);
+      }
+
+      // When keyboard opens, ensure the latest message is visible (WhatsApp-like).
+      scrollToLatest(false);
     };
 
     const onHide = (e: any) => {
       setKeyboardHeight(0);
-      Animated.timing(keyboardAnim, {
-        toValue: 0,
-        duration: typeof e?.duration === 'number' ? e.duration : 180,
-        useNativeDriver: true,
-      }).start();
+      keyboardAnim.stopAnimation();
+      if (Platform.OS === 'ios') {
+        Animated.timing(keyboardAnim, {
+          toValue: 0,
+          duration: typeof e?.duration === 'number' ? e.duration : 220,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }).start();
+      } else {
+        keyboardAnim.setValue(0);
+      }
+
+      // When keyboard closes (tap outside), keep view anchored to latest message.
+      scrollToLatest(false);
     };
 
     const s1 = Keyboard.addListener(showEvt as any, onShow);
@@ -180,7 +205,7 @@ export default function TicketChatScreen() {
       s1.remove();
       s2.remove();
     };
-  }, [keyboardAnim]);
+  }, [keyboardAnim, scrollToLatest]);
 
   const canChat = ticket?.status !== 'CLOSED';
 
