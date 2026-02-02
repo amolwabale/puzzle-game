@@ -105,7 +105,7 @@ export function FormInput({
           mode="outlined"
           keyboardType={keyboard}
           dense={!multiline}
-          multiline={!multiline}
+          multiline={!!multiline}
           maxLength={maxLength}
           placeholder={placeholder}
           secureTextEntry={!!secureTextEntry}
@@ -127,10 +127,17 @@ export function FormInput({
                   },
                 ],
               }
-            : {
+              : {
+                numberOfLines: 1,
                 scrollEnabled: true,
-                style: [styles.input, { minHeight: 48 }, style],
-                contentStyle: baseContentStyle,
+                style: [styles.input, { height: 48 }, style],
+                contentStyle: [
+                  styles.singleLineContent,
+                  contentStyle,
+                  Platform.OS === 'android'
+                    ? ({ includeFontPadding: false } as any)
+                    : null,
+                ],
               })}
           theme={inputTheme}
           error={!!error}
@@ -150,4 +157,10 @@ const styles = StyleSheet.create({
   marginBottom: { marginBottom: 12 },
   content: { fontSize: 16, lineHeight: 20, paddingVertical: 8 },
   helper: { fontSize: 12, paddingVertical: 2, marginBottom: -12 },
+  singleLineContent: {
+    paddingVertical: 0,
+    paddingHorizontal: 12,
+    textAlignVertical: 'center',
+    fontSize: 16,
+  },
 });

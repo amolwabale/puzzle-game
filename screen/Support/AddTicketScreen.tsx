@@ -113,6 +113,7 @@ export default function AddTicketScreen() {
             onChange={(t: any) => {
               setTitle(t);
             }}
+            maxLength={255}
           />
         </View>
 
@@ -125,6 +126,7 @@ export default function AddTicketScreen() {
               setDescription(t);
             }}
             multiline={true}
+            maxLength={500}
           />
         </View>
 

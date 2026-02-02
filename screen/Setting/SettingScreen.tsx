@@ -260,7 +260,8 @@ export default function SettingScreen() {
             label="Property Address"
             value={propertyAddress}
             onChange={setPropertyAddress}
-            maxLength={100}
+            maxLength={255}
+            multiline={true}
           />
         </Section>
 
@@ -271,6 +272,7 @@ export default function SettingScreen() {
             onChange={setWater}
             error={errors.water}
             keyboard="number-pad"
+            maxLength={5}
           />
           <FormInput
             label="Electricity unit (numeric)"
@@ -278,6 +280,7 @@ export default function SettingScreen() {
             onChange={setElectricity}
             error={errors.electricity}
             keyboard="number-pad"
+            maxLength={5}
           />
         </Section>
 

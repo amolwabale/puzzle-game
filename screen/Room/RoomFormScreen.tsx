@@ -464,6 +464,8 @@ export default function RoomFormScreen() {
                 onChange={setComment}
                 error={errors.comment}
                 maxLength={100}
+                multiline={true}
+                
               />
             </Surface>
 

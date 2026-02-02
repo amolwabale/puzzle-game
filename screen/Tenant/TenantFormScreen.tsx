@@ -285,6 +285,7 @@ export default function TenantFormScreen() {
               value={name}
               onChange={setName}
               error={errors.name}
+              maxLength={70}
             />
             <FormInput
               label="Mobile *"
@@ -292,17 +293,20 @@ export default function TenantFormScreen() {
               onChange={setMobile}
               error={errors.mobile}
               keyboard="number-pad"
+              maxLength={10}
             />
             <FormInput
               label="Alternate Mobile"
               value={alternateMobile}
               onChange={setAlternateMobile}
+              maxLength={10}
             />
             <FormInput
               label="Family Members"
               value={familyMembers}
               onChange={setFamilyMembers}
               keyboard="number-pad"
+              maxLength={2}
             />
           </Section>
 
@@ -313,11 +317,14 @@ export default function TenantFormScreen() {
               value={address}
               onChange={setAddress}
               error={errors.address}
+              multiline={true}
+              maxLength={255}
             />
             <FormInput
               label="Company Name"
               value={company}
               onChange={setCompany}
+              maxLength={50}
             />
           </Section>
 

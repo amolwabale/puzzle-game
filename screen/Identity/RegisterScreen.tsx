@@ -297,7 +297,6 @@ export default function RegisterScreen() {
                   setErrors((p) => ({ ...p, password: '' }));
                 }}
                 error={errors.password}
-                secureTextEntry
                 maxLength={64}
                 autoCapitalize="none"
                 autoCorrect={false}
