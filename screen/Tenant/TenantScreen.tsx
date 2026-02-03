@@ -152,7 +152,7 @@ export default function TenantScreen() {
         onPress: async () => {
           await deleteTenant(id);
           loadTenants(true);
-          analytics().logEvent('Tenant_Deleted', {
+          trackEvent('Tenant_Deleted', {
             source: 'Tenant',
             tenant_id: id,
           });
