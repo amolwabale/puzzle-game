@@ -154,13 +154,13 @@ export default function TicketChatScreen() {
   React.useEffect(() => {
     // WhatsApp-like: on iOS follow keyboard animation using WillShow/WillHide + duration.
     // On Android the window resizes (adjustResize), so DidShow/DidHide is sufficient.
-    const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const hideEvt = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showEvt =
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvt =
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
 
     const onShow = (e: any) => {
-      const h = e?.endCoordinates?.height
-        ? Number(e.endCoordinates.height)
-        : 0;
+      const h = e?.endCoordinates?.height ? Number(e.endCoordinates.height) : 0;
       // When typing, keep focus on conversation: collapse details.
       setDetailsOpen(false);
       setKeyboardHeight(h);
@@ -237,7 +237,7 @@ export default function TicketChatScreen() {
     } catch (e: any) {
       setMessages(prev => prev.filter(m => m.id !== temp.id));
       // If user already started typing the next message, don't overwrite it.
-      setInput((curr) => (curr.trim().length === 0 ? text : curr));
+      setInput(curr => (curr.trim().length === 0 ? text : curr));
       Alert.alert('Send failed', e?.message || 'Could not send message');
     } finally {
       setSending(false);
@@ -393,14 +393,18 @@ export default function TicketChatScreen() {
           onRefresh={() => load(true)}
           onContentSizeChange={() => scrollToLatest(false)}
           keyboardShouldPersistTaps="handled"
-          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+          keyboardDismissMode={
+            Platform.OS === 'ios' ? 'interactive' : 'on-drag'
+          }
         />
 
         {/* ⌨️ INPUT BAR */}
         <Animated.View
           style={[
             styles.composerWrap,
-            { transform: [{ translateY: Animated.multiply(keyboardAnim, -1) }] },
+            {
+              transform: [{ translateY: Animated.multiply(keyboardAnim, -1) }],
+            },
           ]}
         >
           <Surface
@@ -412,7 +416,7 @@ export default function TicketChatScreen() {
               },
             ]}
             elevation={2}
-            onLayout={(e) => setComposerHeight(e.nativeEvent.layout.height)}
+            onLayout={e => setComposerHeight(e.nativeEvent.layout.height)}
           >
             <TextInput
               ref={inputRef}

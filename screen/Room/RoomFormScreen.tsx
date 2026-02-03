@@ -208,7 +208,8 @@ export default function RoomFormScreen() {
     else if (rent.trim().length > 10) e.rent = 'Max 10 digits';
     if (!/^\d+$/.test(deposit)) e.deposit = 'Numbers only';
     else if (deposit.trim().length > 10) e.deposit = 'Max 10 digits';
-    if (String(comment || '').trim().length > 100) e.comment = 'Max 100 characters';
+    if (String(comment || '').trim().length > 100)
+      e.comment = 'Max 100 characters';
 
     if (selectedTenant && !joiningDate) {
       e.joiningDate = 'Joining date is required';
@@ -399,8 +400,17 @@ export default function RoomFormScreen() {
           {/* ===== ROOM DETAILS ===== */}
           <Surface style={styles.roomHero} elevation={2}>
             <View style={styles.sectionTitleRow}>
-              <View style={[styles.sectionIcon, { backgroundColor: theme.colors.primaryContainer }]}>
-                <Icon source="home-city-outline" size={18} color={theme.colors.primary} />
+              <View
+                style={[
+                  styles.sectionIcon,
+                  { backgroundColor: theme.colors.primaryContainer },
+                ]}
+              >
+                <Icon
+                  source="home-city-outline"
+                  size={18}
+                  color={theme.colors.primary}
+                />
               </View>
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Text style={styles.sectionTitle} numberOfLines={1}>
@@ -412,378 +422,418 @@ export default function RoomFormScreen() {
               </View>
             </View>
 
-              <FormInput
-                label="Room Name *"
-                value={name}
-                onChange={setName}
-                error={errors.name}
-                maxLength={50}
-              />
-              <FormInput
-                label="Room Type *"
-                value={type}
-                onChange={setType}
-                error={errors.type}
-                maxLength={30}
-              />
-              <FormInput
-                label="Area (sq ft)"
-                value={area}
-                onChange={(v) => setArea(String(v ?? '').replace(/[^\d]/g, '').slice(0, 10))}
-                keyboard="number-pad"
-                error={errors.area}
-                maxLength={10}
-              />
+            <FormInput
+              label="Room Name *"
+              value={name}
+              onChange={setName}
+              error={errors.name}
+              maxLength={50}
+            />
+            <FormInput
+              label="Room Type *"
+              value={type}
+              onChange={setType}
+              error={errors.type}
+              maxLength={30}
+            />
+            <FormInput
+              label="Area (sq ft)"
+              value={area}
+              onChange={v =>
+                setArea(
+                  String(v ?? '')
+                    .replace(/[^\d]/g, '')
+                    .slice(0, 10),
+                )
+              }
+              keyboard="number-pad"
+              error={errors.area}
+              maxLength={10}
+            />
 
-              <View style={styles.moneyRow}>
-                <View style={{ flex: 1 }}>
-                  <FormInput
-                    label="Rent (₹) *"
-                    value={rent}
-                    onChange={(v) => setRent(String(v ?? '').replace(/[^\d]/g, '').slice(0, 10))}
-                    error={errors.rent}
-                    keyboard="number-pad"
-                    maxLength={10}
-                  />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <FormInput
-                    label="Deposit (₹)"
-                    value={deposit}
-                    onChange={(v) => setDeposit(String(v ?? '').replace(/[^\d]/g, '').slice(0, 10))}
-                    error={errors.deposit}
-                    keyboard="number-pad"
-                    maxLength={10}
-                  />
-                </View>
+            <View style={styles.moneyRow}>
+              <View style={{ flex: 1 }}>
+                <FormInput
+                  label="Rent (₹) *"
+                  value={rent}
+                  onChange={v =>
+                    setRent(
+                      String(v ?? '')
+                        .replace(/[^\d]/g, '')
+                        .slice(0, 10),
+                    )
+                  }
+                  error={errors.rent}
+                  keyboard="number-pad"
+                  maxLength={10}
+                />
               </View>
+              <View style={{ flex: 1 }}>
+                <FormInput
+                  label="Deposit (₹)"
+                  value={deposit}
+                  onChange={v =>
+                    setDeposit(
+                      String(v ?? '')
+                        .replace(/[^\d]/g, '')
+                        .slice(0, 10),
+                    )
+                  }
+                  error={errors.deposit}
+                  keyboard="number-pad"
+                  maxLength={10}
+                />
+              </View>
+            </View>
 
-              <FormInput
-                label="Comment"
-                value={comment}
-                onChange={setComment}
-                error={errors.comment}
-                maxLength={100}
-                multiline={true}
-                
-              />
-            </Surface>
+            <FormInput
+              label="Comment"
+              value={comment}
+              onChange={setComment}
+              error={errors.comment}
+              maxLength={100}
+              multiline={true}
+            />
+          </Surface>
 
           {/* ===== TENANT OCCUPANCY ===== */}
           <Surface style={styles.section} elevation={2}>
             <View style={styles.sectionTitleRow}>
-              <View style={[styles.sectionIcon, { backgroundColor: theme.colors.primaryContainer }]}>
-                <Icon source="account-outline" size={18} color={theme.colors.primary} />
+              <View
+                style={[
+                  styles.sectionIcon,
+                  { backgroundColor: theme.colors.primaryContainer },
+                ]}
+              >
+                <Icon
+                  source="account-outline"
+                  size={18}
+                  color={theme.colors.primary}
+                />
               </View>
               <Text style={styles.sectionTitle}>Tenant occupancy</Text>
             </View>
 
-              {activeTenant && !editingOccupancy ? (
-                <>
-                  <Surface style={styles.occupancyCard} elevation={1}>
-                    <View style={styles.occupancyHeader}>
-                      <Avatar.Text
-                        size={44}
-                        label={getInitials(activeTenant.tenant.name)}
+            {activeTenant && !editingOccupancy ? (
+              <>
+                <Surface style={styles.occupancyCard} elevation={1}>
+                  <View style={styles.occupancyHeader}>
+                    <Avatar.Text
+                      size={44}
+                      label={getInitials(activeTenant.tenant.name)}
+                      style={{
+                        backgroundColor: theme.colors.primaryContainer,
+                      }}
+                      color={theme.colors.primary}
+                    />
+
+                    <View style={styles.occupancyHeaderText}>
+                      <Text variant="titleMedium" style={styles.occupancyName}>
+                        {activeTenant.tenant.name}
+                      </Text>
+                      <Text style={styles.muted}>Active tenant</Text>
+                    </View>
+
+                    <View
+                      style={[
+                        styles.statusPill,
+                        { backgroundColor: theme.colors.secondaryContainer },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.statusPillText,
+                          { color: theme.colors.secondary },
+                        ]}
+                      >
+                        Occupied
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.occupancyMetaRow}>
+                    <View style={styles.metaRow}>
+                      <IconButton
+                        icon="counter"
+                        size={18}
+                        style={styles.metaIcon}
+                      />
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.metaLabel}>
+                          Joining meter reading
+                        </Text>
+                        <Text style={styles.metaValue}>
+                          {activeMeterUnit != null
+                            ? String(activeMeterUnit)
+                            : '-'}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View style={[styles.metaRow, { marginTop: 10 }]}>
+                      <IconButton
+                        icon="calendar"
+                        size={18}
+                        style={styles.metaIcon}
+                      />
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.metaLabel}>Joining date</Text>
+                        <Text style={styles.metaValue}>
+                          {formatDate(activeTenant.joining_date)}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                </Surface>
+
+                <Button
+                  mode="outlined"
+                  icon="pencil-outline"
+                  style={{ marginTop: 12 }}
+                  onPress={async () => {
+                    setEditingOccupancy(true);
+                    setSelectedTenant(activeTenant.tenant);
+                    setJoiningDate(new Date(activeTenant.joining_date));
+                    try {
+                      const latest = await fetchLatestMeterReading({
+                        roomId: roomId as number,
+                        tenantId: activeTenant.tenant_id,
+                      });
+                      setMeterReading(
+                        latest?.unit != null ? String(latest.unit) : '',
+                      );
+                      setMeterReadingId(latest?.id ?? null);
+                      setMeterReadingPrevUnit(latest?.unit ?? null);
+                    } catch {
+                      setMeterReading('');
+                      setMeterReadingId(null);
+                      setMeterReadingPrevUnit(null);
+                    }
+                    setTenantQuery('');
+                    setErrors(prev => ({
+                      ...prev,
+                      meterReading: '',
+                      joiningDate: '',
+                    }));
+                  }}
+                >
+                  Edit Occupancy
+                </Button>
+
+                <Button
+                  mode="contained-tonal"
+                  icon="home-remove-outline"
+                  style={{ marginTop: 12 }}
+                  onPress={() =>
+                    Alert.alert('Mark Vacant', 'Confirm tenant vacated?', [
+                      { text: 'Cancel', style: 'cancel' },
+                      {
+                        text: 'Confirm',
+                        style: 'destructive',
+                        onPress: async () => {
+                          await vacateRoom(activeTenant.id);
+                          load();
+                        },
+                      },
+                    ])
+                  }
+                >
+                  Mark Vacant
+                </Button>
+              </>
+            ) : (
+              <>
+                {!selectedTenant && (
+                  <>
+                    <Surface
+                      style={[
+                        styles.occupancyHint,
+                        {
+                          borderColor:
+                            (theme.colors as any).outlineVariant ??
+                            theme.colors.outline,
+                        },
+                      ]}
+                      elevation={0}
+                    >
+                      <Avatar.Icon
+                        size={40}
+                        icon="account-plus-outline"
                         style={{
                           backgroundColor: theme.colors.primaryContainer,
                         }}
                         color={theme.colors.primary}
                       />
-
-                      <View style={styles.occupancyHeaderText}>
-                        <Text
-                          variant="titleMedium"
-                          style={styles.occupancyName}
-                        >
-                          {activeTenant.tenant.name}
-                        </Text>
-                        <Text style={styles.muted}>Active tenant</Text>
-                      </View>
-
-                      <View
-                        style={[
-                          styles.statusPill,
-                          { backgroundColor: theme.colors.secondaryContainer },
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.statusPillText,
-                            { color: theme.colors.secondary },
-                          ]}
-                        >
-                          Occupied
+                      <View style={{ flex: 1, marginLeft: 12 }}>
+                        <Text style={styles.hintTitle}>No tenant assigned</Text>
+                        <Text style={styles.hintSub}>
+                          Search and select a tenant to occupy this room.
                         </Text>
                       </View>
+                    </Surface>
+
+                    <FormInput
+                      label="Search tenant"
+                      value={tenantQuery}
+                      onChange={setTenantQuery}
+                    />
+
+                    {filteredTenants.length > 0 && (
+                      <Surface style={styles.dropdown} elevation={0}>
+                        {filteredTenants.map(t => (
+                          <TouchableOpacity
+                            key={t.id}
+                            style={styles.dropdownItem}
+                            onPress={() => {
+                              setSelectedTenant(t);
+                              setTenantQuery('');
+                            }}
+                          >
+                            <Text>{t.name}</Text>
+                          </TouchableOpacity>
+                        ))}
+                      </Surface>
+                    )}
+                  </>
+                )}
+
+                {selectedTenant && (
+                  <Surface style={styles.selectedTenant} elevation={1}>
+                    <Avatar.Text
+                      size={40}
+                      label={getInitials(selectedTenant.name)}
+                      style={{
+                        backgroundColor: theme.colors.primaryContainer,
+                      }}
+                      color={theme.colors.primary}
+                    />
+
+                    <View style={{ flex: 1, marginLeft: 12 }}>
+                      <Text style={{ fontWeight: '800' }}>
+                        {selectedTenant.name}
+                      </Text>
+                      <Text style={{ color: '#666', marginTop: 2 }}>
+                        Selected tenant
+                      </Text>
                     </View>
 
-                    <View style={styles.occupancyMetaRow}>
-                      <View style={styles.metaRow}>
-                        <IconButton
-                          icon="counter"
-                          size={18}
-                          style={styles.metaIcon}
-                        />
-                        <View style={{ flex: 1 }}>
-                          <Text style={styles.metaLabel}>Joining meter reading</Text>
-                          <Text style={styles.metaValue}>
-                            {activeMeterUnit != null
-                              ? String(activeMeterUnit)
-                              : '-'}
-                          </Text>
-                        </View>
-                      </View>
-
-                      <View style={[styles.metaRow, { marginTop: 10 }]}>
-                        <IconButton
-                          icon="calendar"
-                          size={18}
-                          style={styles.metaIcon}
-                        />
-                        <View style={{ flex: 1 }}>
-                          <Text style={styles.metaLabel}>Joining date</Text>
-                          <Text style={styles.metaValue}>
-                            {formatDate(activeTenant.joining_date)}
-                          </Text>
-                        </View>
-                      </View>
-                    </View>
+                    <IconButton
+                      icon="close"
+                      onPress={() => setSelectedTenant(null)}
+                      accessibilityLabel="Remove selected tenant"
+                    />
                   </Surface>
+                )}
 
+                {selectedTenant && (
+                  <>
+                    <FormInput
+                      label="Joining Meter Reading *"
+                      value={meterReading}
+                      onChange={(text: string) => {
+                        const next = text.replace(/[^\d]/g, '');
+                        setMeterReading(next);
+                        setErrors(prev => ({ ...prev, meterReading: '' }));
+                      }}
+                      error={errors.meterReading}
+                      keyboard="number-pad"
+                    />
+                  </>
+                )}
+
+                <Button
+                  mode="contained-tonal"
+                  icon="calendar"
+                  style={{ marginTop: 12 }}
+                  onPress={() => setDateModalOpen(true)}
+                >
+                  {joiningDate
+                    ? `Joining Date: ${formatDate(joiningDate.toISOString())}`
+                    : 'Select Joining Date'}
+                </Button>
+
+                {!!errors.joiningDate ? (
+                  <Text
+                    style={[styles.errorText, { color: theme.colors.error }]}
+                  >
+                    {errors.joiningDate}
+                  </Text>
+                ) : null}
+
+                {editingOccupancy && activeTenant && (
                   <Button
                     mode="outlined"
-                    icon="pencil-outline"
-                    style={{ marginTop: 12 }}
-                    onPress={async () => {
-                      setEditingOccupancy(true);
-                      setSelectedTenant(activeTenant.tenant);
-                      setJoiningDate(new Date(activeTenant.joining_date));
-                      try {
-                        const latest = await fetchLatestMeterReading({
-                          roomId: roomId as number,
-                          tenantId: activeTenant.tenant_id,
-                        });
-                        setMeterReading(
-                          latest?.unit != null ? String(latest.unit) : '',
-                        );
-                        setMeterReadingId(latest?.id ?? null);
-                        setMeterReadingPrevUnit(latest?.unit ?? null);
-                      } catch {
-                        setMeterReading('');
-                        setMeterReadingId(null);
-                        setMeterReadingPrevUnit(null);
-                      }
+                    icon="close"
+                    onPress={() => {
+                      setEditingOccupancy(false);
+                      setSelectedTenant(null);
+                      setJoiningDate(null);
+                      setMeterReading('');
                       setTenantQuery('');
+                      setMeterReadingId(null);
+                      setMeterReadingPrevUnit(null);
                       setErrors(prev => ({
                         ...prev,
                         meterReading: '',
                         joiningDate: '',
                       }));
                     }}
+                    textColor="#D32F2F"
+                    style={{
+                      marginTop: 12,
+                      borderColor: '#F3B5B5',
+                      backgroundColor: '#FFF5F5',
+                    }}
                   >
-                    Edit Occupancy
+                    Cancel occupancy edit
                   </Button>
-
-                  <Button
-                    mode="contained-tonal"
-                    icon="home-remove-outline"
-                    style={{ marginTop: 12 }}
-                    onPress={() =>
-                      Alert.alert('Mark Vacant', 'Confirm tenant vacated?', [
-                        { text: 'Cancel', style: 'cancel' },
-                        {
-                          text: 'Confirm',
-                          style: 'destructive',
-                          onPress: async () => {
-                            await vacateRoom(activeTenant.id);
-                            load();
-                          },
-                        },
-                      ])
-                    }
-                  >
-                    Mark Vacant
-                  </Button>
-                </>
-              ) : (
-                <>
-                  {!selectedTenant && (
-                    <>
-                      <Surface
-                        style={[
-                          styles.occupancyHint,
-                          { borderColor: (theme.colors as any).outlineVariant ?? theme.colors.outline },
-                        ]}
-                        elevation={0}
-                      >
-                        <Avatar.Icon
-                          size={40}
-                          icon="account-plus-outline"
-                          style={{
-                            backgroundColor: theme.colors.primaryContainer,
-                          }}
-                          color={theme.colors.primary}
-                        />
-                        <View style={{ flex: 1, marginLeft: 12 }}>
-                          <Text style={styles.hintTitle}>
-                            No tenant assigned
-                          </Text>
-                          <Text style={styles.hintSub}>
-                            Search and select a tenant to occupy this room.
-                          </Text>
-                        </View>
-                      </Surface>
-
-                      <FormInput
-                        label="Search tenant"
-                        value={tenantQuery}
-                        onChange={setTenantQuery}
-                      />
-
-                      {filteredTenants.length > 0 && (
-                        <Surface style={styles.dropdown} elevation={0}>
-                          {filteredTenants.map(t => (
-                            <TouchableOpacity
-                              key={t.id}
-                              style={styles.dropdownItem}
-                              onPress={() => {
-                                setSelectedTenant(t);
-                                setTenantQuery('');
-                              }}
-                            >
-                              <Text>{t.name}</Text>
-                            </TouchableOpacity>
-                          ))}
-                        </Surface>
-                      )}
-                    </>
-                  )}
-
-                  {selectedTenant && (
-                    <Surface style={styles.selectedTenant} elevation={1}>
-                      <Avatar.Text
-                        size={40}
-                        label={getInitials(selectedTenant.name)}
-                        style={{
-                          backgroundColor: theme.colors.primaryContainer,
-                        }}
-                        color={theme.colors.primary}
-                      />
-
-                      <View style={{ flex: 1, marginLeft: 12 }}>
-                        <Text style={{ fontWeight: '800' }}>
-                          {selectedTenant.name}
-                        </Text>
-                        <Text style={{ color: '#666', marginTop: 2 }}>
-                          Selected tenant
-                        </Text>
-                      </View>
-
-                      <IconButton
-                        icon="close"
-                        onPress={() => setSelectedTenant(null)}
-                        accessibilityLabel="Remove selected tenant"
-                      />
-                    </Surface>
-                  )}
-
-                  {selectedTenant && (
-                    <>
-                      <FormInput
-                        label="Joining Meter Reading *"
-                        value={meterReading}
-                        onChange={(text: string) => {
-                          const next = text.replace(/[^\d]/g, '');
-                          setMeterReading(next);
-                          setErrors(prev => ({ ...prev, meterReading: '' }));
-                        }}
-                        error={errors.meterReading}
-                        keyboard="number-pad"
-                      />
-                    </>
-                  )}
-
-                  <Button
-                    mode="contained-tonal"
-                    icon="calendar"
-                    style={{ marginTop: 12 }}
-                    onPress={() => setDateModalOpen(true)}
-                  >
-                    {joiningDate
-                      ? `Joining Date: ${formatDate(joiningDate.toISOString())}`
-                      : 'Select Joining Date'}
-                  </Button>
-
-                  {!!errors.joiningDate ? (
-                    <Text style={[styles.errorText, { color: theme.colors.error }]}>{errors.joiningDate}</Text>
-                  ) : null}
-
-                  {editingOccupancy && activeTenant && (
-                    <Button
-                      mode="outlined"
-                      icon="close"
-                      onPress={() => {
-                        setEditingOccupancy(false);
-                        setSelectedTenant(null);
-                        setJoiningDate(null);
-                        setMeterReading('');
-                        setTenantQuery('');
-                        setMeterReadingId(null);
-                        setMeterReadingPrevUnit(null);
-                        setErrors(prev => ({
-                          ...prev,
-                          meterReading: '',
-                          joiningDate: '',
-                        }));
-                      }}
-                      textColor="#D32F2F"
-                      style={{
-                        marginTop: 12,
-                        borderColor: '#F3B5B5',
-                        backgroundColor: '#FFF5F5',
-                      }}
-                    >
-                      Cancel occupancy edit
-                    </Button>
-                  )}
-                </>
-              )}
-            </Surface>
-
-            {/* ===== TENANT HISTORY ===== */}
-            {tenantHistory.length > 0 && (
-              <Surface style={styles.section} elevation={2}>
-                <View style={styles.sectionTitleRow}>
-                  <View style={[styles.sectionIcon, { backgroundColor: theme.colors.primaryContainer }]}>
-                    <Icon source="history" size={18} color={theme.colors.primary} />
-                  </View>
-                  <Text style={styles.sectionTitle}>Tenant history</Text>
-                </View>
-
-                {tenantHistory.map((h, i) => (
-                  <Surface key={i} style={styles.historyCard} elevation={1}>
-                    <Avatar.Icon size={36} icon="account" />
-                    <View style={{ marginLeft: 12 }}>
-                      <Text style={{ fontWeight: '600' }}>{h.tenant_name}</Text>
-                      <Text style={{ color: '#666' }}>
-                        {formatDate(h.joining_date)} →{' '}
-                        {formatDate(h.leaving_date)}
-                      </Text>
-                    </View>
-                  </Surface>
-                ))}
-              </Surface>
+                )}
+              </>
             )}
+          </Surface>
+
+          {/* ===== TENANT HISTORY ===== */}
+          {tenantHistory.length > 0 && (
+            <Surface style={styles.section} elevation={2}>
+              <View style={styles.sectionTitleRow}>
+                <View
+                  style={[
+                    styles.sectionIcon,
+                    { backgroundColor: theme.colors.primaryContainer },
+                  ]}
+                >
+                  <Icon
+                    source="history"
+                    size={18}
+                    color={theme.colors.primary}
+                  />
+                </View>
+                <Text style={styles.sectionTitle}>Tenant history</Text>
+              </View>
+
+              {tenantHistory.map((h, i) => (
+                <Surface key={i} style={styles.historyCard} elevation={1}>
+                  <Avatar.Icon size={36} icon="account" />
+                  <View style={{ marginLeft: 12 }}>
+                    <Text style={{ fontWeight: '600' }}>{h.tenant_name}</Text>
+                    <Text style={{ color: '#666' }}>
+                      {formatDate(h.joining_date)} →{' '}
+                      {formatDate(h.leaving_date)}
+                    </Text>
+                  </View>
+                </Surface>
+              ))}
+            </Surface>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
 
-        <FAB
-          icon="content-save"
-          style={styles.fab}
-          loading={saving}
-          onPress={save}
-        />
+      <FAB
+        icon="content-save"
+        style={styles.fab}
+        loading={saving}
+        onPress={save}
+      />
 
       <DatePickerModal
         locale="en"
@@ -823,10 +873,26 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
-  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
-  sectionIcon: { width: 36, height: 36, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+  },
+  sectionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   sectionTitle: { fontWeight: '900', fontSize: 16, color: '#111827' },
-  sectionSub: { marginTop: 2, color: '#6B7280', fontWeight: '800', fontSize: 13 },
+  sectionSub: {
+    marginTop: 2,
+    color: '#6B7280',
+    fontWeight: '800',
+    fontSize: 13,
+  },
   moneyRow: {
     flexDirection: 'row',
     gap: 12,

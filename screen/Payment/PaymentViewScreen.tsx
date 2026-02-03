@@ -273,7 +273,10 @@ export default function PaymentViewScreen() {
           style={{ backgroundColor: theme.colors.primaryContainer }}
           color={theme.colors.primary}
         />
-        <Text variant="titleMedium" style={{ fontWeight: '800', marginTop: 12 }}>
+        <Text
+          variant="titleMedium"
+          style={{ fontWeight: '800', marginTop: 12 }}
+        >
           Bill not found
         </Text>
         <Text style={{ color: '#666', marginTop: 4 }}>
@@ -775,834 +778,859 @@ export default function PaymentViewScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-          {/* HERO */}
-          <Surface style={[styles.hero, { borderColor: outline }]} elevation={2}>
-            <View
-              style={[
-                styles.heroPhotoWrap,
-                {
-                  backgroundColor: theme.colors.primaryContainer,
-                  borderColor: theme.colors.primary,
-                },
-              ]}
-            >
-              {tenantPhotoUrl ? (
-                <Image
-                  source={{ uri: tenantPhotoUrl }}
-                  style={styles.heroPhoto}
-                  resizeMode="cover"
-                />
-              ) : (
-                <Icon source="account" size={28} color={theme.colors.primary} />
-              )}
-            </View>
-            <View style={{ flex: 1, marginLeft: 14 }}>
-              <View style={styles.heroKickerRow}>
-                <Text style={styles.heroKicker} numberOfLines={1}>
-                  BILL SUMMARY
-                </Text>
-                <Surface
-                  style={[
-                    styles.heroMonthPill,
-                    {
-                      backgroundColor: theme.colors.primaryContainer,
-                      borderColor: theme.colors.primary,
-                    },
-                  ]}
-                  elevation={0}
-                >
-                  <Text
-                    style={[
-                      styles.heroMonthPillText,
-                      { color: theme.colors.primary },
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {billMonthShort}
-                  </Text>
-                </Surface>
-              </View>
-
-              <Text
-                variant="headlineSmall"
-                style={styles.heroTenant}
-                numberOfLines={1}
-              >
-                {tenantName}
+        {/* HERO */}
+        <Surface style={[styles.hero, { borderColor: outline }]} elevation={2}>
+          <View
+            style={[
+              styles.heroPhotoWrap,
+              {
+                backgroundColor: theme.colors.primaryContainer,
+                borderColor: theme.colors.primary,
+              },
+            ]}
+          >
+            {tenantPhotoUrl ? (
+              <Image
+                source={{ uri: tenantPhotoUrl }}
+                style={styles.heroPhoto}
+                resizeMode="cover"
+              />
+            ) : (
+              <Icon source="account" size={28} color={theme.colors.primary} />
+            )}
+          </View>
+          <View style={{ flex: 1, marginLeft: 14 }}>
+            <View style={styles.heroKickerRow}>
+              <Text style={styles.heroKicker} numberOfLines={1}>
+                BILL SUMMARY
               </Text>
-
-              <View style={styles.heroRoomRow}>
-                <Icon
-                  source="home-city-outline"
-                  size={18}
-                  color={theme.colors.primary}
-                />
-                <Text
-                  variant="titleMedium"
-                  style={styles.heroRoom}
-                  numberOfLines={1}
-                >
-                  {roomName}
-                </Text>
-              </View>
-
-              <View style={styles.heroMetaRow}>
-                <Icon source="calendar" size={16} color="#6B7280" />
-                <Text style={styles.heroMetaText} numberOfLines={1}>
-                  Issued {formatDate(bill.created_at)}
-                </Text>
-              </View>
-            </View>
-
-            {/* Edit allowed only when paid_amount is 0 */}
-            {canEditBill ? (
-              <IconButton
-                icon="pencil"
-                size={20}
-                onPress={() =>
-                  navigation.navigate('PaymentForm', { billId: bill.id })
-                }
-                iconColor={theme.colors.primary}
+              <Surface
                 style={[
-                  styles.heroEditBtn,
+                  styles.heroMonthPill,
                   {
                     backgroundColor: theme.colors.primaryContainer,
                     borderColor: theme.colors.primary,
                   },
                 ]}
-              />
-            ) : null}
-          </Surface>
+                elevation={0}
+              >
+                <Text
+                  style={[
+                    styles.heroMonthPillText,
+                    { color: theme.colors.primary },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {billMonthShort}
+                </Text>
+              </Surface>
+            </View>
 
-          <View style={styles.shareShotWrap}>
-            <ViewShot
-              ref={shareShotRef}
-              options={{ format: 'png', quality: 0.9 }}
+            <Text
+              variant="headlineSmall"
+              style={styles.heroTenant}
+              numberOfLines={1}
             >
-              <View style={styles.shareCanvas}>
-                <View style={styles.shareCardFrame}>
-                  <View style={styles.shareCard}>
-                    <View style={styles.shareHeaderRow}>
-                      <View style={styles.shareHeaderLeft}>
-                        <Text style={styles.shareBrand}>{propertyName}</Text>
-                        {!!propertyAddress && (
-                          <Text style={styles.shareMuted}>
-                            {propertyAddress}
-                          </Text>
-                        )}
-                      </View>
-                      <View style={styles.shareStatusPill}>
-                        <Text
-                          style={styles.shareStatusText}
-                          numberOfLines={1}
-                          ellipsizeMode="clip"
-                        >
-                          {billMonthShort}
-                        </Text>
-                      </View>
-                    </View>
+              {tenantName}
+            </Text>
 
-                    <View style={styles.shareMetaGrid}>
-                      <View style={styles.shareMetaItem}>
-                        <Text style={styles.shareMetaLabel}>Billed to</Text>
-                        <Text style={styles.shareMetaValue}>{tenantName}</Text>
-                      </View>
-                      <View style={styles.shareMetaItem}>
-                        <Text style={styles.shareMetaLabel}>
-                          Property / Room
-                        </Text>
-                        <Text style={styles.shareMetaValue}>{roomName}</Text>
-                      </View>
-                      <View style={styles.shareMetaItem}>
-                        <Text style={styles.shareMetaLabel}>
-                          Payment status
-                        </Text>
-                        <Text style={styles.shareMetaValue}>
-                          {status || 'UNPAID'}
-                        </Text>
-                      </View>
-                      <View style={styles.shareMetaItem}>
-                        <Text style={styles.shareMetaLabel}>Issue date</Text>
-                        <Text style={styles.shareMetaValue}>
-                          {formatDate(bill.created_at)}
-                        </Text>
-                      </View>
-                      <View style={styles.shareMetaItem}>
-                        <Text style={styles.shareMetaLabel}>Prev reading</Text>
-                        <Text style={styles.shareMetaValue}>
-                          {String(prev)}
-                        </Text>
-                      </View>
-                      <View style={styles.shareMetaItem}>
-                        <Text style={styles.shareMetaLabel}>Curr reading</Text>
-                        <Text style={styles.shareMetaValue}>
-                          {String(curr)}
-                        </Text>
-                      </View>
-                    </View>
-                    <View style={styles.shareDivider} />
-                    <Text style={styles.shareSectionTitle}>Charges</Text>
-                    <View style={styles.shareTableHeader}>
-                      <Text
-                        style={[
-                          styles.shareDescCell,
-                          styles.shareTableHeaderText,
-                        ]}
-                      >
-                        Description
-                      </Text>
-                      <Text
-                        style={[
-                          styles.shareAmountCell,
-                          styles.shareTableHeaderText,
-                        ]}
-                      >
-                        Amount
-                      </Text>
-                    </View>
-                    <View style={[styles.shareTableRow, styles.shareAltRow]}>
-                      <Text style={styles.shareDescCell}>Rent</Text>
-                      <Text style={styles.shareAmountCell}>
-                        {formatMoney(bill.rent)}
-                      </Text>
-                    </View>
-                    <View style={styles.shareTableRow}>
-                      <Text style={styles.shareDescCell}>Water</Text>
-                      <Text style={styles.shareAmountCell}>
-                        {formatMoney(bill.water)}
-                      </Text>
-                    </View>
-                    <View style={[styles.shareTableRow, styles.shareAltRow]}>
-                      <Text style={styles.shareDescCell}>
-                        Electricity ({units} × {rate})
-                      </Text>
-                      <Text style={styles.shareAmountCell}>
-                        {formatMoney(bill.electricity)}
-                      </Text>
-                    </View>
-                    <View style={styles.shareTableRow}>
-                      <Text style={styles.shareDescCell}>Ad hoc</Text>
-                      <Text style={styles.shareAmountCell}>
-                        {formatMoney(bill.ad_hoc_amount)}
-                      </Text>
-                    </View>
-                    <View style={styles.shareTotalRow}>
-                      <View style={styles.shareTotalLeft}>
-                        {!!bill.ad_hoc_comment?.trim() && (
-                          <Text style={styles.shareNote}>
-                            Ad-hoc note: {bill.ad_hoc_comment.trim()}
-                          </Text>
-                        )}
-                      </View>
-                      <View>
-                        <Text style={styles.shareTotalLabel}>
-                          Total payable
-                        </Text>
-                        <Text style={styles.shareTotalValue}>
-                          {formatMoney(total)}
-                        </Text>
-                      </View>
-                    </View>
+            <View style={styles.heroRoomRow}>
+              <Icon
+                source="home-city-outline"
+                size={18}
+                color={theme.colors.primary}
+              />
+              <Text
+                variant="titleMedium"
+                style={styles.heroRoom}
+                numberOfLines={1}
+              >
+                {roomName}
+              </Text>
+            </View>
 
-                    <View style={styles.shareDivider} />
-
-                    <View style={styles.shareMetaGrid}>
-                      <View style={styles.shareMetaItem}>
-                        <Text style={styles.shareMetaLabel}>Paid</Text>
-                        <Text style={styles.shareMetaValue}>
-                          {formatMoney(paid)}
-                        </Text>
-                      </View>
-                      <View style={styles.shareMetaItem}>
-                        <Text style={styles.shareMetaLabel}>Pending</Text>
-                        <Text style={styles.shareMetaValue}>
-                          {formatMoney(pending)}
-                        </Text>
-                      </View>
-                    </View>
-                    <View style={styles.shareDivider} />
-                    {!!bill.paid_amount_comment?.trim() && (
-                      <View style={styles.shareNotesBlock}>
-                        <Text style={styles.shareSectionTitle}>
-                          Payment notes
-                        </Text>
-                        {bill.paid_amount_comment
-                          .trim()
-                          .split('\n')
-                          .filter(line => line.trim().length > 0)
-                          .map((line, idx) => (
-                            <Text
-                              key={String(idx)}
-                              style={styles.shareNoteLine}
-                            >
-                              {line}
-                            </Text>
-                          ))}
-                        <View style={styles.shareDivider} />
-                      </View>
-                    )}
-                    <Text style={styles.shareFooter}>
-                      This is a system generated invoice.
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            </ViewShot>
+            <View style={styles.heroMetaRow}>
+              <Icon source="calendar" size={16} color="#6B7280" />
+              <Text style={styles.heroMetaText} numberOfLines={1}>
+                Issued {formatDate(bill.created_at)}
+              </Text>
+            </View>
           </View>
 
-          {/* BILL PREVIEW (no-scroll layout) */}
-          <Surface style={[styles.billCard, { borderColor: outline }]} elevation={2}>
-            <View style={styles.billCardClip}>
-              <Surface
-                style={[
-                  styles.billTop,
-                  // Align with RoomView: keep surfaces mostly white, use primaryContainer
-                  // only for small accents (not a full-width block).
-                  { backgroundColor: theme.colors.surface },
-                ]}
-                elevation={0}
-              >
-                <View style={styles.billTopRow}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.billTopLabel}>Total Rent</Text>
-                    <Text
-                      style={styles.billTopValue}
-                      numberOfLines={1}
-                      adjustsFontSizeToFit
-                      minimumFontScale={0.7}
-                    >
-                      {formatMoney(total)}
-                    </Text>
-                  </View>
-                  <View style={styles.statusCol}>
-                    <View
-                      style={[
-                        styles.statusPill,
-                        styles.billStatusPill,
-                        {
-                          backgroundColor: statusTone.bg,
-                          borderColor: statusTone.border,
-                        },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.statusPillText,
-                          { color: statusTone.text },
-                        ]}
-                        numberOfLines={1}
-                      >
-                        {status}
-                      </Text>
-                    </View>
-
-                    <TouchableRipple
-                      onPress={openPaymentDialog}
-                      disabled={!canRecordPayment}
-                      borderless
-                      style={[
-                        styles.recordChip,
-                        {
-                          backgroundColor: theme.colors.surface,
-                          borderColor: canRecordPayment
-                            ? theme.colors.primary
-                            : theme.colors.outline,
-                          opacity: canRecordPayment ? 1 : 0.6,
-                        },
-                      ]}
-                    >
-                      <View style={styles.recordChipInner}>
-                        <Icon
-                          source="cash-plus"
-                          size={16}
-                          color={
-                            canRecordPayment
-                              ? theme.colors.primary
-                              : theme.colors.outline
-                          }
-                        />
-                        <Text
-                          style={[
-                            styles.recordChipText,
-                            {
-                              color: canRecordPayment
-                                ? theme.colors.primary
-                                : theme.colors.outline,
-                            },
-                          ]}
-                          numberOfLines={1}
-                        >
-                          Record
-                        </Text>
-                      </View>
-                    </TouchableRipple>
-                  </View>
-                </View>
-
-                <Surface
-                  style={[
-                    styles.paymentStrip,
-                    {
-                      backgroundColor: theme.colors.surface,
-                      borderColor:
-                        (theme.colors as any).outlineVariant ??
-                        theme.colors.outline,
-                    },
-                  ]}
-                  elevation={0}
-                >
-                  <View style={styles.paymentStripRow}>
-                    <PaymentStat
-                      icon="cash"
-                      label="Paid"
-                      amount={formatMoney(paid)}
-                      color={theme.colors.primary}
-                    />
-                    <View
-                      style={[
-                        styles.paymentStripDivider,
-                        {
-                          backgroundColor:
-                            (theme.colors as any).outlineVariant ??
-                            theme.colors.outline,
-                        },
-                      ]}
-                    />
-                    <PaymentStat
-                      icon="clock-outline"
-                      label="Pending"
-                      amount={formatMoney(pending)}
-                      color={
-                        pending > 0 ? theme.colors.error : theme.colors.primary
-                      }
-                    />
-                  </View>
-                  <ProgressBar
-                    progress={paidProgress}
-                    color={
-                      pending > 0 ? theme.colors.primary : theme.colors.primary
-                    }
-                    style={styles.paymentProgress}
-                  />
-                </Surface>
-              </Surface>
-
-              <Text style={styles.breakdownTitle}>Rent Summary</Text>
-
-              {/* Charges & meters (RoomView-style: flat rows + dividers, no tiny tiles) */}
-              <Surface
-                style={[
-                  styles.breakdownList,
-                  {
-                    borderColor:
-                      (theme.colors as any).outlineVariant ?? theme.colors.outline,
-                    backgroundColor: theme.colors.surface,
-                  },
-                ]}
-                elevation={0}
-              >
-                <BreakdownRow
-                  icon="home-city-outline"
-                  label="Rent"
-                  value={formatMoney(rent)}
-                />
-                <View
-                  style={[
-                    styles.breakdownDivider,
-                    {
-                      backgroundColor:
-                        (theme.colors as any).outlineVariant ?? theme.colors.outline,
-                    },
-                  ]}
-                />
-                <BreakdownRow
-                  icon="water-outline"
-                  label="Water"
-                  value={formatMoney(water)}
-                />
-                <View
-                  style={[
-                    styles.breakdownDivider,
-                    {
-                      backgroundColor:
-                        (theme.colors as any).outlineVariant ?? theme.colors.outline,
-                    },
-                  ]}
-                />
-                <BreakdownRow
-                  icon="flash-outline"
-                  label="Electricity"
-                  sub={`${units} × ${rate}`}
-                  value={formatMoney(electricity)}
-                />
-                <View
-                  style={[
-                    styles.breakdownDivider,
-                    {
-                      backgroundColor:
-                        (theme.colors as any).outlineVariant ?? theme.colors.outline,
-                    },
-                  ]}
-                />
-                <BreakdownRow
-                  icon="cash-plus"
-                  label="Ad-hoc"
-                  sub={
-                    bill.ad_hoc_comment?.trim()
-                      ? bill.ad_hoc_comment.trim()
-                      : undefined
-                  }
-                  value={formatMoney(adHoc)}
-                />
-                <View
-                  style={[
-                    styles.breakdownDivider,
-                    {
-                      backgroundColor:
-                        (theme.colors as any).outlineVariant ?? theme.colors.outline,
-                    },
-                  ]}
-                />
-                <BreakdownRow
-                  icon="counter"
-                  label="Prev meter"
-                  sub={prevLabel}
-                  value={String(prev)}
-                />
-                <View
-                  style={[
-                    styles.breakdownDivider,
-                    {
-                      backgroundColor:
-                        (theme.colors as any).outlineVariant ?? theme.colors.outline,
-                    },
-                  ]}
-                />
-                <BreakdownRow
-                  icon="counter"
-                  label="Curr meter"
-                  sub={currLabel}
-                  value={String(curr)}
-                />
-              </Surface>
-
-              <View style={styles.notesSection}>
-                {!!bill.paid_amount_comment?.trim() && (
-                  <View style={styles.commentBox}>
-                    <View style={styles.commentHeader}>
-                      <Icon
-                        source="note-text-outline"
-                        size={16}
-                        color={theme.colors.primary}
-                      />
-                      <Text style={styles.commentHeaderText}>
-                        Payment notes
-                      </Text>
-                    </View>
-                    <Text style={styles.commentText}>
-                      {bill.paid_amount_comment.trim()}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            </View>
-          </Surface>
-      </ScrollView>
-
-        <FAB icon="share-variant" style={styles.fab} onPress={openShareSheet} />
-
-        {canDeleteBill ? (
-          <FAB
-            icon="trash-can-outline"
-            style={[
-              styles.deleteFab,
-              { backgroundColor: theme.colors.errorContainer },
-            ]}
-            color={theme.colors.error}
-            onPress={confirmDeleteBill}
-            loading={billDeleting}
-            disabled={billDeleting}
-          />
-        ) : null}
-
-        <Portal>
-          <KeyboardAvoidingView
-            style={styles.dialogKav}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={0}
-          >
-            <Dialog
-              visible={paymentDialogOpen}
-              onDismiss={() => setPaymentDialogOpen(false)}
+          {/* Edit allowed only when paid_amount is 0 */}
+          {canEditBill ? (
+            <IconButton
+              icon="pencil"
+              size={20}
+              onPress={() =>
+                navigation.navigate('PaymentForm', { billId: bill.id })
+              }
+              iconColor={theme.colors.primary}
               style={[
-                styles.payDialog,
+                styles.heroEditBtn,
                 {
-                  maxHeight: dialogMaxHeight,
-                  borderColor: outline,
-                  borderWidth: 1,
+                  backgroundColor: theme.colors.primaryContainer,
+                  borderColor: theme.colors.primary,
                 },
               ]}
+            />
+          ) : null}
+        </Surface>
+
+        <View style={styles.shareShotWrap}>
+          <ViewShot
+            ref={shareShotRef}
+            options={{ format: 'png', quality: 0.9 }}
+          >
+            <View style={styles.shareCanvas}>
+              <View style={styles.shareCardFrame}>
+                <View style={styles.shareCard}>
+                  <View style={styles.shareHeaderRow}>
+                    <View style={styles.shareHeaderLeft}>
+                      <Text style={styles.shareBrand}>{propertyName}</Text>
+                      {!!propertyAddress && (
+                        <Text style={styles.shareMuted}>{propertyAddress}</Text>
+                      )}
+                    </View>
+                    <View style={styles.shareStatusPill}>
+                      <Text
+                        style={styles.shareStatusText}
+                        numberOfLines={1}
+                        ellipsizeMode="clip"
+                      >
+                        {billMonthShort}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.shareMetaGrid}>
+                    <View style={styles.shareMetaItem}>
+                      <Text style={styles.shareMetaLabel}>Billed to</Text>
+                      <Text style={styles.shareMetaValue}>{tenantName}</Text>
+                    </View>
+                    <View style={styles.shareMetaItem}>
+                      <Text style={styles.shareMetaLabel}>Property / Room</Text>
+                      <Text style={styles.shareMetaValue}>{roomName}</Text>
+                    </View>
+                    <View style={styles.shareMetaItem}>
+                      <Text style={styles.shareMetaLabel}>Payment status</Text>
+                      <Text style={styles.shareMetaValue}>
+                        {status || 'UNPAID'}
+                      </Text>
+                    </View>
+                    <View style={styles.shareMetaItem}>
+                      <Text style={styles.shareMetaLabel}>Issue date</Text>
+                      <Text style={styles.shareMetaValue}>
+                        {formatDate(bill.created_at)}
+                      </Text>
+                    </View>
+                    <View style={styles.shareMetaItem}>
+                      <Text style={styles.shareMetaLabel}>Prev reading</Text>
+                      <Text style={styles.shareMetaValue}>{String(prev)}</Text>
+                    </View>
+                    <View style={styles.shareMetaItem}>
+                      <Text style={styles.shareMetaLabel}>Curr reading</Text>
+                      <Text style={styles.shareMetaValue}>{String(curr)}</Text>
+                    </View>
+                  </View>
+                  <View style={styles.shareDivider} />
+                  <Text style={styles.shareSectionTitle}>Charges</Text>
+                  <View style={styles.shareTableHeader}>
+                    <Text
+                      style={[
+                        styles.shareDescCell,
+                        styles.shareTableHeaderText,
+                      ]}
+                    >
+                      Description
+                    </Text>
+                    <Text
+                      style={[
+                        styles.shareAmountCell,
+                        styles.shareTableHeaderText,
+                      ]}
+                    >
+                      Amount
+                    </Text>
+                  </View>
+                  <View style={[styles.shareTableRow, styles.shareAltRow]}>
+                    <Text style={styles.shareDescCell}>Rent</Text>
+                    <Text style={styles.shareAmountCell}>
+                      {formatMoney(bill.rent)}
+                    </Text>
+                  </View>
+                  <View style={styles.shareTableRow}>
+                    <Text style={styles.shareDescCell}>Water</Text>
+                    <Text style={styles.shareAmountCell}>
+                      {formatMoney(bill.water)}
+                    </Text>
+                  </View>
+                  <View style={[styles.shareTableRow, styles.shareAltRow]}>
+                    <Text style={styles.shareDescCell}>
+                      Electricity ({units} × {rate})
+                    </Text>
+                    <Text style={styles.shareAmountCell}>
+                      {formatMoney(bill.electricity)}
+                    </Text>
+                  </View>
+                  <View style={styles.shareTableRow}>
+                    <Text style={styles.shareDescCell}>Ad hoc</Text>
+                    <Text style={styles.shareAmountCell}>
+                      {formatMoney(bill.ad_hoc_amount)}
+                    </Text>
+                  </View>
+                  <View style={styles.shareTotalRow}>
+                    <View style={styles.shareTotalLeft}>
+                      {!!bill.ad_hoc_comment?.trim() && (
+                        <Text style={styles.shareNote}>
+                          Ad-hoc note: {bill.ad_hoc_comment.trim()}
+                        </Text>
+                      )}
+                    </View>
+                    <View>
+                      <Text style={styles.shareTotalLabel}>Total payable</Text>
+                      <Text style={styles.shareTotalValue}>
+                        {formatMoney(total)}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.shareDivider} />
+
+                  <View style={styles.shareMetaGrid}>
+                    <View style={styles.shareMetaItem}>
+                      <Text style={styles.shareMetaLabel}>Paid</Text>
+                      <Text style={styles.shareMetaValue}>
+                        {formatMoney(paid)}
+                      </Text>
+                    </View>
+                    <View style={styles.shareMetaItem}>
+                      <Text style={styles.shareMetaLabel}>Pending</Text>
+                      <Text style={styles.shareMetaValue}>
+                        {formatMoney(pending)}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.shareDivider} />
+                  {!!bill.paid_amount_comment?.trim() && (
+                    <View style={styles.shareNotesBlock}>
+                      <Text style={styles.shareSectionTitle}>
+                        Payment notes
+                      </Text>
+                      {bill.paid_amount_comment
+                        .trim()
+                        .split('\n')
+                        .filter(line => line.trim().length > 0)
+                        .map((line, idx) => (
+                          <Text key={String(idx)} style={styles.shareNoteLine}>
+                            {line}
+                          </Text>
+                        ))}
+                      <View style={styles.shareDivider} />
+                    </View>
+                  )}
+                  <Text style={styles.shareFooter}>
+                    This is a system generated invoice.
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </ViewShot>
+        </View>
+
+        {/* BILL PREVIEW (no-scroll layout) */}
+        <Surface
+          style={[styles.billCard, { borderColor: outline }]}
+          elevation={2}
+        >
+          <View style={styles.billCardClip}>
+            <Surface
+              style={[
+                styles.billTop,
+                // Align with RoomView: keep surfaces mostly white, use primaryContainer
+                // only for small accents (not a full-width block).
+                { backgroundColor: theme.colors.surface },
+              ]}
+              elevation={0}
             >
-              <View style={[styles.payDialogHeader, { borderBottomColor: outline }]}>
-                <View style={styles.payDialogHeaderRow}>
-                  <View
-                    style={[
-                      styles.payDialogIconWrap,
-                      { backgroundColor: theme.colors.primaryContainer },
-                    ]}
+              <View style={styles.billTopRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.billTopLabel}>Total Rent</Text>
+                  <Text
+                    style={styles.billTopValue}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.7}
                   >
-                    <Icon source="cash-plus" size={20} color={theme.colors.primary} />
-                  </View>
-
-                  <View style={{ flex: 1, minWidth: 0 }}>
-                    <Text style={styles.payDialogTitle} numberOfLines={1}>
-                      Record payment
-                    </Text>
-                    <Text style={styles.payDialogSub} numberOfLines={1}>
-                      {tenantName} • {roomName}
-                    </Text>
-                  </View>
-
+                    {formatMoney(total)}
+                  </Text>
+                </View>
+                <View style={styles.statusCol}>
                   <View
                     style={[
                       styles.statusPill,
+                      styles.billStatusPill,
                       {
                         backgroundColor: statusTone.bg,
                         borderColor: statusTone.border,
                       },
                     ]}
                   >
-                    <Text style={[styles.statusPillText, { color: statusTone.text }]} numberOfLines={1}>
+                    <Text
+                      style={[
+                        styles.statusPillText,
+                        { color: statusTone.text },
+                      ]}
+                      numberOfLines={1}
+                    >
                       {status}
                     </Text>
                   </View>
+
+                  <TouchableRipple
+                    onPress={openPaymentDialog}
+                    disabled={!canRecordPayment}
+                    borderless
+                    style={[
+                      styles.recordChip,
+                      {
+                        backgroundColor: theme.colors.surface,
+                        borderColor: canRecordPayment
+                          ? theme.colors.primary
+                          : theme.colors.outline,
+                        opacity: canRecordPayment ? 1 : 0.6,
+                      },
+                    ]}
+                  >
+                    <View style={styles.recordChipInner}>
+                      <Icon
+                        source="cash-plus"
+                        size={16}
+                        color={
+                          canRecordPayment
+                            ? theme.colors.primary
+                            : theme.colors.outline
+                        }
+                      />
+                      <Text
+                        style={[
+                          styles.recordChipText,
+                          {
+                            color: canRecordPayment
+                              ? theme.colors.primary
+                              : theme.colors.outline,
+                          },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        Record
+                      </Text>
+                    </View>
+                  </TouchableRipple>
                 </View>
               </View>
 
-              <Dialog.ScrollArea style={{ maxHeight: dialogScrollMaxHeight }}>
-                <ScrollView
-                  showsVerticalScrollIndicator={false}
-                  keyboardShouldPersistTaps="handled"
-                  contentContainerStyle={styles.dialogContent}
-                >
-                  <FormInput
-                    label="Amount received"
-                    value={paymentAmount}
-                    onChange={(t) =>
-                      setPaymentAmount(String(t ?? '').replace(/[^\d]/g, ''))
-                    }
-                    keyboard="number-pad"
-                    error={
-                      paymentAmount.trim().length > 0 && !isAmountValid
-                        ? `Enter an amount between 1 and ${Math.round(pending)}`
-                        : undefined
-                    }
+              <Surface
+                style={[
+                  styles.paymentStrip,
+                  {
+                    backgroundColor: theme.colors.surface,
+                    borderColor:
+                      (theme.colors as any).outlineVariant ??
+                      theme.colors.outline,
+                  },
+                ]}
+                elevation={0}
+              >
+                <View style={styles.paymentStripRow}>
+                  <PaymentStat
+                    icon="cash"
+                    label="Paid"
+                    amount={formatMoney(paid)}
+                    color={theme.colors.primary}
                   />
-
-                  <View style={styles.quickRow}>
-                    <Text style={styles.quickLabel}>Quick fill</Text>
-                    <View style={styles.quickChipsRow}>
-                      <TouchableRipple
-                        onPress={() =>
-                          setPaymentAmount(
-                            String(Math.max(1, Math.round(pending * 0.25))),
-                          )
-                        }
-                        disabled={pending <= 0}
-                        borderless
-                        style={[
-                          styles.quickPill,
-                          {
-                            backgroundColor: theme.colors.surface,
-                            borderColor: outline,
-                            opacity: pending > 0 ? 1 : 0.5,
-                          },
-                        ]}
-                      >
-                        <View style={styles.quickPillInner}>
-                          <Text style={styles.quickPillText}>25%</Text>
-                        </View>
-                      </TouchableRipple>
-
-                      <TouchableRipple
-                        onPress={() =>
-                          setPaymentAmount(
-                            String(Math.max(1, Math.round(pending * 0.5))),
-                          )
-                        }
-                        disabled={pending <= 0}
-                        borderless
-                        style={[
-                          styles.quickPill,
-                          {
-                            backgroundColor: theme.colors.surface,
-                            borderColor: outline,
-                            opacity: pending > 0 ? 1 : 0.5,
-                          },
-                        ]}
-                      >
-                        <View style={styles.quickPillInner}>
-                          <Text style={styles.quickPillText}>50%</Text>
-                        </View>
-                      </TouchableRipple>
-
-                      <TouchableRipple
-                        onPress={() => setPaymentAmount(String(pending))}
-                        disabled={pending <= 0}
-                        borderless
-                        style={[
-                          styles.quickPill,
-                          {
-                            backgroundColor: theme.colors.primaryContainer,
-                            borderColor: theme.colors.primary,
-                            opacity: pending > 0 ? 1 : 0.5,
-                          },
-                        ]}
-                      >
-                        <View style={styles.quickPillInner}>
-                          <Icon
-                            source="check-circle-outline"
-                            size={16}
-                            color={theme.colors.primary}
-                          />
-                          <Text
-                            style={[styles.quickPillText, { color: theme.colors.primary }]}
-                            numberOfLines={1}
-                          >
-                            Full {formatMoney(pending)}
-                          </Text>
-                        </View>
-                      </TouchableRipple>
-                    </View>
-                  </View>
-
-                  <View style={styles.methodBlock}>
-                    <Text style={styles.methodLabel}>Method</Text>
-                    <View style={styles.methodRow}>
-                      {(
-                        [
-                          { id: 'CASH', icon: 'cash' },
-                          { id: 'UPI', icon: 'qrcode-scan' },
-                          { id: 'BANK', icon: 'bank-outline' },
-                        ] as const
-                      ).map(m => {
-                        const selected = paymentMethod === (m.id as any);
-                        return (
-                          <TouchableRipple
-                            key={m.id}
-                            onPress={() => setPaymentMethod(m.id as any)}
-                            borderless
-                            style={[
-                              styles.methodChip,
-                              {
-                                backgroundColor: selected
-                                  ? theme.colors.primaryContainer
-                                  : theme.colors.surface,
-                                borderColor: selected
-                                  ? theme.colors.primary
-                                  : outline,
-                              },
-                            ]}
-                          >
-                            <View style={styles.methodChipInner}>
-                              <Icon
-                                source={m.icon}
-                                size={16}
-                                color={selected ? theme.colors.primary : '#6B7280'}
-                              />
-                              <Text
-                                style={[
-                                  styles.methodChipText,
-                                  {
-                                    color: selected ? theme.colors.primary : '#6B7280',
-                                  },
-                                ]}
-                                numberOfLines={1}
-                              >
-                                {m.id}
-                              </Text>
-                            </View>
-                          </TouchableRipple>
-                        );
-                      })}
-                    </View>
-                  </View>
-
-                  <FormInput
-                    label="Note (saved in bill notes)"
-                    value={paymentNote}
-                    onChange={setPaymentNote}
-                    maxLength={100}
-                  />
-
-                  <Surface
+                  <View
                     style={[
-                      styles.previewBox,
-                      { backgroundColor: theme.colors.surface, borderColor: outline },
+                      styles.paymentStripDivider,
+                      {
+                        backgroundColor:
+                          (theme.colors as any).outlineVariant ??
+                          theme.colors.outline,
+                      },
                     ]}
-                    elevation={0}
+                  />
+                  <PaymentStat
+                    icon="clock-outline"
+                    label="Pending"
+                    amount={formatMoney(pending)}
+                    color={
+                      pending > 0 ? theme.colors.error : theme.colors.primary
+                    }
+                  />
+                </View>
+                <ProgressBar
+                  progress={paidProgress}
+                  color={
+                    pending > 0 ? theme.colors.primary : theme.colors.primary
+                  }
+                  style={styles.paymentProgress}
+                />
+              </Surface>
+            </Surface>
+
+            <Text style={styles.breakdownTitle}>Rent Summary</Text>
+
+            {/* Charges & meters (RoomView-style: flat rows + dividers, no tiny tiles) */}
+            <Surface
+              style={[
+                styles.breakdownList,
+                {
+                  borderColor:
+                    (theme.colors as any).outlineVariant ??
+                    theme.colors.outline,
+                  backgroundColor: theme.colors.surface,
+                },
+              ]}
+              elevation={0}
+            >
+              <BreakdownRow
+                icon="home-city-outline"
+                label="Rent"
+                value={formatMoney(rent)}
+              />
+              <View
+                style={[
+                  styles.breakdownDivider,
+                  {
+                    backgroundColor:
+                      (theme.colors as any).outlineVariant ??
+                      theme.colors.outline,
+                  },
+                ]}
+              />
+              <BreakdownRow
+                icon="water-outline"
+                label="Water"
+                value={formatMoney(water)}
+              />
+              <View
+                style={[
+                  styles.breakdownDivider,
+                  {
+                    backgroundColor:
+                      (theme.colors as any).outlineVariant ??
+                      theme.colors.outline,
+                  },
+                ]}
+              />
+              <BreakdownRow
+                icon="flash-outline"
+                label="Electricity"
+                sub={`${units} × ${rate}`}
+                value={formatMoney(electricity)}
+              />
+              <View
+                style={[
+                  styles.breakdownDivider,
+                  {
+                    backgroundColor:
+                      (theme.colors as any).outlineVariant ??
+                      theme.colors.outline,
+                  },
+                ]}
+              />
+              <BreakdownRow
+                icon="cash-plus"
+                label="Ad-hoc"
+                sub={
+                  bill.ad_hoc_comment?.trim()
+                    ? bill.ad_hoc_comment.trim()
+                    : undefined
+                }
+                value={formatMoney(adHoc)}
+              />
+              <View
+                style={[
+                  styles.breakdownDivider,
+                  {
+                    backgroundColor:
+                      (theme.colors as any).outlineVariant ??
+                      theme.colors.outline,
+                  },
+                ]}
+              />
+              <BreakdownRow
+                icon="counter"
+                label="Prev meter"
+                sub={prevLabel}
+                value={String(prev)}
+              />
+              <View
+                style={[
+                  styles.breakdownDivider,
+                  {
+                    backgroundColor:
+                      (theme.colors as any).outlineVariant ??
+                      theme.colors.outline,
+                  },
+                ]}
+              />
+              <BreakdownRow
+                icon="counter"
+                label="Curr meter"
+                sub={currLabel}
+                value={String(curr)}
+              />
+            </Surface>
+
+            <View style={styles.notesSection}>
+              {!!bill.paid_amount_comment?.trim() && (
+                <View style={styles.commentBox}>
+                  <View style={styles.commentHeader}>
+                    <Icon
+                      source="note-text-outline"
+                      size={16}
+                      color={theme.colors.primary}
+                    />
+                    <Text style={styles.commentHeaderText}>Payment notes</Text>
+                  </View>
+                  <Text style={styles.commentText}>
+                    {bill.paid_amount_comment.trim()}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
+        </Surface>
+      </ScrollView>
+
+      <FAB icon="share-variant" style={styles.fab} onPress={openShareSheet} />
+
+      {canDeleteBill ? (
+        <FAB
+          icon="trash-can-outline"
+          style={[
+            styles.deleteFab,
+            { backgroundColor: theme.colors.errorContainer },
+          ]}
+          color={theme.colors.error}
+          onPress={confirmDeleteBill}
+          loading={billDeleting}
+          disabled={billDeleting}
+        />
+      ) : null}
+
+      <Portal>
+        <KeyboardAvoidingView
+          style={styles.dialogKav}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={0}
+        >
+          <Dialog
+            visible={paymentDialogOpen}
+            onDismiss={() => setPaymentDialogOpen(false)}
+            style={[
+              styles.payDialog,
+              {
+                maxHeight: dialogMaxHeight,
+                borderColor: outline,
+                borderWidth: 1,
+              },
+            ]}
+          >
+            <View
+              style={[styles.payDialogHeader, { borderBottomColor: outline }]}
+            >
+              <View style={styles.payDialogHeaderRow}>
+                <View
+                  style={[
+                    styles.payDialogIconWrap,
+                    { backgroundColor: theme.colors.primaryContainer },
+                  ]}
+                >
+                  <Icon
+                    source="cash-plus"
+                    size={20}
+                    color={theme.colors.primary}
+                  />
+                </View>
+
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={styles.payDialogTitle} numberOfLines={1}>
+                    Record payment
+                  </Text>
+                  <Text style={styles.payDialogSub} numberOfLines={1}>
+                    {tenantName} • {roomName}
+                  </Text>
+                </View>
+
+                <View
+                  style={[
+                    styles.statusPill,
+                    {
+                      backgroundColor: statusTone.bg,
+                      borderColor: statusTone.border,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[styles.statusPillText, { color: statusTone.text }]}
+                    numberOfLines={1}
                   >
-                    <View style={styles.previewHeaderRow}>
-                      <Text style={styles.previewHeaderText}>Payment Summary</Text>
-                      <View
-                        style={[
-                          styles.statusPill,
-                          {
-                            backgroundColor: nextStatusTone.bg,
-                            borderColor: nextStatusTone.border,
-                          },
-                        ]}
-                      >
-                        <Text style={[styles.statusPillText, { color: nextStatusTone.text }]} numberOfLines={1}>
-                          {nextStatus}
+                    {status}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            <Dialog.ScrollArea style={{ maxHeight: dialogScrollMaxHeight }}>
+              <ScrollView
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                contentContainerStyle={styles.dialogContent}
+              >
+                <FormInput
+                  label="Amount received"
+                  value={paymentAmount}
+                  onChange={t =>
+                    setPaymentAmount(String(t ?? '').replace(/[^\d]/g, ''))
+                  }
+                  keyboard="number-pad"
+                  error={
+                    paymentAmount.trim().length > 0 && !isAmountValid
+                      ? `Enter an amount between 1 and ${Math.round(pending)}`
+                      : undefined
+                  }
+                />
+
+                <View style={styles.quickRow}>
+                  <Text style={styles.quickLabel}>Quick fill</Text>
+                  <View style={styles.quickChipsRow}>
+                    <TouchableRipple
+                      onPress={() =>
+                        setPaymentAmount(
+                          String(Math.max(1, Math.round(pending * 0.25))),
+                        )
+                      }
+                      disabled={pending <= 0}
+                      borderless
+                      style={[
+                        styles.quickPill,
+                        {
+                          backgroundColor: theme.colors.surface,
+                          borderColor: outline,
+                          opacity: pending > 0 ? 1 : 0.5,
+                        },
+                      ]}
+                    >
+                      <View style={styles.quickPillInner}>
+                        <Text style={styles.quickPillText}>25%</Text>
+                      </View>
+                    </TouchableRipple>
+
+                    <TouchableRipple
+                      onPress={() =>
+                        setPaymentAmount(
+                          String(Math.max(1, Math.round(pending * 0.5))),
+                        )
+                      }
+                      disabled={pending <= 0}
+                      borderless
+                      style={[
+                        styles.quickPill,
+                        {
+                          backgroundColor: theme.colors.surface,
+                          borderColor: outline,
+                          opacity: pending > 0 ? 1 : 0.5,
+                        },
+                      ]}
+                    >
+                      <View style={styles.quickPillInner}>
+                        <Text style={styles.quickPillText}>50%</Text>
+                      </View>
+                    </TouchableRipple>
+
+                    <TouchableRipple
+                      onPress={() => setPaymentAmount(String(pending))}
+                      disabled={pending <= 0}
+                      borderless
+                      style={[
+                        styles.quickPill,
+                        {
+                          backgroundColor: theme.colors.primaryContainer,
+                          borderColor: theme.colors.primary,
+                          opacity: pending > 0 ? 1 : 0.5,
+                        },
+                      ]}
+                    >
+                      <View style={styles.quickPillInner}>
+                        <Icon
+                          source="check-circle-outline"
+                          size={16}
+                          color={theme.colors.primary}
+                        />
+                        <Text
+                          style={[
+                            styles.quickPillText,
+                            { color: theme.colors.primary },
+                          ]}
+                          numberOfLines={1}
+                        >
+                          Full {formatMoney(pending)}
                         </Text>
                       </View>
-                    </View>
-                    <View style={styles.previewRow}>
-                      <Text style={styles.previewLabel}>Paid</Text>
-                      <Text style={styles.previewValue}>{formatMoney(nextPaid)}</Text>
-                    </View>
-                    <View style={styles.previewRow}>
-                      <Text style={styles.previewLabel}>Pending</Text>
-                      <Text style={styles.previewValue}>{formatMoney(nextPending)}</Text>
-                    </View>
-                    <ProgressBar
-                      progress={nextProgress}
-                      color={theme.colors.primary}
-                      style={styles.previewProgress}
-                    />
-                    {!isAmountValid && paymentAmount.trim().length > 0 && (
-                      <Text style={[styles.amountHint, { color: theme.colors.error }]}>
-                        Enter an amount between 1 and {Math.round(pending)}.
-                      </Text>
-                    )}
-                  </Surface>
-                </ScrollView>
-              </Dialog.ScrollArea>
+                    </TouchableRipple>
+                  </View>
+                </View>
 
-              <Dialog.Actions style={styles.dialogActions}>
-                <Button
-                  onPress={() => setPaymentDialogOpen(false)}
-                  disabled={paymentSaving}
-                  style={styles.dialogActionBtn}
-                  contentStyle={styles.dialogActionBtnContent}
+                <View style={styles.methodBlock}>
+                  <Text style={styles.methodLabel}>Method</Text>
+                  <View style={styles.methodRow}>
+                    {(
+                      [
+                        { id: 'CASH', icon: 'cash' },
+                        { id: 'UPI', icon: 'qrcode-scan' },
+                        { id: 'BANK', icon: 'bank-outline' },
+                      ] as const
+                    ).map(m => {
+                      const selected = paymentMethod === (m.id as any);
+                      return (
+                        <TouchableRipple
+                          key={m.id}
+                          onPress={() => setPaymentMethod(m.id as any)}
+                          borderless
+                          style={[
+                            styles.methodChip,
+                            {
+                              backgroundColor: selected
+                                ? theme.colors.primaryContainer
+                                : theme.colors.surface,
+                              borderColor: selected
+                                ? theme.colors.primary
+                                : outline,
+                            },
+                          ]}
+                        >
+                          <View style={styles.methodChipInner}>
+                            <Icon
+                              source={m.icon}
+                              size={16}
+                              color={
+                                selected ? theme.colors.primary : '#6B7280'
+                              }
+                            />
+                            <Text
+                              style={[
+                                styles.methodChipText,
+                                {
+                                  color: selected
+                                    ? theme.colors.primary
+                                    : '#6B7280',
+                                },
+                              ]}
+                              numberOfLines={1}
+                            >
+                              {m.id}
+                            </Text>
+                          </View>
+                        </TouchableRipple>
+                      );
+                    })}
+                  </View>
+                </View>
+
+                <FormInput
+                  label="Note (saved in bill notes)"
+                  value={paymentNote}
+                  onChange={setPaymentNote}
+                  maxLength={100}
+                />
+
+                <Surface
+                  style={[
+                    styles.previewBox,
+                    {
+                      backgroundColor: theme.colors.surface,
+                      borderColor: outline,
+                    },
+                  ]}
+                  elevation={0}
                 >
-                  Cancel
-                </Button>
-                <Button
-                  mode="contained"
-                  onPress={savePayment}
-                  loading={paymentSaving}
-                  disabled={!isAmountValid}
-                  style={styles.dialogActionBtn}
-                  contentStyle={styles.dialogActionBtnContent}
-                >
-                  Save
-                </Button>
-              </Dialog.Actions>
-            </Dialog>
-          </KeyboardAvoidingView>
-        </Portal>
+                  <View style={styles.previewHeaderRow}>
+                    <Text style={styles.previewHeaderText}>
+                      Payment Summary
+                    </Text>
+                    <View
+                      style={[
+                        styles.statusPill,
+                        {
+                          backgroundColor: nextStatusTone.bg,
+                          borderColor: nextStatusTone.border,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.statusPillText,
+                          { color: nextStatusTone.text },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {nextStatus}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.previewRow}>
+                    <Text style={styles.previewLabel}>Paid</Text>
+                    <Text style={styles.previewValue}>
+                      {formatMoney(nextPaid)}
+                    </Text>
+                  </View>
+                  <View style={styles.previewRow}>
+                    <Text style={styles.previewLabel}>Pending</Text>
+                    <Text style={styles.previewValue}>
+                      {formatMoney(nextPending)}
+                    </Text>
+                  </View>
+                  <ProgressBar
+                    progress={nextProgress}
+                    color={theme.colors.primary}
+                    style={styles.previewProgress}
+                  />
+                  {!isAmountValid && paymentAmount.trim().length > 0 && (
+                    <Text
+                      style={[styles.amountHint, { color: theme.colors.error }]}
+                    >
+                      Enter an amount between 1 and {Math.round(pending)}.
+                    </Text>
+                  )}
+                </Surface>
+              </ScrollView>
+            </Dialog.ScrollArea>
+
+            <Dialog.Actions style={styles.dialogActions}>
+              <Button
+                onPress={() => setPaymentDialogOpen(false)}
+                disabled={paymentSaving}
+                style={styles.dialogActionBtn}
+                contentStyle={styles.dialogActionBtnContent}
+              >
+                Cancel
+              </Button>
+              <Button
+                mode="contained"
+                onPress={savePayment}
+                loading={paymentSaving}
+                disabled={!isAmountValid}
+                style={styles.dialogActionBtn}
+                contentStyle={styles.dialogActionBtnContent}
+              >
+                Save
+              </Button>
+            </Dialog.Actions>
+          </Dialog>
+        </KeyboardAvoidingView>
+      </Portal>
     </>
   );
 }
@@ -1708,7 +1736,10 @@ const MetaPill = ({
   const bg = backgroundColor ?? theme.colors.primaryContainer;
   const bc = borderColor ?? theme.colors.primary;
   return (
-    <Surface style={[styles.metaPill, { backgroundColor: bg, borderColor: bc }]} elevation={0}>
+    <Surface
+      style={[styles.metaPill, { backgroundColor: bg, borderColor: bc }]}
+      elevation={0}
+    >
       <Icon source={icon} size={16} color={c} />
       <Text style={[styles.metaPillText, { color: c }]} numberOfLines={1}>
         {label}
@@ -1977,7 +2008,12 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   breakdownLabel: { fontSize: 12, fontWeight: '900', color: '#6B7280' },
-  breakdownSub: { marginTop: 3, fontSize: 12, fontWeight: '800', color: '#6B7280' },
+  breakdownSub: {
+    marginTop: 3,
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#6B7280',
+  },
   breakdownValue: {
     marginLeft: 10,
     fontSize: 14,
@@ -2144,7 +2180,12 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   quickPillInner: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  quickPillText: { fontWeight: '900', fontSize: 13, letterSpacing: 0.2, color: '#6B7280' },
+  quickPillText: {
+    fontWeight: '900',
+    fontSize: 13,
+    letterSpacing: 0.2,
+    color: '#6B7280',
+  },
 
   methodBlock: { marginTop: 12 },
   methodLabel: {
@@ -2167,7 +2208,12 @@ const styles = StyleSheet.create({
   },
   methodChipInner: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   methodChipText: { fontWeight: '900', fontSize: 13, letterSpacing: 0.2 },
-  dialogActions: { paddingTop: 0, paddingHorizontal: 27, paddingBottom: 12, gap: 10 },
+  dialogActions: {
+    paddingTop: 0,
+    paddingHorizontal: 27,
+    paddingBottom: 12,
+    gap: 10,
+  },
   dialogActionBtn: { flex: 1 },
   dialogActionBtnContent: { paddingVertical: 6 },
   amountHint: { marginTop: 8, fontWeight: '800' },

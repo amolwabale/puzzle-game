@@ -120,9 +120,7 @@ export default function MenuTabs() {
       }}
       screenListeners={{
         focus: e => {
-          const routeName = e.target
-            ?.split('-')
-            ?.shift();
+          const routeName = e.target?.split('-')?.shift();
 
           if (routeName) {
             trackScreen(`Tab_${routeName}`);

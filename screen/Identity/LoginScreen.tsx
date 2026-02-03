@@ -99,7 +99,10 @@ export default function LoginScreen() {
             style={[
               styles.blob,
               styles.blobTwo,
-              { backgroundColor: theme.colors.secondaryContainer, opacity: 0.45 },
+              {
+                backgroundColor: theme.colors.secondaryContainer,
+                opacity: 0.45,
+              },
             ]}
           />
         </View>
@@ -130,7 +133,11 @@ export default function LoginScreen() {
                   { backgroundColor: theme.colors.primaryContainer },
                 ]}
               >
-                <Icon source="lock-outline" size={18} color={theme.colors.primary} />
+                <Icon
+                  source="lock-outline"
+                  size={18}
+                  color={theme.colors.primary}
+                />
               </View>
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Text
@@ -140,7 +147,10 @@ export default function LoginScreen() {
                   Welcome back
                 </Text>
                 <Text
-                  style={[styles.heroSub, { color: theme.colors.onSurfaceVariant }]}
+                  style={[
+                    styles.heroSub,
+                    { color: theme.colors.onSurfaceVariant },
+                  ]}
                   numberOfLines={2}
                 >
                   Sign in to manage tenants, rooms, and payments.
@@ -172,7 +182,12 @@ export default function LoginScreen() {
                     color={theme.colors.primary}
                   />
                 </View>
-                <Text style={[styles.sectionTitle, { color: theme.colors.onSurface }]}>
+                <Text
+                  style={[
+                    styles.sectionTitle,
+                    { color: theme.colors.onSurface },
+                  ]}
+                >
                   Login
                 </Text>
               </View>
@@ -180,9 +195,9 @@ export default function LoginScreen() {
               <FormInput
                 label="Email *"
                 value={email}
-                onChange={(t) => {
+                onChange={t => {
                   setEmail(t);
-                  setErrors((p) => ({ ...p, email: '' }));
+                  setErrors(p => ({ ...p, email: '' }));
                 }}
                 error={errors.email}
                 keyboard="email-address"
@@ -196,9 +211,9 @@ export default function LoginScreen() {
               <FormInput
                 label="Password *"
                 value={password}
-                onChange={(t) => {
+                onChange={t => {
                   setPassword(t);
-                  setErrors((p) => ({ ...p, password: '' }));
+                  setErrors(p => ({ ...p, password: '' }));
                 }}
                 error={errors.password}
                 secureTextEntry
@@ -308,8 +323,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
   },
-  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
-  sectionIcon: { width: 36, height: 36, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+  },
+  sectionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   sectionTitle: { fontWeight: '900', fontSize: 16, color: '#111827' },
 
   button: {

@@ -160,11 +160,13 @@ export default function PaymentScreen() {
   const baseBills = React.useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return bills;
-    return (bills || []).filter((b) => {
+    return (bills || []).filter(b => {
       const tenantName =
         b.tenant_id != null ? tenantNameById[b.tenant_id] : undefined;
       const roomName = b.room_id != null ? roomNameById[b.room_id] : undefined;
-      const hay = `${String(tenantName ?? '')} ${String(roomName ?? '')}`.toLowerCase();
+      const hay = `${String(tenantName ?? '')} ${String(
+        roomName ?? '',
+      )}`.toLowerCase();
       return hay.includes(q);
     });
   }, [bills, query, tenantNameById, roomNameById]);
@@ -179,7 +181,7 @@ export default function PaymentScreen() {
     let paid = 0;
     let partial = 0;
     let unpaid = 0;
-    (baseBills || []).forEach((b) => {
+    (baseBills || []).forEach(b => {
       const s = normalizeStatus(b);
       if (s === 'PAID') paid += 1;
       else if (s === 'PARTIAL') partial += 1;
@@ -195,7 +197,7 @@ export default function PaymentScreen() {
 
   const visibleBills = React.useMemo(() => {
     if (paymentFilter === 'ALL') return baseBills;
-    return (baseBills || []).filter((b) => normalizeStatus(b) === paymentFilter);
+    return (baseBills || []).filter(b => normalizeStatus(b) === paymentFilter);
   }, [baseBills, paymentFilter, normalizeStatus]);
 
   const renderItem = ({ item }: { item: BillRecord }) => (
@@ -311,7 +313,9 @@ export default function PaymentScreen() {
                   ]}
                   textStyle={[
                     styles.pillText,
-                    { color: paymentFilter === 'UNPAID' ? '#EF4444' : '#6B7280' },
+                    {
+                      color: paymentFilter === 'UNPAID' ? '#EF4444' : '#6B7280',
+                    },
                   ]}
                 >
                   Unpaid-{counts.unpaid}
@@ -333,7 +337,10 @@ export default function PaymentScreen() {
                   ]}
                   textStyle={[
                     styles.pillText,
-                    { color: paymentFilter === 'PARTIAL' ? '#F97316' : '#6B7280' },
+                    {
+                      color:
+                        paymentFilter === 'PARTIAL' ? '#F97316' : '#6B7280',
+                    },
                   ]}
                 >
                   Partial-{counts.partial}
@@ -400,17 +407,28 @@ const PaymentCard = ({
   return (
     <Surface style={[styles.card, { borderColor: outline }]} elevation={1}>
       <View style={styles.cardClip}>
-        <TouchableRipple onPress={onPress} style={styles.cardContent} borderless>
+        <TouchableRipple
+          onPress={onPress}
+          style={styles.cardContent}
+          borderless
+        >
           <View style={styles.cardContentInner}>
             <AvatarDisplay uri={photoUrl} size={AVATAR_SIZE} />
 
             <View style={styles.cardBody}>
               <View style={styles.titleRow}>
-                <Text variant="titleMedium" style={styles.cardTitle} numberOfLines={1}>
+                <Text
+                  variant="titleMedium"
+                  style={styles.cardTitle}
+                  numberOfLines={1}
+                >
                   {tenantName}
                 </Text>
                 <Text
-                  style={[styles.totalTopRight, { color: theme.colors.primary }]}
+                  style={[
+                    styles.totalTopRight,
+                    { color: theme.colors.primary },
+                  ]}
                   numberOfLines={1}
                   adjustsFontSizeToFit
                   minimumFontScale={0.7}
@@ -422,13 +440,21 @@ const PaymentCard = ({
               <View style={styles.metaRow}>
                 <View style={styles.metaLeft}>
                   <View style={styles.roomRow}>
-                    <Icon source="home-city-outline" size={16} color={theme.colors.primary} />
+                    <Icon
+                      source="home-city-outline"
+                      size={16}
+                      color={theme.colors.primary}
+                    />
                     <Text style={styles.roomText} numberOfLines={1}>
                       {roomName}
                     </Text>
                   </View>
                   <View style={styles.issuedRow}>
-                    <Icon source="calendar-month-outline" size={14} color="#6B7280" />
+                    <Icon
+                      source="calendar-month-outline"
+                      size={14}
+                      color="#6B7280"
+                    />
                     <Text style={styles.dateText} numberOfLines={1}>
                       {formatMonthYear(item.billing_month ?? item.created_at)}
                     </Text>
@@ -446,7 +472,13 @@ const PaymentCard = ({
                         },
                       ]}
                     >
-                      <Text style={[styles.statusPillText, { color: statusTone.text }]} numberOfLines={1}>
+                      <Text
+                        style={[
+                          styles.statusPillText,
+                          { color: statusTone.text },
+                        ]}
+                        numberOfLines={1}
+                      >
                         {status}
                       </Text>
                     </View>
@@ -465,7 +497,11 @@ const PaymentCard = ({
                       ]}
                     >
                       <View style={styles.statusActionBtnInner}>
-                        <Icon source="cash-plus" size={16} color={theme.colors.primary} />
+                        <Icon
+                          source="cash-plus"
+                          size={16}
+                          color={theme.colors.primary}
+                        />
                       </View>
                     </TouchableRipple>
                   </View>
@@ -539,7 +575,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
   },
-  cardContentInner: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  cardContentInner: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
   cardBody: { flex: 1 },
   titleRow: {
     flexDirection: 'row',
@@ -616,7 +657,12 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   emptyIcon: { marginBottom: 16, backgroundColor: '#FFFFFF' },
-  emptyTitle: { fontWeight: '900', marginBottom: 6, fontSize: 16, color: '#111827' },
+  emptyTitle: {
+    fontWeight: '900',
+    marginBottom: 6,
+    fontSize: 16,
+    color: '#111827',
+  },
   emptySubtitle: {
     color: '#6B7280',
     textAlign: 'center',

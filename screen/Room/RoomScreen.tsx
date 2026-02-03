@@ -94,7 +94,9 @@ export default function RoomScreen() {
   const [refreshing, setRefreshing] = React.useState(false);
   const [rooms, setRooms] = React.useState<RoomRecord[]>([]);
   const [query, setQuery] = React.useState('');
-  const [roomFilter, setRoomFilter] = React.useState<'ALL' | 'OCCUPIED' | 'VACANT'>('ALL');
+  const [roomFilter, setRoomFilter] = React.useState<
+    'ALL' | 'OCCUPIED' | 'VACANT'
+  >('ALL');
   const [activeByRoom, setActiveByRoom] = React.useState<
     Record<number, TenantRoomRecord | null>
   >({});
@@ -215,8 +217,9 @@ export default function RoomScreen() {
 
   const visibleRooms = React.useMemo(() => {
     if (roomFilter === 'ALL') return baseRooms;
-    if (roomFilter === 'OCCUPIED') return (baseRooms || []).filter((r) => !!activeByRoom[r.id]);
-    return (baseRooms || []).filter((r) => !activeByRoom[r.id]);
+    if (roomFilter === 'OCCUPIED')
+      return (baseRooms || []).filter(r => !!activeByRoom[r.id]);
+    return (baseRooms || []).filter(r => !activeByRoom[r.id]);
   }, [baseRooms, roomFilter, activeByRoom]);
 
   return (
@@ -239,7 +242,7 @@ export default function RoomScreen() {
             <View style={styles.listHeader}>
               <Searchbar
                 placeholder="Search rooms"
-                          placeholderTextColor="#9CA3AF"
+                placeholderTextColor="#9CA3AF"
                 value={query}
                 onChangeText={setQuery}
                 style={styles.search}
@@ -253,13 +256,20 @@ export default function RoomScreen() {
                   style={[
                     styles.pill,
                     {
-                      backgroundColor: roomFilter === 'ALL' ? theme.colors.primaryContainer : '#FFFFFF',
-                      borderColor: roomFilter === 'ALL' ? theme.colors.primary : '#E5E7EB',
+                      backgroundColor:
+                        roomFilter === 'ALL'
+                          ? theme.colors.primaryContainer
+                          : '#FFFFFF',
+                      borderColor:
+                        roomFilter === 'ALL' ? theme.colors.primary : '#E5E7EB',
                     },
                   ]}
                   textStyle={[
                     styles.pillText,
-                    { color: roomFilter === 'ALL' ? theme.colors.primary : '#6B7280' },
+                    {
+                      color:
+                        roomFilter === 'ALL' ? theme.colors.primary : '#6B7280',
+                    },
                   ]}
                 >
                   All {baseRooms.length}
@@ -272,13 +282,23 @@ export default function RoomScreen() {
                     styles.pill,
                     {
                       backgroundColor:
-                        roomFilter === 'OCCUPIED' ? theme.colors.secondaryContainer : '#FFFFFF',
-                      borderColor: roomFilter === 'OCCUPIED' ? theme.colors.secondary : '#E5E7EB',
+                        roomFilter === 'OCCUPIED'
+                          ? theme.colors.secondaryContainer
+                          : '#FFFFFF',
+                      borderColor:
+                        roomFilter === 'OCCUPIED'
+                          ? theme.colors.secondary
+                          : '#E5E7EB',
                     },
                   ]}
                   textStyle={[
                     styles.pillText,
-                    { color: roomFilter === 'OCCUPIED' ? theme.colors.secondary : '#6B7280' },
+                    {
+                      color:
+                        roomFilter === 'OCCUPIED'
+                          ? theme.colors.secondary
+                          : '#6B7280',
+                    },
                   ]}
                 >
                   Occupied {occupiedCount}
@@ -290,7 +310,8 @@ export default function RoomScreen() {
                   style={[
                     styles.pill,
                     {
-                      backgroundColor: roomFilter === 'VACANT' ? '#F3F4F6' : '#FFFFFF',
+                      backgroundColor:
+                        roomFilter === 'VACANT' ? '#F3F4F6' : '#FFFFFF',
                       borderColor: '#E5E7EB',
                     },
                   ]}
@@ -306,7 +327,9 @@ export default function RoomScreen() {
           }
           ListEmptyComponent={
             <View style={styles.noResults}>
-              <Text style={styles.noResultsText}>No rooms match your search/filter.</Text>
+              <Text style={styles.noResultsText}>
+                No rooms match your search/filter.
+              </Text>
             </View>
           }
           refreshControl={

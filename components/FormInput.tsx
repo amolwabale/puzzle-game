@@ -127,7 +127,7 @@ export function FormInput({
                   },
                 ],
               }
-              : {
+            : {
                 numberOfLines: 1,
                 scrollEnabled: true,
                 style: [styles.input, { height: 48 }, style],

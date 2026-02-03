@@ -51,8 +51,10 @@ export default function SupportScreen() {
   const visibleTickets = React.useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return tickets;
-    return (tickets || []).filter((t) => {
-      const hay = `${String((t as any)?.title ?? '')} ${String((t as any)?.description ?? '')}`.toLowerCase();
+    return (tickets || []).filter(t => {
+      const hay = `${String((t as any)?.title ?? '')} ${String(
+        (t as any)?.description ?? '',
+      )}`.toLowerCase();
       return hay.includes(q);
     });
   }, [tickets, query]);
@@ -105,7 +107,11 @@ export default function SupportScreen() {
             ) : null
           }
           renderItem={({ item }) => (
-            <TicketCard ticket={item} onPress={() => goChat(item.id)} query={query} />
+            <TicketCard
+              ticket={item}
+              onPress={() => goChat(item.id)}
+              query={query}
+            />
           )}
           refreshControl={
             <RefreshControl

@@ -24,7 +24,9 @@ export default function AuthScreen() {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <View
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    >
       {/* Soft background accents (peaceful / welcoming) */}
       <View pointerEvents="none" style={styles.bgAccents}>
         <View
@@ -83,7 +85,9 @@ export default function AuthScreen() {
           </View>
         </View>
 
-        <View style={[styles.heroDivider, { backgroundColor: outlineColor(theme) }]} />
+        <View
+          style={[styles.heroDivider, { backgroundColor: outlineColor(theme) }]}
+        />
 
         <View style={styles.featureRow}>
           <View
@@ -92,10 +96,16 @@ export default function AuthScreen() {
               { backgroundColor: theme.colors.secondaryContainer },
             ]}
           >
-            <Icon source="flash-outline" size={16} color={theme.colors.primary} />
+            <Icon
+              source="flash-outline"
+              size={16}
+              color={theme.colors.primary}
+            />
           </View>
           <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={[styles.featureTitle, { color: theme.colors.onSurface }]}>
+            <Text
+              style={[styles.featureTitle, { color: theme.colors.onSurface }]}
+            >
               Faster billing
             </Text>
             <Text
@@ -124,7 +134,9 @@ export default function AuthScreen() {
             />
           </View>
           <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={[styles.featureTitle, { color: theme.colors.onSurface }]}>
+            <Text
+              style={[styles.featureTitle, { color: theme.colors.onSurface }]}
+            >
               Clean records
             </Text>
             <Text
@@ -158,9 +170,15 @@ export default function AuthScreen() {
               { backgroundColor: theme.colors.primaryContainer },
             ]}
           >
-            <Icon source="rocket-launch-outline" size={18} color={theme.colors.primary} />
+            <Icon
+              source="rocket-launch-outline"
+              size={18}
+              color={theme.colors.primary}
+            />
           </View>
-          <Text style={[styles.sectionTitle, { color: theme.colors.onSurface }]}>
+          <Text
+            style={[styles.sectionTitle, { color: theme.colors.onSurface }]}
+          >
             Get started
           </Text>
         </View>
@@ -243,7 +261,12 @@ const styles = StyleSheet.create({
   heroSub: { marginTop: 2, fontWeight: '700', fontSize: 13, lineHeight: 18 },
   heroDivider: { height: 1, marginTop: 12, marginBottom: 12, opacity: 0.6 },
 
-  featureRow: { flexDirection: 'row', gap: 10, alignItems: 'center', marginBottom: 10 },
+  featureRow: {
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
   featureIcon: {
     width: 30,
     height: 30,

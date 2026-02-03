@@ -30,9 +30,7 @@ export default function MainTabs() {
       }}
       screenListeners={{
         focus: e => {
-          const routeName = e.target
-            ?.split('-')
-            ?.shift();
+          const routeName = e.target?.split('-')?.shift();
 
           if (routeName) {
             trackScreen(`Tab_${routeName}`);

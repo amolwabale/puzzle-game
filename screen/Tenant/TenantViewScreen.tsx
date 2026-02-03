@@ -21,7 +21,8 @@ import { fetchTenantById, TenantRecord } from '../../service/tenantService';
 import { supabase } from '../../service/SupabaseClient'; // ✅ REQUIRED
 import { fetchRooms } from '../../service/RoomService';
 import { fetchActiveRoomForTenants } from '../../service/TenantRoomService';
-
+import analytics from '@react-native-firebase/analytics';
+import { trackEvent } from '../../service/analyticsTracker';
 type Props = NativeStackScreenProps<TenantStackParamList, 'TenantView'>;
 
 const formatDate = (d?: string | null) =>
@@ -157,6 +158,12 @@ export default function TenantViewScreen() {
         return;
       }
       skipNextReloadRef.current = true;
+
+      trackEvent('Tenant_Document_Viewed_' + label, {
+        source: 'Tenant',
+        tenant_id: tenantId,
+        document_label: label,
+      });
       navigation.navigate('TenantDocument', { title: label, url: signed });
     } catch (err: any) {
       Alert.alert('Open failed', err?.message || 'Could not open document');
@@ -200,6 +207,11 @@ export default function TenantViewScreen() {
       );
       const fileUrl = `file://${destPath}`;
 
+      trackEvent('Tenant_Document_Shared_' + label, {
+        source: 'Tenant',
+        tenant_id: tenantId,
+        document_label: label,
+      });
       await Share.share({
         title: label,
         message: `${label} document`,
@@ -304,9 +316,13 @@ export default function TenantViewScreen() {
       <FAB
         icon="pencil"
         style={styles.fab}
-        onPress={() =>
-          navigation.navigate('TenantForm', { mode: 'edit', tenantId })
-        }
+        onPress={() => {
+          trackEvent('TenantView_To_TenantEdit_Navigation', {
+            source: 'Tenant',
+            tenant_id: tenantId,
+          });
+          navigation.navigate('TenantForm', { mode: 'edit', tenantId });
+        }}
       />
     </>
   );

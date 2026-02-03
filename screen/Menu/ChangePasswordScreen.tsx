@@ -1,12 +1,6 @@
 import React from 'react';
 import { Alert, ScrollView, StyleSheet, View } from 'react-native';
-import {
-  Avatar,
-  Button,
-  Surface,
-  Text,
-  useTheme,
-} from 'react-native-paper';
+import { Avatar, Button, Surface, Text, useTheme } from 'react-native-paper';
 import { changePasswordAndLogout } from '../../service/MenuService';
 import { FormInput } from '../../components/FormInput';
 
@@ -90,7 +84,7 @@ export default function ChangePasswordScreen() {
               label="New password *"
               value={password}
               error={errors.password}
-              onChange={(t) => setPassword(t)}
+              onChange={t => setPassword(t)}
               secureTextEntry={false}
               autoCapitalize="none"
               autoCorrect={false}
@@ -106,7 +100,7 @@ export default function ChangePasswordScreen() {
               label="Confirm password *"
               value={confirmPassword}
               error={errors.confirmPassword}
-              onChange={(t) => setConfirmPassword(t)}
+              onChange={t => setConfirmPassword(t)}
               secureTextEntry={true}
               autoCapitalize="none"
               autoCorrect={false}

@@ -9,13 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import {
-  Button,
-  Icon,
-  Text,
-  Surface,
-  useTheme,
-} from 'react-native-paper';
+import { Button, Icon, Text, Surface, useTheme } from 'react-native-paper';
 import { AuthStackParamList } from '../../navigation/StackParam';
 import { RegisterUser } from '../../service/IdentityService';
 import { FormInput } from '../../components/FormInput';
@@ -121,230 +115,240 @@ export default function RegisterScreen() {
             style={[
               styles.blob,
               styles.blobTwo,
-              { backgroundColor: theme.colors.secondaryContainer, opacity: 0.45 },
+              {
+                backgroundColor: theme.colors.secondaryContainer,
+                opacity: 0.45,
+              },
             ]}
           />
         </View>
 
         <ScrollView
           style={styles.scroll}
-        contentContainerStyle={styles.container}
-        // Note: using BOTH KeyboardAvoidingView + automaticallyAdjustKeyboardInsets can feel jumpy on long forms.
-        // We rely on KeyboardAvoidingView + natural scrolling for smoother behavior.
-        automaticallyAdjustKeyboardInsets={false}
-        contentInsetAdjustmentBehavior={
-          Platform.OS === 'ios' ? 'automatic' : undefined
-        }
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'none'}
-        showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.container}
+          // Note: using BOTH KeyboardAvoidingView + automaticallyAdjustKeyboardInsets can feel jumpy on long forms.
+          // We rely on KeyboardAvoidingView + natural scrolling for smoother behavior.
+          automaticallyAdjustKeyboardInsets={false}
+          contentInsetAdjustmentBehavior={
+            Platform.OS === 'ios' ? 'automatic' : undefined
+          }
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'none'}
+          showsVerticalScrollIndicator={false}
         >
-        {/* HERO */}
-        <Surface
-          style={[
-            styles.hero,
-            {
-              borderColor: outlineColor(theme),
-              backgroundColor: theme.colors.surface,
-            },
-          ]}
-          elevation={2}
-        >
-          <View style={styles.heroRow}>
-            <View
-              style={[
-                styles.heroIconWrap,
-                { backgroundColor: theme.colors.primaryContainer },
-              ]}
-            >
-              <Icon
-                source="account-plus-outline"
-                size={18}
-                color={theme.colors.primary}
-              />
-            </View>
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Text
-                style={[styles.heroTitle, { color: theme.colors.onSurface }]}
-                numberOfLines={1}
+          {/* HERO */}
+          <Surface
+            style={[
+              styles.hero,
+              {
+                borderColor: outlineColor(theme),
+                backgroundColor: theme.colors.surface,
+              },
+            ]}
+            elevation={2}
+          >
+            <View style={styles.heroRow}>
+              <View
+                style={[
+                  styles.heroIconWrap,
+                  { backgroundColor: theme.colors.primaryContainer },
+                ]}
               >
-                Create account
-              </Text>
-              <Text
-                style={[styles.heroSub, { color: theme.colors.onSurfaceVariant }]}
-                numberOfLines={2}
+                <Icon
+                  source="account-plus-outline"
+                  size={18}
+                  color={theme.colors.primary}
+                />
+              </View>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text
+                  style={[styles.heroTitle, { color: theme.colors.onSurface }]}
+                  numberOfLines={1}
+                >
+                  Create account
+                </Text>
+                <Text
+                  style={[
+                    styles.heroSub,
+                    { color: theme.colors.onSurfaceVariant },
+                  ]}
+                  numberOfLines={2}
+                >
+                  Set up your profile to get started.
+                </Text>
+              </View>
+            </View>
+          </Surface>
+
+          {/* FORM */}
+          <Surface
+            style={[
+              styles.card,
+              {
+                borderColor: outlineColor(theme),
+                backgroundColor: theme.colors.surface,
+              },
+            ]}
+            elevation={2}
+          >
+            <View style={styles.sectionTitleRow}>
+              <View
+                style={[
+                  styles.sectionIcon,
+                  { backgroundColor: theme.colors.primaryContainer },
+                ]}
               >
-                Set up your profile to get started.
+                <Icon
+                  source="form-textbox"
+                  size={18}
+                  color={theme.colors.primary}
+                />
+              </View>
+              <Text
+                style={[styles.sectionTitle, { color: theme.colors.onSurface }]}
+              >
+                Registration
               </Text>
             </View>
-          </View>
-        </Surface>
 
-        {/* FORM */}
-        <Surface
-          style={[
-            styles.card,
-            {
-              borderColor: outlineColor(theme),
-              backgroundColor: theme.colors.surface,
-            },
-          ]}
-          elevation={2}
-        >
-          <View style={styles.sectionTitleRow}>
-            <View
-              style={[
-                styles.sectionIcon,
-                { backgroundColor: theme.colors.primaryContainer },
-              ]}
-            >
-              <Icon
-                source="form-textbox"
-                size={18}
-                color={theme.colors.primary}
-              />
+            <View style={styles.twoColRow}>
+              <View style={{ flex: 1 }}>
+                <FormInput
+                  label="First name *"
+                  value={firstName}
+                  onChange={t => {
+                    setFirstName(t);
+                    setErrors(p => ({ ...p, firstName: '' }));
+                  }}
+                  error={errors.firstName}
+                  maxLength={50}
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                  textContentType="givenName"
+                  autoComplete="name-given"
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <FormInput
+                  label="Last name *"
+                  value={lastName}
+                  onChange={t => {
+                    setLastName(t);
+                    setErrors(p => ({ ...p, lastName: '' }));
+                  }}
+                  error={errors.lastName}
+                  maxLength={50}
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                  textContentType="familyName"
+                  autoComplete="name-family"
+                />
+              </View>
             </View>
-            <Text style={[styles.sectionTitle, { color: theme.colors.onSurface }]}>
-              Registration
-            </Text>
-          </View>
 
-          <View style={styles.twoColRow}>
-            <View style={{ flex: 1 }}>
-              <FormInput
-                label="First name *"
-                value={firstName}
-                onChange={(t) => {
-                  setFirstName(t);
-                  setErrors((p) => ({ ...p, firstName: '' }));
-                }}
-                error={errors.firstName}
-                maxLength={50}
-                autoCapitalize="words"
-                autoCorrect={false}
-                textContentType="givenName"
-                autoComplete="name-given"
-              />
+            <FormInput
+              label="Email *"
+              value={email}
+              onChange={t => {
+                setEmail(t);
+                setErrors(p => ({ ...p, email: '' }));
+              }}
+              error={errors.email}
+              keyboard="email-address"
+              maxLength={254}
+              autoCapitalize="none"
+              autoCorrect={false}
+              textContentType="username"
+              autoComplete="email"
+            />
+
+            <FormInput
+              label="Mobile number *"
+              value={mobile}
+              onChange={t => {
+                const next = String(t ?? '')
+                  .replace(/[^\d]/g, '')
+                  .slice(0, 10);
+                setMobile(next);
+                setErrors(p => ({ ...p, mobile: '' }));
+              }}
+              error={errors.mobile}
+              keyboard="phone-pad"
+              maxLength={10}
+              autoCapitalize="none"
+              autoCorrect={false}
+              textContentType="telephoneNumber"
+              autoComplete="tel"
+            />
+
+            <FormInput
+              label="Address (optional)"
+              value={address}
+              onChange={t => setAddress(t)}
+              maxLength={120}
+              autoCapitalize="words"
+              autoCorrect={false}
+              textContentType="fullStreetAddress"
+            />
+
+            <View style={styles.twoColRow}>
+              <View style={{ flex: 1 }}>
+                <FormInput
+                  label="Password *"
+                  value={password}
+                  onChange={t => {
+                    setPassword(t);
+                    setErrors(p => ({ ...p, password: '' }));
+                  }}
+                  error={errors.password}
+                  maxLength={64}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  textContentType="newPassword"
+                  autoComplete="password-new"
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <FormInput
+                  label="Confirm *"
+                  value={confirmPassword}
+                  onChange={t => {
+                    setConfirmPassword(t);
+                    setErrors(p => ({ ...p, confirmPassword: '' }));
+                  }}
+                  error={errors.confirmPassword}
+                  secureTextEntry
+                  maxLength={64}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  textContentType="newPassword"
+                  autoComplete="password-new"
+                />
+              </View>
             </View>
-            <View style={{ flex: 1 }}>
-              <FormInput
-                label="Last name *"
-                value={lastName}
-                onChange={(t) => {
-                  setLastName(t);
-                  setErrors((p) => ({ ...p, lastName: '' }));
-                }}
-                error={errors.lastName}
-                maxLength={50}
-                autoCapitalize="words"
-                autoCorrect={false}
-                textContentType="familyName"
-                autoComplete="name-family"
-              />
+
+            <View style={styles.buttonRow}>
+              <Button
+                mode="outlined"
+                onPress={handleBack}
+                style={styles.secondaryButton}
+                contentStyle={styles.buttonContent}
+                disabled={loading}
+              >
+                Back
+              </Button>
+              <Button
+                mode="contained"
+                onPress={handleRegister}
+                loading={loading}
+                disabled={loading}
+                style={styles.primaryButton}
+                contentStyle={styles.buttonContent}
+              >
+                Register
+              </Button>
             </View>
-          </View>
-
-          <FormInput
-            label="Email *"
-            value={email}
-            onChange={(t) => {
-              setEmail(t);
-              setErrors((p) => ({ ...p, email: '' }));
-            }}
-            error={errors.email}
-            keyboard="email-address"
-            maxLength={254}
-            autoCapitalize="none"
-            autoCorrect={false}
-            textContentType="username"
-            autoComplete="email"
-          />
-
-          <FormInput
-            label="Mobile number *"
-            value={mobile}
-            onChange={(t) => {
-              const next = String(t ?? '').replace(/[^\d]/g, '').slice(0, 10);
-              setMobile(next);
-              setErrors((p) => ({ ...p, mobile: '' }));
-            }}
-            error={errors.mobile}
-            keyboard="phone-pad"
-            maxLength={10}
-            autoCapitalize="none"
-            autoCorrect={false}
-            textContentType="telephoneNumber"
-            autoComplete="tel"
-          />
-
-          <FormInput
-            label="Address (optional)"
-            value={address}
-            onChange={(t) => setAddress(t)}
-            maxLength={120}
-            autoCapitalize="words"
-            autoCorrect={false}
-            textContentType="fullStreetAddress"
-          />
-
-          <View style={styles.twoColRow}>
-            <View style={{ flex: 1 }}>
-              <FormInput
-                label="Password *"
-                value={password}
-                onChange={(t) => {
-                  setPassword(t);
-                  setErrors((p) => ({ ...p, password: '' }));
-                }}
-                error={errors.password}
-                maxLength={64}
-                autoCapitalize="none"
-                autoCorrect={false}
-                textContentType="newPassword"
-                autoComplete="password-new"
-              />
-            </View>
-            <View style={{ flex: 1 }}>
-              <FormInput
-                label="Confirm *"
-                value={confirmPassword}
-                onChange={(t) => {
-                  setConfirmPassword(t);
-                  setErrors((p) => ({ ...p, confirmPassword: '' }));
-                }}
-                error={errors.confirmPassword}
-                secureTextEntry
-                maxLength={64}
-                autoCapitalize="none"
-                autoCorrect={false}
-                textContentType="newPassword"
-                autoComplete="password-new"
-              />
-            </View>
-          </View>
-
-          <View style={styles.buttonRow}>
-            <Button
-              mode="outlined"
-              onPress={handleBack}
-              style={styles.secondaryButton}
-              contentStyle={styles.buttonContent}
-              disabled={loading}
-            >
-              Back
-            </Button>
-            <Button
-              mode="contained"
-              onPress={handleRegister}
-              loading={loading}
-              disabled={loading}
-              style={styles.primaryButton}
-              contentStyle={styles.buttonContent}
-            >
-              Register
-            </Button>
-          </View>
-        </Surface>
+          </Surface>
         </ScrollView>
       </View>
     </KeyboardAvoidingView>

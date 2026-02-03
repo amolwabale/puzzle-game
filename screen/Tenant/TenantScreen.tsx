@@ -29,6 +29,9 @@ import {
 import { supabase } from '../../service/SupabaseClient';
 import { fetchRooms } from '../../service/RoomService';
 import { fetchActiveRoomForTenants } from '../../service/TenantRoomService';
+import analytics from '@react-native-firebase/analytics';
+import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
+import { trackEvent } from '../../service/analyticsTracker';
 
 type Nav = NativeStackNavigationProp<TenantStackParamList, 'TenantList'>;
 
@@ -149,6 +152,10 @@ export default function TenantScreen() {
         onPress: async () => {
           await deleteTenant(id);
           loadTenants(true);
+          analytics().logEvent('Tenant_Deleted', {
+            source: 'Tenant',
+            tenant_id: id,
+          });
         },
       },
     ]);
@@ -159,10 +166,20 @@ export default function TenantScreen() {
       item={item}
       photoUrl={signedUrls[item.id]}
       assignment={assignmentByTenant[item.id]}
-      onView={() => navigation.navigate('TenantView', { tenantId: item.id })}
-      onEdit={() =>
-        navigation.navigate('TenantForm', { tenantId: item.id, mode: 'edit' })
-      }
+      onView={() => {
+        trackEvent('TenantList_To_TenantView_Navigation', {
+          source: 'Tenant',
+          tenant_id: item.id,
+        });
+        navigation.navigate('TenantView', { tenantId: item.id });
+      }}
+      onEdit={() => {
+        trackEvent('TenantList_To_TenantEdit_Navigation', {
+          source: 'Tenant',
+          tenant_id: item.id,
+        });
+        navigation.navigate('TenantForm', { tenantId: item.id, mode: 'edit' });
+      }}
       onDelete={() => handleDelete(item.id)}
     />
   );

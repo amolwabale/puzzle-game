@@ -1,11 +1,22 @@
-
-import analytics from '@react-native-firebase/analytics';
+import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
+const analyticsInstance = getAnalytics();
 
 export const trackScreen = async (name: string) => {
   try {
-    await analytics().logScreenView({
-      screen_name: name,
-      screen_class: name,
+    logEvent(analyticsInstance, 'screen_view', {
+      firebase_screen: name,
+      firebase_screen_class: name,
+    });
+  } catch (e) {
+    // fail silently in prod
+    console.log('Analytics error:', e);
+  }
+};
+
+export const trackEvent = async (name: string, params: Record<string, any>) => {
+  try {
+    logEvent(analyticsInstance, name, {
+      ...params,
     });
   } catch (e) {
     // fail silently in prod

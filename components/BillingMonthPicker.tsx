@@ -47,7 +47,9 @@ export function formatBillingMonthLabel(d: Date) {
   const nd = normalizeBillingMonthDate(d);
   const monthIdx = nd.getUTCMonth();
   const year = nd.getUTCFullYear();
-  const m = BILLING_MONTHS[monthIdx]?.label ?? nd.toLocaleDateString('en-GB', { month: 'short' });
+  const m =
+    BILLING_MONTHS[monthIdx]?.label ??
+    nd.toLocaleDateString('en-GB', { month: 'short' });
   return `${m} ${year}`.toUpperCase();
 }
 
@@ -74,7 +76,8 @@ export function BillingMonthPickerDialog({
 }) {
   const theme = useTheme();
   const outline = (theme.colors as any).outlineVariant ?? theme.colors.outline;
-  const surfaceVariant = (theme.colors as any).surfaceVariant ?? theme.colors.surface;
+  const surfaceVariant =
+    (theme.colors as any).surfaceVariant ?? theme.colors.surface;
 
   const [draft, setDraft] = React.useState<BillingMonthDraft>(() =>
     billingMonthDraftFromDate(value ?? new Date()),
@@ -95,32 +98,58 @@ export function BillingMonthPickerDialog({
           { backgroundColor: theme.colors.surface, borderColor: outline },
         ]}
       >
-        <Dialog.Title style={{ color: theme.colors.onSurface }}>{title}</Dialog.Title>
+        <Dialog.Title style={{ color: theme.colors.onSurface }}>
+          {title}
+        </Dialog.Title>
         <Dialog.Content>
           <Text style={[styles.hint, { color: theme.colors.onSurfaceVariant }]}>
             Select month and year.
           </Text>
 
-          <View style={[styles.selectedRow, { borderColor: outline, backgroundColor: theme.colors.surface }]}>
-            <View style={[styles.selectedIcon, { backgroundColor: theme.colors.primaryContainer }]}>
-              <Icon source="calendar-month-outline" size={18} color={theme.colors.primary} />
+          <View
+            style={[
+              styles.selectedRow,
+              { borderColor: outline, backgroundColor: theme.colors.surface },
+            ]}
+          >
+            <View
+              style={[
+                styles.selectedIcon,
+                { backgroundColor: theme.colors.primaryContainer },
+              ]}
+            >
+              <Icon
+                source="calendar-month-outline"
+                size={18}
+                color={theme.colors.primary}
+              />
             </View>
-            <Text style={[styles.selectedLabel, { color: theme.colors.onSurfaceVariant }]}>
+            <Text
+              style={[
+                styles.selectedLabel,
+                { color: theme.colors.onSurfaceVariant },
+              ]}
+            >
               Selected
             </Text>
             <Chip
               compact
               showSelectedCheck={false}
-              style={[styles.selectedChip, { backgroundColor: theme.colors.primaryContainer }]}
+              style={[
+                styles.selectedChip,
+                { backgroundColor: theme.colors.primaryContainer },
+              ]}
               textStyle={{ fontWeight: '900', color: theme.colors.primary }}
             >
               {BILLING_MONTHS[draft.monthIdx]?.label} {draft.year}
             </Chip>
           </View>
 
-          <Text style={[styles.label, { color: theme.colors.onSurface }]}>Month</Text>
+          <Text style={[styles.label, { color: theme.colors.onSurface }]}>
+            Month
+          </Text>
           <View style={styles.chipGrid}>
-            {BILLING_MONTHS.map((m) => {
+            {BILLING_MONTHS.map(m => {
               const selected = draft.monthIdx === m.idx;
               return (
                 <Chip
@@ -128,19 +157,23 @@ export function BillingMonthPickerDialog({
                   compact
                   showSelectedCheck={false}
                   selected={selected}
-                  onPress={() => setDraft((p) => ({ ...p, monthIdx: m.idx }))}
+                  onPress={() => setDraft(p => ({ ...p, monthIdx: m.idx }))}
                   style={[
                     styles.chip,
                     {
                       borderWidth: 1,
                       borderColor: selected ? theme.colors.primary : outline,
-                      backgroundColor: selected ? theme.colors.primaryContainer : surfaceVariant,
+                      backgroundColor: selected
+                        ? theme.colors.primaryContainer
+                        : surfaceVariant,
                     },
                   ]}
                   textStyle={{
                     fontSize: 12,
                     fontWeight: selected ? '900' : '800',
-                    color: selected ? theme.colors.primary : theme.colors.onSurface,
+                    color: selected
+                      ? theme.colors.primary
+                      : theme.colors.onSurface,
                   }}
                 >
                   {m.label}
@@ -149,9 +182,11 @@ export function BillingMonthPickerDialog({
             })}
           </View>
 
-          <Text style={[styles.label, { color: theme.colors.onSurface }]}>Year</Text>
+          <Text style={[styles.label, { color: theme.colors.onSurface }]}>
+            Year
+          </Text>
           <View style={styles.chipGrid}>
-            {getYearOptions(draft.year, yearSpan).map((y) => {
+            {getYearOptions(draft.year, yearSpan).map(y => {
               const selected = draft.year === y;
               return (
                 <Chip
@@ -159,19 +194,23 @@ export function BillingMonthPickerDialog({
                   compact
                   showSelectedCheck={false}
                   selected={selected}
-                  onPress={() => setDraft((p) => ({ ...p, year: y }))}
+                  onPress={() => setDraft(p => ({ ...p, year: y }))}
                   style={[
                     styles.chip,
                     {
                       borderWidth: 1,
                       borderColor: selected ? theme.colors.primary : outline,
-                      backgroundColor: selected ? theme.colors.primaryContainer : surfaceVariant,
+                      backgroundColor: selected
+                        ? theme.colors.primaryContainer
+                        : surfaceVariant,
                     },
                   ]}
                   textStyle={{
                     fontSize: 12,
                     fontWeight: selected ? '900' : '800',
-                    color: selected ? theme.colors.primary : theme.colors.onSurface,
+                    color: selected
+                      ? theme.colors.primary
+                      : theme.colors.onSurface,
                   }}
                 >
                   {String(y)}
@@ -199,7 +238,10 @@ export function BillingMonthPickerDialog({
                   color={theme.colors.primary}
                 />
                 <Text
-                  style={[styles.quickPillText, { color: theme.colors.primary }]}
+                  style={[
+                    styles.quickPillText,
+                    { color: theme.colors.primary },
+                  ]}
                   numberOfLines={1}
                 >
                   Current month
@@ -210,7 +252,10 @@ export function BillingMonthPickerDialog({
         </Dialog.Content>
         <Dialog.Actions>
           <Button onPress={onDismiss}>Cancel</Button>
-          <Button mode="contained" onPress={() => onConfirm(billingMonthDateFromDraft(draft))}>
+          <Button
+            mode="contained"
+            onPress={() => onConfirm(billingMonthDateFromDraft(draft))}
+          >
             Done
           </Button>
         </Dialog.Actions>
@@ -262,4 +307,3 @@ const styles = StyleSheet.create({
   chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   chip: { marginBottom: 8, borderRadius: 999, overflow: 'hidden' },
 });
-

@@ -124,12 +124,25 @@ export default function RoomViewScreen() {
 
   return (
     <>
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         {/* HERO (Support-style) */}
         <Surface style={styles.hero} elevation={2}>
           <View style={styles.heroTop}>
-            <View style={[styles.heroIconWrap, { backgroundColor: theme.colors.primaryContainer }]}>
-              <Icon source="home-city-outline" size={18} color={theme.colors.primary} />
+            <View
+              style={[
+                styles.heroIconWrap,
+                { backgroundColor: theme.colors.primaryContainer },
+              ]}
+            >
+              <Icon
+                source="home-city-outline"
+                size={18}
+                color={theme.colors.primary}
+              />
             </View>
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={styles.heroTitle} numberOfLines={1}>
@@ -145,7 +158,10 @@ export default function RoomViewScreen() {
           <View
             style={[
               styles.kpiList,
-              { borderColor: (theme.colors as any).outlineVariant ?? theme.colors.outline },
+              {
+                borderColor:
+                  (theme.colors as any).outlineVariant ?? theme.colors.outline,
+              },
             ]}
           >
             <KpiRow
@@ -156,27 +172,57 @@ export default function RoomViewScreen() {
             <View
               style={[
                 styles.kpiDivider,
-                { backgroundColor: (theme.colors as any).outlineVariant ?? theme.colors.outline },
+                {
+                  backgroundColor:
+                    (theme.colors as any).outlineVariant ??
+                    theme.colors.outline,
+                },
               ]}
             />
-            <KpiRow icon="currency-inr" label="Rent" value={`₹${formatIntIN(room.rent)}`} />
+            <KpiRow
+              icon="currency-inr"
+              label="Rent"
+              value={`₹${formatIntIN(room.rent)}`}
+            />
             <View
               style={[
                 styles.kpiDivider,
-                { backgroundColor: (theme.colors as any).outlineVariant ?? theme.colors.outline },
+                {
+                  backgroundColor:
+                    (theme.colors as any).outlineVariant ??
+                    theme.colors.outline,
+                },
               ]}
             />
-            <KpiRow icon="bank" label="Deposit" value={`₹${formatIntIN(room.deposit)}`} />
+            <KpiRow
+              icon="bank"
+              label="Deposit"
+              value={`₹${formatIntIN(room.deposit)}`}
+            />
           </View>
         </Surface>
 
         <Section title="Additional details" icon="comment-text-outline">
-          <InfoRow icon="comment-text-outline" label="Comment" value={room.comment} />
+          <InfoRow
+            icon="comment-text-outline"
+            label="Comment"
+            value={room.comment}
+          />
         </Section>
 
         <Section title="Tenant occupancy" icon="account-outline">
           {activeTenant ? (
-            <Surface style={[styles.subCard, { borderColor: (theme.colors as any).outlineVariant ?? theme.colors.outline }]} elevation={0}>
+            <Surface
+              style={[
+                styles.subCard,
+                {
+                  borderColor:
+                    (theme.colors as any).outlineVariant ??
+                    theme.colors.outline,
+                },
+              ]}
+              elevation={0}
+            >
               <View style={styles.occHeader}>
                 <Avatar.Text
                   size={44}
@@ -192,14 +238,33 @@ export default function RoomViewScreen() {
                     Active tenant
                   </Text>
                 </View>
-                <View style={[styles.statusPill, { backgroundColor: theme.colors.secondaryContainer, borderColor: theme.colors.secondary }]}>
-                  <Text style={[styles.statusPillText, { color: theme.colors.secondary }]}>Occupied</Text>
+                <View
+                  style={[
+                    styles.statusPill,
+                    {
+                      backgroundColor: theme.colors.secondaryContainer,
+                      borderColor: theme.colors.secondary,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.statusPillText,
+                      { color: theme.colors.secondary },
+                    ]}
+                  >
+                    Occupied
+                  </Text>
                 </View>
               </View>
 
               <View style={styles.occMetaRow}>
                 <View style={styles.metaRow}>
-                  <IconButton icon="counter" size={18} style={styles.metaIcon} />
+                  <IconButton
+                    icon="counter"
+                    size={18}
+                    style={styles.metaIcon}
+                  />
                   <View style={{ flex: 1 }}>
                     <Text style={styles.metaLabel}>Meter reading</Text>
                     <Text style={styles.metaValue}>
@@ -208,10 +273,16 @@ export default function RoomViewScreen() {
                   </View>
                 </View>
                 <View style={styles.metaRow}>
-                  <IconButton icon="calendar" size={18} style={styles.metaIcon} />
+                  <IconButton
+                    icon="calendar"
+                    size={18}
+                    style={styles.metaIcon}
+                  />
                   <View style={{ flex: 1 }}>
                     <Text style={styles.metaLabel}>Joining date</Text>
-                    <Text style={styles.metaValue}>{formatDate(activeTenant.joining_date)}</Text>
+                    <Text style={styles.metaValue}>
+                      {formatDate(activeTenant.joining_date)}
+                    </Text>
                   </View>
                 </View>
               </View>
@@ -220,14 +291,25 @@ export default function RoomViewScreen() {
             <Surface
               style={[
                 styles.emptyInline,
-                { backgroundColor: theme.colors.surface, borderColor: (theme.colors as any).outlineVariant ?? theme.colors.outline },
+                {
+                  backgroundColor: theme.colors.surface,
+                  borderColor:
+                    (theme.colors as any).outlineVariant ??
+                    theme.colors.outline,
+                },
               ]}
               elevation={0}
             >
-              <Avatar.Icon size={40} icon="account-off-outline" style={{ backgroundColor: 'transparent' }} />
+              <Avatar.Icon
+                size={40}
+                icon="account-off-outline"
+                style={{ backgroundColor: 'transparent' }}
+              />
               <View style={{ flex: 1, marginLeft: 12 }}>
                 <Text style={styles.emptyInlineTitle}>Not assigned</Text>
-                <Text style={styles.emptyInlineSub}>No tenant is currently occupying this room.</Text>
+                <Text style={styles.emptyInlineSub}>
+                  No tenant is currently occupying this room.
+                </Text>
               </View>
             </Surface>
           )}
@@ -237,10 +319,17 @@ export default function RoomViewScreen() {
           {tenantHistory.length > 0 ? (
             tenantHistory.map((h, i) => (
               <Surface
-                key={`${h.tenant_name ?? 'tenant'}-${h.joining_date ?? ''}-${h.leaving_date ?? ''}-${i}`}
+                key={`${h.tenant_name ?? 'tenant'}-${h.joining_date ?? ''}-${
+                  h.leaving_date ?? ''
+                }-${i}`}
                 style={[
                   styles.historyRow,
-                  { borderColor: (theme.colors as any).outlineVariant ?? theme.colors.outline, backgroundColor: theme.colors.surface },
+                  {
+                    borderColor:
+                      (theme.colors as any).outlineVariant ??
+                      theme.colors.outline,
+                    backgroundColor: theme.colors.surface,
+                  },
                 ]}
                 elevation={0}
               >
@@ -285,13 +374,23 @@ const KpiRow = ({ icon, label, value }: any) => {
   const badgeBg = (theme.colors as any).surfaceVariant ?? theme.colors.surface;
   return (
     <View style={styles.kpiRow}>
-      <View style={[styles.kpiIconBadge, { borderColor: outline, backgroundColor: badgeBg }]}>
+      <View
+        style={[
+          styles.kpiIconBadge,
+          { borderColor: outline, backgroundColor: badgeBg },
+        ]}
+      >
         <Icon source={icon} size={16} color="#6B7280" />
       </View>
       <Text style={styles.kpiLabel} numberOfLines={1}>
         {label}
       </Text>
-      <Text style={styles.kpiValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
+      <Text
+        style={styles.kpiValue}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.85}
+      >
         {value}
       </Text>
     </View>
@@ -313,7 +412,12 @@ const Section = ({ title, icon, children }: any) => {
   return (
     <Surface style={styles.section} elevation={2}>
       <View style={styles.sectionTitleRow}>
-        <View style={[styles.sectionIcon, { backgroundColor: theme.colors.primaryContainer }]}>
+        <View
+          style={[
+            styles.sectionIcon,
+            { backgroundColor: theme.colors.primaryContainer },
+          ]}
+        >
           <Icon source={icon} size={18} color={theme.colors.primary} />
         </View>
         <Text style={styles.sectionTitle} numberOfLines={1}>
@@ -349,7 +453,13 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
   },
   heroTop: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  heroIconWrap: { width: 36, height: 36, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  heroIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   heroTitle: { fontWeight: '900', fontSize: 16, color: '#111827' },
   heroSub: { marginTop: 2, color: '#6B7280', fontWeight: '800', fontSize: 13 },
 
@@ -401,8 +511,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
-  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
-  sectionIcon: { width: 36, height: 36, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+  },
+  sectionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   sectionTitle: { fontWeight: '900', fontSize: 16, color: '#111827' },
 
   infoRow: {
@@ -440,7 +561,12 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   occName: { fontWeight: '900', fontSize: 14, color: '#111827' },
-  occMetaRow: { marginTop: 12, flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
+  occMetaRow: {
+    marginTop: 12,
+    flexDirection: 'row',
+    gap: 10,
+    flexWrap: 'wrap',
+  },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -470,7 +596,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   emptyInlineTitle: { fontWeight: '900', fontSize: 14, color: '#111827' },
-  emptyInlineSub: { color: '#6B7280', marginTop: 2, fontSize: 13, fontWeight: '800' },
+  emptyInlineSub: {
+    color: '#6B7280',
+    marginTop: 2,
+    fontSize: 13,
+    fontWeight: '800',
+  },
 
   historyRow: {
     flexDirection: 'row',
@@ -481,7 +612,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   historyName: { fontWeight: '900', fontSize: 14, color: '#111827' },
-  historyDates: { color: '#6B7280', marginTop: 2, fontSize: 12, fontWeight: '800' },
+  historyDates: {
+    color: '#6B7280',
+    marginTop: 2,
+    fontSize: 12,
+    fontWeight: '800',
+  },
 
   fab: {
     position: 'absolute',

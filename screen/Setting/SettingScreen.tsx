@@ -230,12 +230,25 @@ export default function SettingScreen() {
 
   return (
     <>
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         {/* HERO (Support/Room style) */}
         <Surface style={styles.hero} elevation={2}>
           <View style={styles.heroTop}>
-            <View style={[styles.heroIconWrap, { backgroundColor: theme.colors.primaryContainer }]}>
-              <Avatar.Icon size={18} icon="office-building-outline" style={{ backgroundColor: 'transparent' }} />
+            <View
+              style={[
+                styles.heroIconWrap,
+                { backgroundColor: theme.colors.primaryContainer },
+              ]}
+            >
+              <Avatar.Icon
+                size={18}
+                icon="office-building-outline"
+                style={{ backgroundColor: 'transparent' }}
+              />
             </View>
             <View style={{ flex: 1, minWidth: 0 }}>
               <Text style={styles.heroTitle} numberOfLines={1}>
@@ -299,7 +312,9 @@ export default function SettingScreen() {
           />
 
           <Text style={styles.rentHint}>
-            Tip: Due date can be in the next month (e.g. Rent = Last day, Due = 5). If you choose 29/30/31, months with fewer days will treat it as the last day of that month.
+            Tip: Due date can be in the next month (e.g. Rent = Last day, Due =
+            5). If you choose 29/30/31, months with fewer days will treat it as
+            the last day of that month.
           </Text>
 
           <Button
@@ -316,18 +331,29 @@ export default function SettingScreen() {
 
       {/* ---------- DAY PICKER (DAY OF MONTH) ---------- */}
       <Portal>
-        <Dialog visible={dayPickerOpenFor != null} onDismiss={() => setDayPickerOpenFor(null)}>
+        <Dialog
+          visible={dayPickerOpenFor != null}
+          onDismiss={() => setDayPickerOpenFor(null)}
+        >
           <Dialog.Title>
-            {dayPickerOpenFor === 'rentDate' ? 'Select Rent Date' : 'Select Rent Due Date'}
+            {dayPickerOpenFor === 'rentDate'
+              ? 'Select Rent Date'
+              : 'Select Rent Due Date'}
           </Dialog.Title>
           <Dialog.Content>
             <Text style={styles.pickerHint}>
-              Pick a day of month (1–31). If the day doesn’t exist in a month, it will auto-adjust to the month’s last day.
+              Pick a day of month (1–31). If the day doesn’t exist in a month,
+              it will auto-adjust to the month’s last day.
             </Text>
 
             <View style={styles.quickRow}>
               {[1, 5, 10, 15, 20, 25, 28, 30, 31].map(d => (
-                <Chip key={d} compact style={styles.quickChip} onPress={() => selectDay(d)}>
+                <Chip
+                  key={d}
+                  compact
+                  style={styles.quickChip}
+                  onPress={() => selectDay(d)}
+                >
                   {d === 31 ? 'Last day' : String(d)}
                 </Chip>
               ))}
@@ -337,7 +363,8 @@ export default function SettingScreen() {
               {Array.from({ length: 31 }).map((_, idx) => {
                 const day = idx + 1;
                 const selected =
-                  (dayPickerOpenFor === 'rentDate' ? rentDate : rentDueDate) === String(day);
+                  (dayPickerOpenFor === 'rentDate' ? rentDate : rentDueDate) ===
+                  String(day);
                 return (
                   <Chip
                     key={day}
@@ -345,13 +372,19 @@ export default function SettingScreen() {
                     style={[
                       styles.dayChip,
                       {
-                        backgroundColor: selected ? theme.colors.primaryContainer : theme.colors.surface,
-                        borderColor: selected ? theme.colors.primary : theme.colors.outline,
+                        backgroundColor: selected
+                          ? theme.colors.primaryContainer
+                          : theme.colors.surface,
+                        borderColor: selected
+                          ? theme.colors.primary
+                          : theme.colors.outline,
                       },
                     ]}
                     textStyle={{
                       fontWeight: '900',
-                      color: selected ? theme.colors.primary : theme.colors.onSurface,
+                      color: selected
+                        ? theme.colors.primary
+                        : theme.colors.onSurface,
                       fontVariant: ['tabular-nums'],
                     }}
                     onPress={() => selectDay(day)}
@@ -388,8 +421,17 @@ const Section = ({ title, icon, children }: any) => {
   return (
     <Surface style={[styles.section, { borderColor: outline }]} elevation={2}>
       <View style={styles.sectionTitleRow}>
-        <View style={[styles.sectionIcon, { backgroundColor: theme.colors.primaryContainer }]}>
-          <Avatar.Icon size={18} icon={icon} style={{ backgroundColor: 'transparent' }} />
+        <View
+          style={[
+            styles.sectionIcon,
+            { backgroundColor: theme.colors.primaryContainer },
+          ]}
+        >
+          <Avatar.Icon
+            size={18}
+            icon={icon}
+            style={{ backgroundColor: 'transparent' }}
+          />
         </View>
         <Text style={styles.sectionTitle} numberOfLines={1}>
           {title}
@@ -415,7 +457,11 @@ const DaySelectRow = ({
   const outline = (theme.colors as any).outlineVariant ?? theme.colors.outline;
   return (
     <View style={styles.selectWrap}>
-      <TouchableRipple onPress={onPress} borderless style={[styles.selectRow, { borderColor: outline }]}>
+      <TouchableRipple
+        onPress={onPress}
+        borderless
+        style={[styles.selectRow, { borderColor: outline }]}
+      >
         <View style={styles.selectRowInner}>
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={styles.selectLabel} numberOfLines={1}>
@@ -425,13 +471,24 @@ const DaySelectRow = ({
               {value ? String(value) : 'Tap to select'}
             </Text>
           </View>
-          <View style={[styles.selectIconWrap, { backgroundColor: theme.colors.primaryContainer }]}>
-            <Avatar.Icon size={18} icon="calendar-month" style={{ backgroundColor: 'transparent' }} />
+          <View
+            style={[
+              styles.selectIconWrap,
+              { backgroundColor: theme.colors.primaryContainer },
+            ]}
+          >
+            <Avatar.Icon
+              size={18}
+              icon="calendar-month"
+              style={{ backgroundColor: 'transparent' }}
+            />
           </View>
         </View>
       </TouchableRipple>
       {error ? (
-        <Text style={[styles.errorText, { color: theme.colors.error }]}>{error}</Text>
+        <Text style={[styles.errorText, { color: theme.colors.error }]}>
+          {error}
+        </Text>
       ) : null}
     </View>
   );
@@ -466,7 +523,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   heroTitle: { fontWeight: '900', fontSize: 16, color: '#111827' },
-  heroSubtitle: { marginTop: 2, color: '#6B7280', fontWeight: '800', fontSize: 13 },
+  heroSubtitle: {
+    marginTop: 2,
+    color: '#6B7280',
+    fontWeight: '800',
+    fontSize: 13,
+  },
 
   section: {
     borderRadius: 16,
@@ -505,7 +567,12 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   selectLabel: { fontSize: 12, fontWeight: '800', color: '#6B7280' },
-  selectValue: { marginTop: 4, fontSize: 14, fontWeight: '900', color: '#111827' },
+  selectValue: {
+    marginTop: 4,
+    fontSize: 14,
+    fontWeight: '900',
+    color: '#111827',
+  },
   selectIconWrap: {
     width: 36,
     height: 36,

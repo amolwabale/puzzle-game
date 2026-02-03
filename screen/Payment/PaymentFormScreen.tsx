@@ -252,7 +252,8 @@ export default function PaymentFormScreen() {
 
       const prev = previousMeter;
       const curr = Number(currentMeter);
-      const billingMonthIso = normalizeBillingMonthDate(billingMonth).toISOString();
+      const billingMonthIso =
+        normalizeBillingMonthDate(billingMonth).toISOString();
 
       if (isEdit && billId) {
         const paidAmount =
@@ -380,409 +381,455 @@ export default function PaymentFormScreen() {
               </View>
             </Surface>
 
-              {/* SELECTION */}
-              <Surface style={styles.section} elevation={2}>
-                <View style={styles.sectionTitleRow}>
-                  <View
-                    style={[
-                      styles.sectionIcon,
-                      { backgroundColor: theme.colors.primaryContainer },
-                    ]}
-                  >
-                    <Icon
-                      source="swap-horizontal"
-                      size={18}
-                      color={theme.colors.primary}
-                    />
-                  </View>
-                  <Text style={styles.sectionTitle} numberOfLines={1}>
-                    Select tenant & room
-                  </Text>
-                </View>
-
-                {!selectedRoom || !selectedTenant ? (
-                  <>
-                    <Surface style={styles.occupancyHint} elevation={0}>
-                      <Avatar.Icon
-                        size={40}
-                        icon="swap-horizontal"
-                        style={{
-                          backgroundColor: theme.colors.primaryContainer,
-                        }}
-                        color={theme.colors.primary}
-                      />
-                      <View style={{ flex: 1, marginLeft: 12 }}>
-                        <Text style={{ fontWeight: '700' }}>
-                          Select an occupied room
-                        </Text>
-                        <Text style={{ color: '#666', marginTop: 2 }}>
-                          Search by room or tenant name (Room - Tenant).
-                        </Text>
-                      </View>
-                    </Surface>
-
-                    <FormInput
-                      label="Search room - tenant *"
-                      value={pairQuery}
-                      onChange={(t) => {
-                        setPairQuery(t);
-                        setErrors(p => ({ ...p, pair: '' }));
-                      }}
-                      error={errors.pair}
-                    />
-
-                    {filteredPairs.length > 0 && (
-                      <Surface style={styles.dropdown} elevation={0}>
-                        <View style={styles.dropdownClip}>
-                          {filteredPairs.slice(0, 8).map(({ room, tenant }) => (
-                            <TouchableOpacity
-                              key={`${room.id}-${tenant.id}`}
-                              style={styles.dropdownItem}
-                              onPress={() => selectPair({ room, tenant })}
-                            >
-                              <Text style={{ fontWeight: '800' }}>
-                                {(room.name || '-') +
-                                  ' - ' +
-                                  (tenant.name || '-')}
-                              </Text>
-                              <Text
-                                style={{
-                                  color: '#666',
-                                  fontSize: 14,
-                                  marginTop: 2,
-                                }}
-                              >
-                                Rent:{' '}
-                                {room.rent
-                                  ? formatMoney(Number(room.rent))
-                                  : '-'}
-                              </Text>
-                            </TouchableOpacity>
-                          ))}
-                        </View>
-                      </Surface>
-                    )}
-
-                    {pairQuery.trim().length > 0 &&
-                      filteredPairs.length === 0 && (
-                        <Text style={{ color: '#777', marginTop: 8 }}>
-                          No occupied rooms found.
-                        </Text>
-                      )}
-                  </>
-                ) : (
-                  <Surface style={styles.selectedTile} elevation={1}>
-                    <Avatar.Icon size={36} icon="home-city-outline" />
-                    <View style={{ flex: 1, marginLeft: 12 }}>
-                      <Text style={{ fontWeight: '800' }}>
-                        {(selectedRoom.name || '-') +
-                          ' - ' +
-                          (selectedTenant.name || '-')}
-                      </Text>
-                      <Text style={{ color: '#666', marginTop: 2 }}>
-                        Rent{' '}
-                        {selectedRoom.rent
-                          ? formatMoney(Number(selectedRoom.rent))
-                          : '-'}
-                      </Text>
-                    </View>
-                    {!isEdit && (
-                      <IconButton
-                        icon="close"
-                        onPress={() => {
-                          setSelectedRoom(null);
-                          setSelectedTenant(null);
-                          setPairQuery('');
-                          setPreviousMeter(0);
-                          setCurrentMeter('');
-                        }}
-                      />
-                    )}
-                  </Surface>
-                )}
-
-                {/* Billing month */}
-                <TouchableOpacity
-                  onPress={() => {
-                    setBillingMonthOpen(true);
-                  }}
-                  activeOpacity={0.85}
+            {/* SELECTION */}
+            <Surface style={styles.section} elevation={2}>
+              <View style={styles.sectionTitleRow}>
+                <View
                   style={[
-                    styles.billingMonthRow,
-                    {
-                      borderColor:
-                        (theme.colors as any).outlineVariant ?? theme.colors.outline,
-                      backgroundColor: theme.colors.surface,
-                    },
+                    styles.sectionIcon,
+                    { backgroundColor: theme.colors.primaryContainer },
                   ]}
                 >
-                  <View
-                    style={[
-                      styles.billingMonthIcon,
-                      { backgroundColor: theme.colors.primaryContainer },
-                    ]}
-                  >
-                    <Icon
-                      source="calendar-month-outline"
-                      size={18}
-                      color={theme.colors.primary}
-                    />
-                  </View>
-                  <View style={styles.billingMonthBody}>
-                    <Text style={styles.billingMonthLabel} numberOfLines={1}>
-                      Billing month
-                    </Text>
-                    <View style={styles.billingMonthPillsRow}>
-                      <View
-                        style={[
-                          styles.billingMonthValuePill,
-                          {
-                            backgroundColor: theme.colors.primaryContainer,
-                            borderColor: theme.colors.primary,
-                          },
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.billingMonthValuePillText,
-                            { color: theme.colors.primary },
-                          ]}
-                          numberOfLines={1}
-                        >
-                          {formatBillingMonthLabel(billingMonth)}
-                        </Text>
-                      </View>
-
-                      <View
-                        style={[
-                          styles.billingMonthChangePill,
-                          {
-                            backgroundColor: theme.colors.primaryContainer,
-                            borderColor: theme.colors.primary,
-                          },
-                        ]}
-                      >
-                        <Icon
-                          source="pencil-outline"
-                          size={14}
-                          color={theme.colors.primary}
-                        />
-                        <Text
-                          style={[
-                            styles.billingMonthChangeText,
-                            { color: theme.colors.primary },
-                          ]}
-                          numberOfLines={1}
-                        >
-                          Change
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              </Surface>
-
-              {/* METER + ADHOC */}
-              <Surface style={styles.section} elevation={2}>
-                <View style={styles.sectionTitleRow}>
-                  <View
-                    style={[
-                      styles.sectionIcon,
-                      { backgroundColor: theme.colors.primaryContainer },
-                    ]}
-                  >
-                    <Icon
-                      source="counter"
-                      size={18}
-                      color={theme.colors.primary}
-                    />
-                  </View>
-                  <Text style={styles.sectionTitle} numberOfLines={1}>
-                    Meter & charges
-                  </Text>
-                </View>
-
-                <Surface style={styles.readingRow} elevation={0}>
                   <Icon
-                    source="counter"
-                    size={20}
+                    source="swap-horizontal"
+                    size={18}
                     color={theme.colors.primary}
                   />
-                  <View style={{ marginLeft: 10 }}>
-                    <Text style={{ fontWeight: '700' }}>Previous reading</Text>
-                    <Text style={{ color: '#666', marginTop: 2 }}>
-                      {previousMeter}
-                    </Text>
-                  </View>
-                </Surface>
+                </View>
+                <Text style={styles.sectionTitle} numberOfLines={1}>
+                  Select tenant & room
+                </Text>
+              </View>
 
-                <FormInput
-                label="Current Meter Reading *"
-                  value={currentMeter}
-                  onChange={(t) => {
-                    const next = t.replace(/[^\d]/g, '');
-                    setCurrentMeter(next);
-                  }}
-                error={errors.currentMeter}
-                maxLength={10}
-                keyboard="number-pad"
-              />
-                
-
-                <FormInput
-                label="Ad-hoc Amount"
-                  value={adHocAmount}
-                  onChange={(t) => {
-                    const next = t.replace(/[^\d]/g, '');
-                    setAdHocAmount(next);
-                  }}
-                error={errors.adHocAmount}
-                maxLength={10}
-                keyboard="number-pad"
-              />
-                
-
-                <FormInput
-                label="Ad-hoc Comment"
-                  value={adHocComment}
-                  onChange={setAdHocComment}
-                  error={errors.adHocComment}
-                  maxLength={100}
-                />
-              </Surface>
-
-              {/* SUMMARY */}
-              <Surface style={styles.section} elevation={2}>
-                <View style={styles.sectionTitleRow}>
-                  <View
-                    style={[
-                      styles.sectionIcon,
-                      { backgroundColor: theme.colors.primaryContainer },
-                    ]}
-                  >
-                    <Icon
-                      source="receipt"
-                      size={18}
+              {!selectedRoom || !selectedTenant ? (
+                <>
+                  <Surface style={styles.occupancyHint} elevation={0}>
+                    <Avatar.Icon
+                      size={40}
+                      icon="swap-horizontal"
+                      style={{
+                        backgroundColor: theme.colors.primaryContainer,
+                      }}
                       color={theme.colors.primary}
                     />
-                  </View>
-                  <Text style={styles.sectionTitle} numberOfLines={1}>
-                    Summary
-                  </Text>
-                </View>
+                    <View style={{ flex: 1, marginLeft: 12 }}>
+                      <Text style={{ fontWeight: '700' }}>
+                        Select an occupied room
+                      </Text>
+                      <Text style={{ color: '#666', marginTop: 2 }}>
+                        Search by room or tenant name (Room - Tenant).
+                      </Text>
+                    </View>
+                  </Surface>
 
-                <Surface
+                  <FormInput
+                    label="Search room - tenant *"
+                    value={pairQuery}
+                    onChange={t => {
+                      setPairQuery(t);
+                      setErrors(p => ({ ...p, pair: '' }));
+                    }}
+                    error={errors.pair}
+                  />
+
+                  {filteredPairs.length > 0 && (
+                    <Surface style={styles.dropdown} elevation={0}>
+                      <View style={styles.dropdownClip}>
+                        {filteredPairs.slice(0, 8).map(({ room, tenant }) => (
+                          <TouchableOpacity
+                            key={`${room.id}-${tenant.id}`}
+                            style={styles.dropdownItem}
+                            onPress={() => selectPair({ room, tenant })}
+                          >
+                            <Text style={{ fontWeight: '800' }}>
+                              {(room.name || '-') +
+                                ' - ' +
+                                (tenant.name || '-')}
+                            </Text>
+                            <Text
+                              style={{
+                                color: '#666',
+                                fontSize: 14,
+                                marginTop: 2,
+                              }}
+                            >
+                              Rent:{' '}
+                              {room.rent ? formatMoney(Number(room.rent)) : '-'}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    </Surface>
+                  )}
+
+                  {pairQuery.trim().length > 0 &&
+                    filteredPairs.length === 0 && (
+                      <Text style={{ color: '#777', marginTop: 8 }}>
+                        No occupied rooms found.
+                      </Text>
+                    )}
+                </>
+              ) : (
+                <Surface style={styles.selectedTile} elevation={1}>
+                  <Avatar.Icon size={36} icon="home-city-outline" />
+                  <View style={{ flex: 1, marginLeft: 12 }}>
+                    <Text style={{ fontWeight: '800' }}>
+                      {(selectedRoom.name || '-') +
+                        ' - ' +
+                        (selectedTenant.name || '-')}
+                    </Text>
+                    <Text style={{ color: '#666', marginTop: 2 }}>
+                      Rent{' '}
+                      {selectedRoom.rent
+                        ? formatMoney(Number(selectedRoom.rent))
+                        : '-'}
+                    </Text>
+                  </View>
+                  {!isEdit && (
+                    <IconButton
+                      icon="close"
+                      onPress={() => {
+                        setSelectedRoom(null);
+                        setSelectedTenant(null);
+                        setPairQuery('');
+                        setPreviousMeter(0);
+                        setCurrentMeter('');
+                      }}
+                    />
+                  )}
+                </Surface>
+              )}
+
+              {/* Billing month */}
+              <TouchableOpacity
+                onPress={() => {
+                  setBillingMonthOpen(true);
+                }}
+                activeOpacity={0.85}
+                style={[
+                  styles.billingMonthRow,
+                  {
+                    borderColor:
+                      (theme.colors as any).outlineVariant ??
+                      theme.colors.outline,
+                    backgroundColor: theme.colors.surface,
+                  },
+                ]}
+              >
+                <View
                   style={[
-                    styles.summaryHero,
-                    { backgroundColor: theme.colors.surface },
+                    styles.billingMonthIcon,
+                    { backgroundColor: theme.colors.primaryContainer },
                   ]}
-                  elevation={0}
                 >
-                  <View style={styles.summaryHeroRow}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.summaryHeroLabel}>Total payable</Text>
-                      <Text style={styles.summaryHeroValue}>
-                        {formatMoney(total)}
+                  <Icon
+                    source="calendar-month-outline"
+                    size={18}
+                    color={theme.colors.primary}
+                  />
+                </View>
+                <View style={styles.billingMonthBody}>
+                  <Text style={styles.billingMonthLabel} numberOfLines={1}>
+                    Billing month
+                  </Text>
+                  <View style={styles.billingMonthPillsRow}>
+                    <View
+                      style={[
+                        styles.billingMonthValuePill,
+                        {
+                          backgroundColor: theme.colors.primaryContainer,
+                          borderColor: theme.colors.primary,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.billingMonthValuePillText,
+                          { color: theme.colors.primary },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {formatBillingMonthLabel(billingMonth)}
                       </Text>
                     </View>
 
                     <View
                       style={[
-                        styles.statusPill,
+                        styles.billingMonthChangePill,
                         {
-                          backgroundColor: theme.colors.errorContainer,
-                          borderColor: theme.colors.error,
+                          backgroundColor: theme.colors.primaryContainer,
+                          borderColor: theme.colors.primary,
                         },
                       ]}
                     >
-                      <Text style={[styles.statusPillText, { color: theme.colors.error }]}>
-                        UNPAID
+                      <Icon
+                        source="pencil-outline"
+                        size={14}
+                        color={theme.colors.primary}
+                      />
+                      <Text
+                        style={[
+                          styles.billingMonthChangeText,
+                          { color: theme.colors.primary },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        Change
                       </Text>
                     </View>
                   </View>
-                </Surface>
+                </View>
+              </TouchableOpacity>
+            </Surface>
 
-                <Text style={styles.rentSummaryTitle}>Rent Summary</Text>
-
-                <Surface
+            {/* METER + ADHOC */}
+            <Surface style={styles.section} elevation={2}>
+              <View style={styles.sectionTitleRow}>
+                <View
                   style={[
-                    styles.rentSummaryList,
+                    styles.sectionIcon,
+                    { backgroundColor: theme.colors.primaryContainer },
+                  ]}
+                >
+                  <Icon
+                    source="counter"
+                    size={18}
+                    color={theme.colors.primary}
+                  />
+                </View>
+                <Text style={styles.sectionTitle} numberOfLines={1}>
+                  Meter & charges
+                </Text>
+              </View>
+
+              <Surface style={styles.readingRow} elevation={0}>
+                <Icon source="counter" size={20} color={theme.colors.primary} />
+                <View style={{ marginLeft: 10 }}>
+                  <Text style={{ fontWeight: '700' }}>Previous reading</Text>
+                  <Text style={{ color: '#666', marginTop: 2 }}>
+                    {previousMeter}
+                  </Text>
+                </View>
+              </Surface>
+
+              <FormInput
+                label="Current Meter Reading *"
+                value={currentMeter}
+                onChange={t => {
+                  const next = t.replace(/[^\d]/g, '');
+                  setCurrentMeter(next);
+                }}
+                error={errors.currentMeter}
+                maxLength={10}
+                keyboard="number-pad"
+              />
+
+              <FormInput
+                label="Ad-hoc Amount"
+                value={adHocAmount}
+                onChange={t => {
+                  const next = t.replace(/[^\d]/g, '');
+                  setAdHocAmount(next);
+                }}
+                error={errors.adHocAmount}
+                maxLength={10}
+                keyboard="number-pad"
+              />
+
+              <FormInput
+                label="Ad-hoc Comment"
+                value={adHocComment}
+                onChange={setAdHocComment}
+                error={errors.adHocComment}
+                maxLength={100}
+              />
+            </Surface>
+
+            {/* SUMMARY */}
+            <Surface style={styles.section} elevation={2}>
+              <View style={styles.sectionTitleRow}>
+                <View
+                  style={[
+                    styles.sectionIcon,
+                    { backgroundColor: theme.colors.primaryContainer },
+                  ]}
+                >
+                  <Icon
+                    source="receipt"
+                    size={18}
+                    color={theme.colors.primary}
+                  />
+                </View>
+                <Text style={styles.sectionTitle} numberOfLines={1}>
+                  Summary
+                </Text>
+              </View>
+
+              <Surface
+                style={[
+                  styles.summaryHero,
+                  { backgroundColor: theme.colors.surface },
+                ]}
+                elevation={0}
+              >
+                <View style={styles.summaryHeroRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.summaryHeroLabel}>Total payable</Text>
+                    <Text style={styles.summaryHeroValue}>
+                      {formatMoney(total)}
+                    </Text>
+                  </View>
+
+                  <View
+                    style={[
+                      styles.statusPill,
+                      {
+                        backgroundColor: theme.colors.errorContainer,
+                        borderColor: theme.colors.error,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.statusPillText,
+                        { color: theme.colors.error },
+                      ]}
+                    >
+                      UNPAID
+                    </Text>
+                  </View>
+                </View>
+              </Surface>
+
+              <Text style={styles.rentSummaryTitle}>Rent Summary</Text>
+
+              <Surface
+                style={[
+                  styles.rentSummaryList,
+                  {
+                    borderColor:
+                      (theme.colors as any).outlineVariant ??
+                      theme.colors.outline,
+                    backgroundColor: theme.colors.surface,
+                  },
+                ]}
+                elevation={0}
+              >
+                <RentSummaryRow
+                  icon="home-city-outline"
+                  label="Rent"
+                  value={formatMoney(rent)}
+                />
+                <View
+                  style={[
+                    styles.rentSummaryDivider,
                     {
-                      borderColor:
-                        (theme.colors as any).outlineVariant ?? theme.colors.outline,
-                      backgroundColor: theme.colors.surface,
+                      backgroundColor:
+                        (theme.colors as any).outlineVariant ??
+                        theme.colors.outline,
                     },
                   ]}
-                  elevation={0}
-                >
-                  <RentSummaryRow
-                    icon="home-city-outline"
-                    label="Rent"
-                    value={formatMoney(rent)}
-                  />
-                  <View style={[styles.rentSummaryDivider, { backgroundColor: (theme.colors as any).outlineVariant ?? theme.colors.outline }]} />
+                />
 
-                  <RentSummaryRow
-                    icon="water-outline"
-                    label="Water"
-                    value={formatMoney(water)}
-                  />
-                  <View style={[styles.rentSummaryDivider, { backgroundColor: (theme.colors as any).outlineVariant ?? theme.colors.outline }]} />
+                <RentSummaryRow
+                  icon="water-outline"
+                  label="Water"
+                  value={formatMoney(water)}
+                />
+                <View
+                  style={[
+                    styles.rentSummaryDivider,
+                    {
+                      backgroundColor:
+                        (theme.colors as any).outlineVariant ??
+                        theme.colors.outline,
+                    },
+                  ]}
+                />
 
-                  <RentSummaryRow
-                    icon="flash-outline"
-                    label="Electricity"
-                    sub={`${diffUnits} × ${settings.electricity_unit}`}
-                    value={formatMoney(electricity)}
-                  />
-                  <View style={[styles.rentSummaryDivider, { backgroundColor: (theme.colors as any).outlineVariant ?? theme.colors.outline }]} />
+                <RentSummaryRow
+                  icon="flash-outline"
+                  label="Electricity"
+                  sub={`${diffUnits} × ${settings.electricity_unit}`}
+                  value={formatMoney(electricity)}
+                />
+                <View
+                  style={[
+                    styles.rentSummaryDivider,
+                    {
+                      backgroundColor:
+                        (theme.colors as any).outlineVariant ??
+                        theme.colors.outline,
+                    },
+                  ]}
+                />
 
-                  <RentSummaryRow
-                    icon="cash-plus"
-                    label="Ad-hoc"
-                    sub={adHocComment?.trim() ? adHocComment.trim() : undefined}
-                    value={formatMoney(adHoc)}
-                  />
-                  <View style={[styles.rentSummaryDivider, { backgroundColor: (theme.colors as any).outlineVariant ?? theme.colors.outline }]} />
+                <RentSummaryRow
+                  icon="cash-plus"
+                  label="Ad-hoc"
+                  sub={adHocComment?.trim() ? adHocComment.trim() : undefined}
+                  value={formatMoney(adHoc)}
+                />
+                <View
+                  style={[
+                    styles.rentSummaryDivider,
+                    {
+                      backgroundColor:
+                        (theme.colors as any).outlineVariant ??
+                        theme.colors.outline,
+                    },
+                  ]}
+                />
 
-                  <RentSummaryRow
-                    icon="counter"
-                    label="Prev meter"
-                    sub={prevLabel}
-                    value={String(previousMeter)}
-                  />
-                  <View style={[styles.rentSummaryDivider, { backgroundColor: (theme.colors as any).outlineVariant ?? theme.colors.outline }]} />
+                <RentSummaryRow
+                  icon="counter"
+                  label="Prev meter"
+                  sub={prevLabel}
+                  value={String(previousMeter)}
+                />
+                <View
+                  style={[
+                    styles.rentSummaryDivider,
+                    {
+                      backgroundColor:
+                        (theme.colors as any).outlineVariant ??
+                        theme.colors.outline,
+                    },
+                  ]}
+                />
 
-                  <RentSummaryRow
-                    icon="counter"
-                    label="Curr meter"
-                    sub={currLabel}
-                    value={
-                      currentMeter.trim().length > 0 ? String(currentMeterNum) : '-'
-                    }
-                  />
-                </Surface>
+                <RentSummaryRow
+                  icon="counter"
+                  label="Curr meter"
+                  sub={currLabel}
+                  value={
+                    currentMeter.trim().length > 0
+                      ? String(currentMeterNum)
+                      : '-'
+                  }
+                />
               </Surface>
-            </View>
+            </Surface>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
 
-        <FAB
-          icon="content-save"
-          style={styles.fab}
-          loading={saving}
-          onPress={save}
-        />
+      <FAB
+        icon="content-save"
+        style={styles.fab}
+        loading={saving}
+        onPress={save}
+      />
 
-        <BillingMonthPickerDialog
-          visible={billingMonthOpen}
-          value={billingMonth}
-          onDismiss={() => setBillingMonthOpen(false)}
-          onConfirm={(d) => {
-            setBillingMonth(d);
-            setBillingMonthOpen(false);
-          }}
-        />
+      <BillingMonthPickerDialog
+        visible={billingMonthOpen}
+        value={billingMonth}
+        onDismiss={() => setBillingMonthOpen(false)}
+        onConfirm={d => {
+          setBillingMonth(d);
+          setBillingMonthOpen(false);
+        }}
+      />
     </>
   );
 }
@@ -843,7 +890,8 @@ const MeterTile = ({
   value: number | null;
 }) => {
   const theme = useTheme();
-  const monthColor = kind === 'curr' ? theme.colors.secondary : theme.colors.primary;
+  const monthColor =
+    kind === 'curr' ? theme.colors.secondary : theme.colors.primary;
   return (
     <Surface
       style={[
@@ -898,7 +946,12 @@ const RentSummaryRow = ({
   const badgeBg = (theme.colors as any).surfaceVariant ?? theme.colors.surface;
   return (
     <View style={styles.rentSummaryRow}>
-      <View style={[styles.rentSummaryIconBadge, { borderColor: outline, backgroundColor: badgeBg }]}>
+      <View
+        style={[
+          styles.rentSummaryIconBadge,
+          { borderColor: outline, backgroundColor: badgeBg },
+        ]}
+      >
         <Icon source={icon} size={16} color="#6B7280" />
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>
@@ -911,7 +964,12 @@ const RentSummaryRow = ({
           </Text>
         ) : null}
       </View>
-      <Text style={styles.rentSummaryValue} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
+      <Text
+        style={styles.rentSummaryValue}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.85}
+      >
         {value}
       </Text>
     </View>
@@ -939,10 +997,26 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
-  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
-  sectionIcon: { width: 36, height: 36, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+  },
+  sectionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   sectionTitle: { fontWeight: '900', fontSize: 16, color: '#111827' },
-  sectionSub: { marginTop: 2, color: '#6B7280', fontWeight: '800', fontSize: 13 },
+  sectionSub: {
+    marginTop: 2,
+    color: '#6B7280',
+    fontWeight: '800',
+    fontSize: 13,
+  },
 
   dropdown: {
     borderRadius: 12,
@@ -1111,7 +1185,12 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   rentSummaryLabel: { fontSize: 12, fontWeight: '900', color: '#6B7280' },
-  rentSummarySub: { marginTop: 3, fontSize: 12, fontWeight: '800', color: '#6B7280' },
+  rentSummarySub: {
+    marginTop: 3,
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#6B7280',
+  },
   rentSummaryValue: {
     marginLeft: 10,
     fontSize: 14,

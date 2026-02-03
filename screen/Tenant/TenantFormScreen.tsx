@@ -38,7 +38,8 @@ import {
 } from '../../service/tenantService';
 import { supabase } from '../../service/SupabaseClient';
 import { FormInput } from '../../components/FormInput';
-
+import analytics from '@react-native-firebase/analytics';
+import { trackEvent } from '../../service/analyticsTracker';
 type FileState = { file?: FileInput | null; url?: string | null };
 type Props = NativeStackScreenProps<TenantStackParamList, 'TenantForm'>;
 
@@ -213,6 +214,17 @@ export default function TenantFormScreen() {
         company_name: company,
         files: { profile, adhar, pan, agreement },
       });
+      if (mode === 'add') {
+        trackEvent('Tenant_Created', {
+          source: 'Tenant',
+          tenant_id: tenantId,
+        });
+      } else {
+        trackEvent('Tenant_Updated', {
+          source: 'Tenant',
+          tenant_id: tenantId,
+        });
+      }
       Alert.alert('Saved', 'Tenant saved successfully', [
         { text: 'OK', onPress: navigation.goBack },
       ]);
