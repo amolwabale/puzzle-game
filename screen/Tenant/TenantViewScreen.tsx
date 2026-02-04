@@ -160,11 +160,11 @@ export default function TenantViewScreen() {
         return;
       }
       skipNextReloadRef.current = true;
-
-      trackEvent('Tenant_Document_Viewed_' + label, {
+      const viewedEvent = 'Tenant_Document_Viewed_' + label;
+      trackEvent(viewedEvent, {
         source: 'Tenant',
         tenant_id: tenantId,
-        document_label: label,
+        document_label: label
       });
       navigation.navigate('TenantDocument', { title: label, url: signed });
     } catch (err: any) {
@@ -209,7 +209,8 @@ export default function TenantViewScreen() {
       );
       const fileUrl = `file://${destPath}`;
 
-      trackEvent('Tenant_Document_Shared_' + label, {
+      const sharedEvent = 'Tenant_Document_Shared_' + label;
+      trackEvent(sharedEvent, {
         source: 'Tenant',
         tenant_id: tenantId,
         document_label: label,
