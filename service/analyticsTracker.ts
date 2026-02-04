@@ -13,11 +13,9 @@ export const trackScreen = async (name: string) => {
   }
 };
 
-export const trackEvent = async (name: string, params: Record<string, any>) => {
+export const trackEvent = async (name: string, params: Record<string, string | number | boolean | undefined>) => {
   try {
-    logEvent(analyticsInstance, name, {
-      ...params,
-    });
+    logEvent(analyticsInstance, name, params);
   } catch (e) {
     // fail silently in prod
     console.log('Analytics error:', e);

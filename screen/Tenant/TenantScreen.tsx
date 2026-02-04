@@ -167,14 +167,14 @@ export default function TenantScreen() {
       photoUrl={signedUrls[item.id]}
       assignment={assignmentByTenant[item.id]}
       onView={() => {
-        trackEvent('TenantList_To_TenantView_Navigation', {
+        trackEvent('Navigation_TenantList_To_TenantView', {
           source: 'Tenant',
           tenant_id: item.id,
         });
         navigation.navigate('TenantView', { tenantId: item.id });
       }}
       onEdit={() => {
-        trackEvent('TenantList_To_TenantEdit_Navigation', {
+        trackEvent('Navigation_TenantList_To_TenantEdit', {
           source: 'Tenant',
           tenant_id: item.id,
         });
@@ -234,7 +234,13 @@ export default function TenantScreen() {
       <FAB
         icon="plus"
         style={styles.fab}
-        onPress={() => navigation.navigate('TenantForm', { mode: 'add' })}
+        onPress={() => {
+          trackEvent('Navigation_TenantList_To_TenantAdd', {
+            source: 'Tenant',
+            mode: 'Add',
+          });
+          navigation.navigate('TenantForm', { mode: 'add' });
+        }}
       />
     </View>
   );

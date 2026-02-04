@@ -22,7 +22,9 @@ import { supabase } from '../../service/SupabaseClient'; // ✅ REQUIRED
 import { fetchRooms } from '../../service/RoomService';
 import { fetchActiveRoomForTenants } from '../../service/TenantRoomService';
 import analytics from '@react-native-firebase/analytics';
+import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
 import { trackEvent } from '../../service/analyticsTracker';
+
 type Props = NativeStackScreenProps<TenantStackParamList, 'TenantView'>;
 
 const formatDate = (d?: string | null) =>
