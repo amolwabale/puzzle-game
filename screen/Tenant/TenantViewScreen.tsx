@@ -164,7 +164,7 @@ export default function TenantViewScreen() {
       trackEvent(viewedEvent, {
         source: 'Tenant',
         tenant_id: tenantId,
-        document_label: label
+        document_label: label,
       });
       navigation.navigate('TenantDocument', { title: label, url: signed });
     } catch (err: any) {

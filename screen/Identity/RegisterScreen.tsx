@@ -13,6 +13,9 @@ import { Button, Icon, Text, Surface, useTheme } from 'react-native-paper';
 import { AuthStackParamList } from '../../navigation/StackParam';
 import { RegisterUser } from '../../service/IdentityService';
 import { FormInput } from '../../components/FormInput';
+import analytics from '@react-native-firebase/analytics';
+import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
+import { trackEvent } from '../../service/analyticsTracker';
 
 export default function RegisterScreen() {
   const theme = useTheme();
@@ -22,6 +25,9 @@ export default function RegisterScreen() {
     >();
   const handleBack = () => {
     navigation.navigate('AuthScreen');
+    trackEvent('Auth_Register_Back_Pressed', {
+      source: 'Auth',
+    });
   };
 
   const [firstName, setFirstName] = React.useState('');
@@ -81,6 +87,11 @@ export default function RegisterScreen() {
         password,
         mobile,
         address,
+      });
+
+      trackEvent('Auth_Register_Success', {
+        source: 'Auth',
+        email: email,
       });
 
       Alert.alert(

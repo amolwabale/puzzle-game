@@ -13,7 +13,10 @@ export const trackScreen = async (name: string) => {
   }
 };
 
-export const trackEvent = async (name: string, params: Record<string, string | number | boolean | undefined>) => {
+export const trackEvent = async (
+  name: string,
+  params: Record<string, string | number | boolean | undefined>,
+) => {
   try {
     logEvent(analyticsInstance, name, params);
   } catch (e) {

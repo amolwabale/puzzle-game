@@ -29,6 +29,9 @@ import {
   TenantRoomRecord,
 } from '../../service/TenantRoomService';
 import supabase from '../../service/SupabaseClient';
+import analytics from '@react-native-firebase/analytics';
+import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
+import { trackEvent } from '../../service/analyticsTracker';
 
 type Nav = NativeStackNavigationProp<RoomStackParamList, 'RoomList'>;
 
@@ -170,6 +173,10 @@ export default function RoomScreen() {
             setRefreshing(true);
             await deleteRoom(id);
             await loadRooms(true);
+            trackEvent('Room_Deleted', {
+              source: 'Room',
+              room_id: id,
+            });
           } finally {
             setRefreshing(false);
           }
@@ -189,10 +196,20 @@ export default function RoomScreen() {
         secondary: theme.colors.secondary,
         secondaryContainer: theme.colors.secondaryContainer,
       }}
-      onView={() => navigation.navigate('RoomView', { roomId: item.id })}
-      onEdit={() =>
-        navigation.navigate('RoomForm', { roomId: item.id, mode: 'edit' })
-      }
+      onView={() => {
+        trackEvent('Navigation_RoomList_To_RoomView', {
+          source: 'Room',
+          room_id: item.id,
+        });
+        navigation.navigate('RoomView', { roomId: item.id });
+      }}
+      onEdit={() => {
+        trackEvent('Navigation_RoomList_To_RoomEdit', {
+          source: 'Room',
+          room_id: item.id,
+        });
+        navigation.navigate('RoomForm', { roomId: item.id, mode: 'edit' });
+      }}
       onDelete={() => void handleDelete(item.id)}
     />
   );
@@ -344,7 +361,13 @@ export default function RoomScreen() {
       <FAB
         icon="plus"
         style={styles.fab}
-        onPress={() => navigation.navigate('RoomForm', { mode: 'add' })}
+        onPress={() => {
+          trackEvent('Navigation_RoomList_To_RoomAdd', {
+            source: 'Room',
+            mode: 'Add',
+          });
+          navigation.navigate('RoomForm', { mode: 'add' });
+        }}
       />
     </View>
   );

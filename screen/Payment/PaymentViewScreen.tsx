@@ -43,6 +43,9 @@ import { fetchRooms } from '../../service/RoomService';
 import { fetchTenants } from '../../service/tenantService';
 import { supabase } from '../../service/SupabaseClient';
 import { FormInput } from '../../components/FormInput';
+import analytics from '@react-native-firebase/analytics';
+import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
+import { trackEvent } from '../../service/analyticsTracker';
 
 const PDFModule =
   NativeModules?.HtmlToPdf ||
@@ -240,6 +243,10 @@ export default function PaymentViewScreen() {
     setPaymentMethod('UPI');
     setPaymentNote('');
     setPaymentDialogOpen(true);
+    trackEvent('Payment_RecordPayment_Opened', {
+      source: 'Payment',
+      bill_id: bill?.id,
+    });
   }, []);
 
   // Reset the auto-open gate when navigating to a different bill.
@@ -723,13 +730,23 @@ export default function PaymentViewScreen() {
     Alert.alert('Share Bill', 'Choose a format', [
       {
         text: 'Share PDF',
-        onPress: () =>
-          sharePdf().catch(e => Alert.alert('Share failed', e.message)),
+        onPress: () => {
+          trackEvent('Payment_Share_Pdf', {
+            source: 'Payment',
+            bill_id: bill.id,
+          });
+          sharePdf().catch(e => Alert.alert('Share failed', e.message));
+        },
       },
       {
         text: 'Share Image',
-        onPress: () =>
-          shareImage().catch(e => Alert.alert('Share failed', e.message)),
+        onPress: () => {
+          trackEvent('Payment_Share_Image', {
+            source: 'Payment',
+            bill_id: bill.id,
+          });
+          shareImage().catch(e => Alert.alert('Share failed', e.message));
+        },
       },
       { text: 'Cancel', style: 'cancel' },
     ]);
@@ -765,7 +782,13 @@ export default function PaymentViewScreen() {
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: () => void doDeleteBill(),
+          onPress: () => {
+            trackEvent('Payment_Delete_Bill', {
+              source: 'Payment',
+              bill_id: bill.id,
+            });
+            void doDeleteBill();
+          },
         },
       ],
     );
@@ -862,9 +885,13 @@ export default function PaymentViewScreen() {
             <IconButton
               icon="pencil"
               size={20}
-              onPress={() =>
-                navigation.navigate('PaymentForm', { billId: bill.id })
-              }
+              onPress={() => {
+                trackEvent('Navigation_PaymentView_To_PaymentEdit', {
+                  source: 'Payment',
+                  bill_id: bill.id,
+                });
+                navigation.navigate('PaymentForm', { billId: bill.id });
+              }}
               iconColor={theme.colors.primary}
               style={[
                 styles.heroEditBtn,

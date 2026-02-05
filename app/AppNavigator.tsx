@@ -17,7 +17,8 @@ import { TopMenuProvider } from '../navigation/TopMenuDrawer';
 import { TopMenuButton } from '../navigation/TopMenuButton.tsx';
 import '@react-native-firebase/app';
 import analytics from '@react-native-firebase/analytics';
-
+import { getAnalytics, setUserId } from '@react-native-firebase/analytics';
+import { trackEvent } from '../service/analyticsTracker';
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 
 export default function AppNavigator() {
@@ -25,12 +26,17 @@ export default function AppNavigator() {
   const navRef = useNavigationContainerRef();
   const [loading, setLoading] = React.useState(true);
   const [session, setSession] = React.useState<any>(null);
-
+  const analyticsInstance = getAnalytics();
   React.useEffect(() => {
     // 1️⃣ Restore session on app start
     supabase.auth.getSession().then(({ data, error }) => {
       if (data.session) {
-        analytics().setUserId(data.session.user.id);
+        trackEvent('App_Started', {
+          source: 'App',
+        });
+        if (data.session.user.id) {
+          setUserId(analyticsInstance, data.session.user.id);
+        }
       }
       if (!error) {
         setSession(data.session);

@@ -4,6 +4,9 @@ import { Button, Icon, Text, Surface, useTheme } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../navigation/StackParam';
+import analytics from '@react-native-firebase/analytics';
+import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
+import { trackEvent } from '../../service/analyticsTracker';
 
 type NavigationProp = NativeStackNavigationProp<
   AuthStackParamList,
@@ -17,10 +20,16 @@ export default function AuthScreen() {
 
   const handleLogin = () => {
     navigation.navigate('LoginScreen');
+    trackEvent('Auth_Login_Opened', {
+      source: 'Auth',
+    });
   };
 
   const handleRegister = () => {
     navigation.navigate('RegisterScreen');
+    trackEvent('Auth_Register_Opened', {
+      source: 'Auth',
+    });
   };
 
   return (

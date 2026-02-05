@@ -17,6 +17,9 @@ import type { FileInput, Ticket } from '../../service/ticketTypes';
 import { useNavigation } from '@react-navigation/native';
 import { SmartTextInput } from '../../ui/SmartTextInput';
 import { FormInput } from '../../components/FormInput';
+import analytics from '@react-native-firebase/analytics';
+import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
+import { trackEvent } from '../../service/analyticsTracker';
 
 export default function AddTicketScreen() {
   const theme = useTheme();
@@ -66,6 +69,10 @@ export default function AddTicketScreen() {
         title,
         description,
         file,
+      });
+      trackEvent('Support_TicketCreated', {
+        source: 'Support',
+        ticket_id: created.id,
       });
       Alert.alert('Ticket created', 'Your request has been sent to support.', [
         {

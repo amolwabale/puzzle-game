@@ -25,6 +25,9 @@ import {
   TenantRoomRecord,
 } from '../../service/TenantRoomService';
 import { fetchLatestMeterReading } from '../../service/MeterReadingService';
+import analytics from '@react-native-firebase/analytics';
+import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
+import { trackEvent } from '../../service/analyticsTracker';
 
 type Props = NativeStackScreenProps<RoomStackParamList, 'RoomView'>;
 
@@ -358,9 +361,13 @@ export default function RoomViewScreen() {
       <FAB
         icon="pencil"
         style={styles.fab}
-        onPress={() =>
-          navigation.navigate('RoomForm', { mode: 'edit', roomId })
-        }
+        onPress={() => {
+          trackEvent('Navigation_RoomView_To_RoomEdit', {
+            source: 'Room',
+            room_id: roomId,
+          });
+          navigation.navigate('RoomForm', { mode: 'edit', roomId });
+        }}
       />
     </>
   );

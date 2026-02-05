@@ -24,6 +24,9 @@ import { fetchBills, BillRecord } from '../../service/BillService';
 import { fetchRooms } from '../../service/RoomService';
 import { fetchTenants, TenantRecord } from '../../service/tenantService';
 import { supabase } from '../../service/SupabaseClient';
+import analytics from '@react-native-firebase/analytics';
+import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
+import { trackEvent } from '../../service/analyticsTracker';
 
 const formatMoney = (n?: number | null) => {
   const v = Math.round(Number(n || 0));
@@ -208,16 +211,25 @@ export default function PaymentScreen() {
       photoUrl={
         item.tenant_id != null ? tenantPhotoById[item.tenant_id] : undefined
       }
-      onRecord={() =>
+      onRecord={() => {
+        trackEvent('Navigation_PaymentList_To_PaymentViewRecord', {
+          source: 'Payment',
+          bill_id: item.id,
+        });
         navigation.navigate('PaymentView', {
           billId: item.id,
           openRecordPayment: true,
-        })
-      }
-      onPress={() => navigation.navigate('PaymentView', { billId: item.id })}
+        });
+      }}
+      onPress={() => {
+        trackEvent('Navigation_PaymentList_To_PaymentView', {
+          source: 'Payment',
+          bill_id: item.id,
+        });
+        navigation.navigate('PaymentView', { billId: item.id });
+      }}
     />
   );
-
   return (
     <View style={styles.container}>
       {initialLoading ? (
@@ -367,7 +379,13 @@ export default function PaymentScreen() {
       <FAB
         icon="plus"
         style={styles.fab}
-        onPress={() => navigation.navigate('PaymentForm')}
+        onPress={() => {
+          trackEvent('Navigation_PaymentList_To_PaymentAdd', {
+            source: 'Payment',
+            mode: 'Add',
+          });
+          navigation.navigate('PaymentForm');
+        }}
       />
     </View>
   );

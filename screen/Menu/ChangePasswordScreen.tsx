@@ -3,6 +3,9 @@ import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { Avatar, Button, Surface, Text, useTheme } from 'react-native-paper';
 import { changePasswordAndLogout } from '../../service/MenuService';
 import { FormInput } from '../../components/FormInput';
+import analytics from '@react-native-firebase/analytics';
+import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
+import { trackEvent } from '../../service/analyticsTracker';
 
 export default function ChangePasswordScreen() {
   const theme = useTheme();
@@ -35,6 +38,10 @@ export default function ChangePasswordScreen() {
         'Password changed',
         'Please login again with your new password.',
       );
+      trackEvent('Password_Changed', {
+        source: 'Menu',
+        password_id: password,
+      });
       // AppNavigator will redirect to AuthStack after signOut.
     } catch (e: any) {
       Alert.alert('Failed', e?.message || 'Could not change password.');

@@ -29,6 +29,9 @@ import { FormInput } from '../../components/FormInput';
 
 type AuthNav = NativeStackNavigationProp<AuthStackParamList, 'LoginScreen'>;
 type RootNav = NativeStackNavigationProp<RootStackParamList>;
+import analytics from '@react-native-firebase/analytics';
+import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
+import { trackEvent } from '../../service/analyticsTracker';
 
 export default function LoginScreen() {
   const theme = useTheme();
@@ -41,6 +44,9 @@ export default function LoginScreen() {
 
   const handleBack = () => {
     navigation.navigate('AuthScreen');
+    trackEvent('Auth_Login_Back_Pressed', {
+      source: 'Auth',
+    });
   };
 
   const validate = () => {
@@ -72,6 +78,10 @@ export default function LoginScreen() {
         Alert.alert('Invalid email or password');
         return;
       }
+      trackEvent('Auth_Login_Success', {
+        source: 'Auth',
+        email: email,
+      });
     } catch (error: any) {
       Alert.alert('Login Failed', error.message);
     } finally {

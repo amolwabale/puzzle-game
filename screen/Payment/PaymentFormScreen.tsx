@@ -46,7 +46,9 @@ import {
   formatBillingMonthLabel,
   normalizeBillingMonthDate,
 } from '../../components/BillingMonthPicker';
-
+import analytics from '@react-native-firebase/analytics';
+import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
+import { trackEvent } from '../../service/analyticsTracker';
 const formatMoney = (n: number) => `₹${Math.round(n)}`;
 
 const formatMonth = (d: Date) =>
@@ -297,6 +299,11 @@ export default function PaymentFormScreen() {
           // non-blocking: bill is updated; meter sync is best-effort
         }
 
+        trackEvent('Payment_Updated', {
+          source: 'Payment',
+          bill_id: billId,
+        });
+
         Alert.alert('Updated', 'Payment updated successfully', [
           { text: 'OK', onPress: () => navigation.goBack() },
         ]);
@@ -323,6 +330,11 @@ export default function PaymentFormScreen() {
         roomId: selectedRoom.id,
         tenantId: selectedTenant.id,
         unit: curr,
+      });
+
+      trackEvent('Payment_Added', {
+        source: 'Payment',
+        bill_id: billId,
       });
 
       Alert.alert('Saved', 'Payment captured successfully', [

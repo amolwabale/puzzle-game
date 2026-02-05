@@ -36,6 +36,9 @@ import {
 import { createSignedUrlFromPublicUrl } from '../../service/MenuService';
 import { ChatBubble } from './components/ChatBubble';
 import { StatusChip } from './components/StatusChip';
+import analytics from '@react-native-firebase/analytics';
+import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
+import { trackEvent } from '../../service/analyticsTracker';
 
 type RouteParams = { ticketId: string };
 
@@ -129,6 +132,10 @@ export default function TicketChatScreen() {
           try {
             const updated = await closeTicket(ticketId);
             setTicket(updated);
+            trackEvent('Support_TicketClosed', {
+              source: 'Support',
+              ticket_id: ticketId,
+            });
           } catch (e: any) {
             Alert.alert('Failed', e?.message || 'Could not close ticket');
           }
@@ -231,6 +238,11 @@ export default function TicketChatScreen() {
     // Scroll after the message is actually appended/rendered.
     scrollToLatest(true);
 
+    trackEvent('Support_MessageSent', {
+      source: 'Support',
+      ticket_id: ticketId,
+      message: text,
+    });
     try {
       const saved = await sendTicketChat({ ticketId, chat: text });
       setMessages(prev => prev.map(m => (m.id === temp.id ? saved : m)));
@@ -303,6 +315,11 @@ export default function TicketChatScreen() {
                       const signed = await createSignedUrlFromPublicUrl(
                         ticket.upload_url!,
                       );
+                      trackEvent('Support_AttachmentViewed', {
+                        source: 'Support',
+                        ticket_id: ticketId,
+                        attachment_url: signed,
+                      });
                       navigation.navigate('SupportDocument', {
                         title: 'Attachment',
                         url: signed,

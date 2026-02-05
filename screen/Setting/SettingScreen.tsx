@@ -15,7 +15,9 @@ import {
 } from 'react-native-paper';
 import supabase from '../../service/SupabaseClient';
 import { FormInput } from '../../components/FormInput';
-
+import analytics from '@react-native-firebase/analytics';
+import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
+import { trackEvent } from '../../service/analyticsTracker';
 type Errors = Partial<
   Record<
     | 'propertyName'
@@ -207,6 +209,11 @@ export default function SettingScreen() {
       if (result.error) {
         throw new Error(result.error.message);
       }
+
+      trackEvent('Setting_Saved', {
+        source: 'Setting',
+        setting_id: result.data?.id,
+      });
 
       Alert.alert('Saved', 'Settings have been saved successfully.');
 

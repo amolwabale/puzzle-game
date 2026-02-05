@@ -18,6 +18,9 @@ import {
 import { listTickets } from '../../service/ticketService';
 import type { Ticket } from '../../service/ticketTypes';
 import { TicketCard } from '../Support/components/TicketCard';
+import analytics from '@react-native-firebase/analytics';
+import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
+import { trackEvent } from '../../service/analyticsTracker';
 
 export default function SupportScreen() {
   const navigation = useNavigation<any>();
@@ -44,9 +47,19 @@ export default function SupportScreen() {
     }, [load]),
   );
 
-  const goNew = () => navigation.navigate('SupportNewTicket');
-  const goChat = (ticketId: string) =>
+  const goNew = () => {
+    trackEvent('Support_NewTicket_Opened', {
+      source: 'Support',
+    });
+    navigation.navigate('SupportNewTicket');
+  };
+  const goChat = (ticketId: string) => {
+    trackEvent('Support_TicketDetails_Opened', {
+      source: 'Support',
+      ticket_id: ticketId,
+    });
     navigation.navigate('SupportTicketChat', { ticketId });
+  };
 
   const visibleTickets = React.useMemo(() => {
     const q = query.trim().toLowerCase();

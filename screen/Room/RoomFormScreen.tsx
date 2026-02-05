@@ -46,6 +46,9 @@ import {
   fetchLatestMeterReading,
   updateMeterReading,
 } from '../../service/MeterReadingService';
+import analytics from '@react-native-firebase/analytics';
+import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
+import { trackEvent } from '../../service/analyticsTracker';
 
 /* ---------------- TYPES ---------------- */
 
@@ -262,6 +265,21 @@ export default function RoomFormScreen() {
         rent,
         deposit,
         comment,
+      });
+
+      var event = 'Room_Added';
+      if (mode === 'edit') {
+        event = 'Room_Updated';
+      }
+
+      trackEvent(event, {
+        source: 'Room',
+        room_id: savedRoom.id,
+        name: name,
+        type: type,
+        area: area,
+        rent: rent,
+        deposit: deposit,
       });
 
       const shouldApplyOccupancy =
