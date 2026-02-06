@@ -148,9 +148,7 @@ export default function RoomViewScreen() {
               />
             </View>
             <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={styles.heroTitle} numberOfLines={1}>
-                {room.name || 'Room'}
-              </Text>
+              <Text style={styles.heroTitle}>{room.name || 'Room'}</Text>
               <Text style={styles.heroSub} numberOfLines={1}>
                 {room.type || '—'}
               </Text>

@@ -849,11 +849,7 @@ export default function PaymentViewScreen() {
               </Surface>
             </View>
 
-            <Text
-              variant="headlineSmall"
-              style={styles.heroTenant}
-              numberOfLines={1}
-            >
+            <Text variant="headlineSmall" style={styles.heroTenant}>
               {tenantName}
             </Text>
 

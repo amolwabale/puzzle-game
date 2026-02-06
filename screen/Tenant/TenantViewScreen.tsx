@@ -350,15 +350,21 @@ const InfoRow = ({
   icon: string;
   label: string;
   value?: string | number | null;
-}) => (
-  <View style={styles.infoRow}>
-    <IconButton icon={icon} size={18} />
-    <View>
-      <Text style={styles.infoLabel}>{label}</Text>
-      <Text style={styles.infoValue}>{value ?? '-'}</Text>
+}) => {
+  if (!value) return null;
+
+  return (
+    <View style={styles.infoRow}>
+      <IconButton icon={icon} size={18} style={styles.infoIcon} />
+
+      {/* 🔑 THIS wrapper is mandatory */}
+      <View style={styles.infoTextWrap}>
+        <Text style={styles.infoLabel}>{label}</Text>
+        <Text style={styles.infoValue}>{String(value)}</Text>
+      </View>
     </View>
-  </View>
-);
+  );
+};
 
 const DocTile = ({
   icon,
@@ -489,19 +495,30 @@ const styles = StyleSheet.create({
 
   infoRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start', // 🔑 NOT center
     marginBottom: 12,
+  },
+  infoIcon: {
+    margin: 0,
+    marginRight: 8,
+  },
+  infoTextWrap: {
+    flex: 1, // 🔑 REQUIRED for wrapping
+    minWidth: 0, // 🔑 REQUIRED inside flex row
   },
   infoLabel: {
     fontSize: 12,
     fontWeight: '800',
     color: '#6B7280',
   },
+
   infoValue: {
     fontSize: 15,
     fontWeight: '800',
     color: '#111827',
     marginTop: 2,
+    lineHeight: 20, // helps visual wrapping
+    flexWrap: 'wrap', // safety
   },
 
   docGrid: {
