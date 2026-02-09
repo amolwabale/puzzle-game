@@ -28,7 +28,8 @@ type Props = {
   contentStyle?: StyleProp<TextStyle>;
   /** Optional: pass a placeholder for the TextInput */
   placeholder?: string;
-};
+  importantForAutofill?: 'auto' | 'yes' | 'no' | 'noExcludeDescendants' | 'noExcludeDescendantsNoForce';
+}
 
 /**
  * Shared form input for this app.
@@ -52,6 +53,7 @@ export function FormInput({
   style,
   contentStyle,
   placeholder,
+  importantForAutofill,
 }: Props) {
   const theme = useTheme();
 
@@ -113,6 +115,7 @@ export function FormInput({
           autoCorrect={autoCorrect}
           textContentType={textContentType}
           autoComplete={autoComplete}
+          importantForAutofill={importantForAutofill as any}
           {...(multiline
             ? {
                 numberOfLines: 4,

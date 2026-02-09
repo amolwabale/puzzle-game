@@ -199,8 +199,35 @@ export default function PaymentScreen() {
   }, [baseBills, normalizeStatus]);
 
   const visibleBills = React.useMemo(() => {
-    if (paymentFilter === 'ALL') return baseBills;
-    return (baseBills || []).filter(b => normalizeStatus(b) === paymentFilter);
+    const filtered =
+      paymentFilter === 'ALL'
+        ? baseBills
+        : (baseBills || []).filter(b => normalizeStatus(b) === paymentFilter);
+
+    const rank: Record<'UNPAID' | 'PARTIAL' | 'PAID', number> = {
+      UNPAID: 0,
+      PARTIAL: 1,
+      PAID: 2,
+    };
+
+    // Required ordering:
+    // UNPAID (latest first) → PARTIAL (latest first) → PAID (latest first)
+    return [...(filtered || [])].sort((a, b) => {
+      const sa = normalizeStatus(a);
+      const sb = normalizeStatus(b);
+      const ra = rank[sa];
+      const rb = rank[sb];
+      if (ra !== rb) return ra - rb;
+
+      const at = new Date(String((a as any)?.created_at ?? '')).getTime();
+      const bt = new Date(String((b as any)?.created_at ?? '')).getTime();
+      if (Number.isFinite(at) && Number.isFinite(bt) && at !== bt) return bt - at;
+      if (Number.isFinite(at) && !Number.isFinite(bt)) return -1;
+      if (!Number.isFinite(at) && Number.isFinite(bt)) return 1;
+
+      // Stable fallback.
+      return String((b as any)?.id ?? '').localeCompare(String((a as any)?.id ?? ''));
+    });
   }, [baseBills, paymentFilter, normalizeStatus]);
 
   const renderItem = ({ item }: { item: BillRecord }) => (

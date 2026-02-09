@@ -1,4 +1,5 @@
 import supabase from './SupabaseClient';
+import { readUriAsArrayBuffer } from './readUriAsArrayBuffer';
 import type {
   FileInput,
   Ticket,
@@ -109,6 +110,7 @@ export async function changePasswordAndLogout(newPassword: string) {
 /* ===================== SUPPORT / TICKETS ===================== */
 
 const SUPPORT_BUCKET = 'tenant-manager';
+const MAX_UPLOAD_BYTES = 20 * 1024 * 1024; // 20 MB
 
 const getExt = (name: string, fallback = 'bin') =>
   name.includes('.') ? name.split('.').pop()! : fallback;
@@ -131,11 +133,7 @@ const uploadSupportFile = async (
   // Required path: `${userId}/Support/support_id/image_name`
   const path = `${userId}/Support/${ticketId}/${safeName}`;
 
-  const uri = file.uri.startsWith('file://') ? file.uri : `file://${file.uri}`;
-  const res = await fetch(uri);
-  const buffer = await res.arrayBuffer();
-  if (!buffer || buffer.byteLength === 0)
-    throw new Error('Selected file is empty or unreadable');
+  const buffer = await readUriAsArrayBuffer(file.uri, { maxBytes: MAX_UPLOAD_BYTES });
 
   const { error } = await supabase.storage
     .from(SUPPORT_BUCKET)

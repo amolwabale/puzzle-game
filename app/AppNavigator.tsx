@@ -19,6 +19,7 @@ import '@react-native-firebase/app';
 import analytics from '@react-native-firebase/analytics';
 import { getAnalytics, setUserId } from '@react-native-firebase/analytics';
 import { trackEvent } from '../service/analyticsTracker';
+import { NativeModules } from 'react-native';
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 
 export default function AppNavigator() {
@@ -27,6 +28,8 @@ export default function AppNavigator() {
   const [loading, setLoading] = React.useState(true);
   const [session, setSession] = React.useState<any>(null);
   const analyticsInstance = getAnalytics();
+
+
   React.useEffect(() => {
     // 1️⃣ Restore session on app start
     supabase.auth.getSession().then(({ data, error }) => {

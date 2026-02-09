@@ -1,8 +1,6 @@
 import React from 'react';
 import { Alert, ScrollView, StyleSheet, View } from 'react-native';
-import DocumentPicker, {
-  types as docTypes,
-} from 'react-native-document-picker';
+import { pick } from '@react-native-documents/picker';
 import {
   Button,
   HelperText,
@@ -44,19 +42,19 @@ export default function AddTicketScreen() {
 
   const pickFile = React.useCallback(async () => {
     try {
-      const r = await DocumentPicker.pickSingle({
-        type: [
-          docTypes.images,
-          docTypes.pdf,
-          docTypes.plainText,
-          docTypes.allFiles,
-        ],
-        copyTo: 'cachesDirectory',
+      const result = await pick({
+        type: ['image/*', 'application/pdf'],
+        multiple: false,
       });
-      const uri = (r.fileCopyUri || r.uri) as string;
-      setFile({ uri, name: r.name || 'attachment', type: r.type || undefined });
+
+      const file = result?.[0];
+  
+      setFile({
+        uri: file.uri,
+        name: file.name ?? 'attachment',
+        type: file.type ?? undefined,
+      });
     } catch (e: any) {
-      if (DocumentPicker.isCancel(e)) return;
       Alert.alert('Pick failed', e?.message || 'Could not select file');
     }
   }, []);

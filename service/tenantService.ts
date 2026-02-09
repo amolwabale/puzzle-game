@@ -1,4 +1,5 @@
 import supabase from './SupabaseClient';
+import { readUriAsArrayBuffer } from './readUriAsArrayBuffer';
 
 /* ===================== TYPES ===================== */
 
@@ -49,6 +50,7 @@ type SavePayload = {
 /* ===================== CONSTS ===================== */
 
 const BUCKET = 'tenant-manager';
+const MAX_UPLOAD_BYTES = 20 * 1024 * 1024; // 20 MB
 
 /* ===================== AUTH ===================== */
 
@@ -105,13 +107,9 @@ const uploadFile = async (
   const ext = getExt(file.name);
   const path = `${userId}/${tenantId}/${key}.${ext}`;
 
-  const uri = file.uri.startsWith('file://') ? file.uri : `file://${file.uri}`;
-  const res = await fetch(uri);
-  const buffer = await res.arrayBuffer();
-
-  if (!buffer || buffer.byteLength === 0) {
-    throw new Error('Selected file is empty or unreadable');
-  }
+  // Android picker often returns content:// URIs; fetch(file://content://...) fails.
+  // Use a robust URI reader that supports content:// and file://.
+  const buffer = await readUriAsArrayBuffer(file.uri, { maxBytes: MAX_UPLOAD_BYTES });
 
   const { error } = await supabase.storage.from(BUCKET).upload(path, buffer, {
     upsert: true,

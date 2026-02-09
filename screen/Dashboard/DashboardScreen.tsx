@@ -467,7 +467,8 @@ export default function DashboardScreen() {
         .filter(Boolean) as string[],
     );
 
-    const missingTenantIds = new Set<number>();
+    // IMPORTANT: dedupe by (tenant_id, room_id) — a tenant can be mapped to multiple rooms.
+    const missingTenantRoomKeys = new Set<string>();
     // Only count occupancies that existed before the cycle started.
     activeMappings
       .filter(mm => {
@@ -479,12 +480,12 @@ export default function DashboardScreen() {
       .forEach(mm => {
         if (mm.tenant_id == null || mm.room_id == null) return;
         const key = `${mm.tenant_id}-${mm.room_id}`;
-        if (!billKeySet.has(key)) missingTenantIds.add(mm.tenant_id);
+        if (!billKeySet.has(key)) missingTenantRoomKeys.add(key);
       });
 
     const tenantsMissingBillsAfterRentDayCount =
       afterRentGate && cycleStart && isValidDay(rentDay)
-        ? missingTenantIds.size
+        ? missingTenantRoomKeys.size
         : 0;
 
     const billsUnpaidAfterDueDayCount = afterDueGate

@@ -63,12 +63,35 @@ export default function SupportScreen() {
 
   const visibleTickets = React.useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return tickets;
-    return (tickets || []).filter(t => {
-      const hay = `${String((t as any)?.title ?? '')} ${String(
-        (t as any)?.description ?? '',
-      )}`.toLowerCase();
-      return hay.includes(q);
+    const filtered = !q
+      ? tickets
+      : (tickets || []).filter(t => {
+          const hay = `${String((t as any)?.title ?? '')} ${String(
+            (t as any)?.description ?? '',
+          )}`.toLowerCase();
+          return hay.includes(q);
+        });
+
+    // Sort order:
+    // 1) Opened cases first (anything except CLOSED)
+    // 2) Within each group: latest created_at first
+    return [...(filtered || [])].sort((a, b) => {
+      const aClosed = String((a as any)?.status ?? '')
+        .toUpperCase()
+        .trim() === 'CLOSED';
+      const bClosed = String((b as any)?.status ?? '')
+        .toUpperCase()
+        .trim() === 'CLOSED';
+      if (aClosed !== bClosed) return aClosed ? 1 : -1;
+
+      const at = new Date(String((a as any)?.created_at ?? '')).getTime();
+      const bt = new Date(String((b as any)?.created_at ?? '')).getTime();
+      if (Number.isFinite(at) && Number.isFinite(bt) && at !== bt) return bt - at;
+      if (Number.isFinite(at) && !Number.isFinite(bt)) return -1;
+      if (!Number.isFinite(at) && Number.isFinite(bt)) return 1;
+
+      // Stable fallback.
+      return String((a as any)?.id ?? '').localeCompare(String((b as any)?.id ?? ''));
     });
   }, [tickets, query]);
 

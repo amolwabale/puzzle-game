@@ -24,9 +24,7 @@ import {
   TouchableRipple,
   useTheme,
 } from 'react-native-paper';
-import DocumentPicker, {
-  types as docTypes,
-} from 'react-native-document-picker';
+import { pick, types as pickerTypes } from '@react-native-documents/picker';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { TenantStackParamList } from '../../navigation/StackParam';
 import {
@@ -147,6 +145,8 @@ export default function TenantFormScreen() {
     return Object.keys(e).length === 0;
   };
 
+  const MAX_FILE_BYTES = 20 * 1024 * 1024; // 20 MB
+
   const pickPhoto = async () => {
     const r = await launchImageLibrary({
       mediaType: 'photo',
@@ -154,6 +154,12 @@ export default function TenantFormScreen() {
     });
     const a = r.assets?.[0];
     if (!a?.uri) return;
+
+    const fileSize = (a as any).fileSize != null ? Number((a as any).fileSize) : null;
+    if (fileSize != null && Number.isFinite(fileSize) && fileSize > MAX_FILE_BYTES) {
+      Alert.alert('File too large', 'Please choose a file smaller than 20 MB.');
+      return;
+    }
 
     setProfile({
       file: { uri: a.uri, name: a.fileName || 'photo.jpg', type: a.type },
@@ -164,19 +170,56 @@ export default function TenantFormScreen() {
   };
 
   const pickFile = async (setter: (f: FileState) => void) => {
-    const r = await DocumentPicker.pickSingle({
-      type: [docTypes.images, docTypes.pdf],
-      copyTo: 'cachesDirectory',
-    });
+    try {
+      const results = await pick({
+        // Allow any file type (pdf, images, docs, etc).
+        type: [pickerTypes.allFiles],
+        allowMultiSelection: false,
+      });
+  
+      const file = results[0];
 
-    setter({
-      file: {
-        uri: r.fileCopyUri ?? r.uri ?? undefined,
-        name: r.name || 'file',
-        type: r.type || undefined,
-      },
-      url: null,
-    });
+      const size = (file as any).size != null ? Number((file as any).size) : null;
+      if (size != null && Number.isFinite(size) && size > MAX_FILE_BYTES) {
+        Alert.alert('File too large', 'Please choose a file smaller than 20 MB.');
+        return;
+      }
+  
+      setter({
+        file: {
+          uri: file.uri,
+          name: file.name ?? 'file',
+          type: file.type ?? undefined, // ✅ FIXED
+        },
+        url: null,
+      });
+    } catch (e: any) {
+      if (e?.code === 'DOCUMENT_PICKER_CANCELED') {
+        return;
+      }
+      console.error('File pick failed', e);
+    }
+  };
+
+  const normalizeFile = (file?: {
+    uri?: string;
+    name?: string;
+    type?: string;
+  }) => {
+    if (!file?.uri) return null;
+  
+    let uri = file.uri;
+  
+    // Android fix: content:// → file://
+    if (Platform.OS === 'android' && uri.startsWith('content://')) {
+      uri = uri;
+    }
+  
+    return {
+      uri,
+      name: file.name || `file-${Date.now()}`,
+      type: file.type || 'application/octet-stream',
+    };
   };
 
   const save = async () => {
@@ -229,6 +272,12 @@ export default function TenantFormScreen() {
       Alert.alert('Saved', 'Tenant saved successfully', [
         { text: 'OK', onPress: navigation.goBack },
       ]);
+    } catch (e: any) {
+      const message =
+        typeof e?.message === 'string' && e.message.trim()
+          ? e.message
+          : 'Something went wrong while saving. Please try again.';
+      Alert.alert('Error', message);
     } finally {
       setSaving(false);
     }

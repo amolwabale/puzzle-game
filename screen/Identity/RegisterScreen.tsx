@@ -6,6 +6,8 @@ import {
   StyleSheet,
   Alert,
   ScrollView,
+  Dimensions,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
@@ -39,6 +41,45 @@ export default function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = React.useState('');
   const [loading, setLoading] = React.useState(false);
   const [errors, setErrors] = React.useState<Record<string, string>>({});
+  const [androidKeyboardPad, setAndroidKeyboardPad] = React.useState(0);
+
+  // Android keyboards can be "overlay" (floating) in emulator/IME settings,
+  // which means the window may NOT resize even with adjustResize.
+  // Add bottom padding equal to keyboard height so the ScrollView can always reach
+  // fields that would otherwise sit behind the keyboard.
+  React.useEffect(() => {
+    if (Platform.OS !== 'android') return;
+
+    const onShow = (e: any) => {
+      const screenH = Dimensions.get('screen').height;
+      const screenY =
+        e?.endCoordinates?.screenY != null ? Number(e.endCoordinates.screenY) : null;
+      const directH =
+        e?.endCoordinates?.height != null ? Number(e.endCoordinates.height) : null;
+
+      // Some Android IMEs report height=0 but provide screenY.
+      const computed =
+        screenY != null && Number.isFinite(screenY)
+          ? Math.max(0, screenH - screenY)
+          : 0;
+      const h =
+        directH != null && Number.isFinite(directH) && directH > 0
+          ? directH
+          : computed;
+
+      setAndroidKeyboardPad(h > 0 ? h : 0);
+    };
+    const onHide = () => setAndroidKeyboardPad(0);
+
+    const s1 = Keyboard.addListener('keyboardDidShow', onShow);
+    const s1b = Keyboard.addListener('keyboardDidChangeFrame', onShow as any);
+    const s2 = Keyboard.addListener('keyboardDidHide', onHide);
+    return () => {
+      s1.remove();
+      s1b.remove();
+      s2.remove();
+    };
+  }, []);
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
@@ -106,11 +147,19 @@ export default function RegisterScreen() {
     }
   };
 
+  const Wrapper: any = Platform.OS === 'ios' ? KeyboardAvoidingView : View;
+  const wrapperProps =
+    Platform.OS === 'ios'
+      ? {
+          behavior: 'padding' as const,
+          keyboardVerticalOffset: 0,
+        }
+      : {};
+
   return (
-    <KeyboardAvoidingView
+    <Wrapper
       style={[styles.screen, { backgroundColor: theme.colors.background }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+      {...wrapperProps}
     >
       <View style={styles.stage}>
         {/* Soft background accents (same as AuthScreen) */}
@@ -136,15 +185,23 @@ export default function RegisterScreen() {
 
         <ScrollView
           style={styles.scroll}
-          contentContainerStyle={styles.container}
+          contentContainerStyle={[
+            styles.container,
+            Platform.OS === 'android' && {
+              paddingBottom: 120 + androidKeyboardPad,
+            },
+          ]}
           // Note: using BOTH KeyboardAvoidingView + automaticallyAdjustKeyboardInsets can feel jumpy on long forms.
           // We rely on KeyboardAvoidingView + natural scrolling for smoother behavior.
           automaticallyAdjustKeyboardInsets={false}
           contentInsetAdjustmentBehavior={
             Platform.OS === 'ios' ? 'automatic' : undefined
           }
-          keyboardShouldPersistTaps="handled"
+          // Android: keep keyboard open while scrolling to lower fields.
+          // iOS: interactive is fine and already working well.
+          keyboardShouldPersistTaps="always"
           keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'none'}
+          nestedScrollEnabled={Platform.OS === 'android'}
           showsVerticalScrollIndicator={false}
         >
           {/* HERO */}
@@ -362,7 +419,7 @@ export default function RegisterScreen() {
           </Surface>
         </ScrollView>
       </View>
-    </KeyboardAvoidingView>
+    </Wrapper>
   );
 }
 

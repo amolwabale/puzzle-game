@@ -89,13 +89,9 @@ export default function LoginScreen() {
     }
   };
 
-  return (
-    <KeyboardAvoidingView
-      style={[styles.screen, { backgroundColor: theme.colors.background }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
-    >
-      <View style={styles.stage}>
+  const content = (
+
+    <View style={styles.stage}>
         {/* Soft background accents (same as AuthScreen) */}
         <View pointerEvents="none" style={styles.bgAccents}>
           <View
@@ -210,11 +206,12 @@ export default function LoginScreen() {
                   setErrors(p => ({ ...p, email: '' }));
                 }}
                 error={errors.email}
-                keyboard="email-address"
+                keyboard="default"
                 autoCapitalize="none"
                 autoCorrect={false}
                 textContentType="username"
-                autoComplete="email"
+                autoComplete="off"
+                importantForAutofill="no"
                 maxLength={50}
               />
 
@@ -260,6 +257,14 @@ export default function LoginScreen() {
           </View>
         </ScrollView>
       </View>
+  )
+  return (
+    <KeyboardAvoidingView
+      style={[styles.screen, { backgroundColor: theme.colors.background }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={0}
+    >
+      {content}
     </KeyboardAvoidingView>
   );
 }

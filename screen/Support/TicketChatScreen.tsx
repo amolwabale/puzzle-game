@@ -7,9 +7,9 @@ import React from 'react';
 import {
   Alert,
   Animated,
+  Dimensions,
   Easing,
   FlatList,
-  InteractionManager,
   Keyboard,
   Platform,
   StyleSheet,
@@ -67,14 +67,32 @@ export default function TicketChatScreen() {
   const [composerHeight, setComposerHeight] = React.useState(0);
   const [keyboardHeight, setKeyboardHeight] = React.useState(0);
   const keyboardAnim = React.useRef(new Animated.Value(0)).current;
+  // On Android, the window may resize (adjustResize) OR the keyboard may overlay (floating IME).
+  // We keep a baseline window height (keyboard closed) so we can avoid "double compensation".
+  const baseWindowHeightRef = React.useRef(Dimensions.get('window').height);
+  // More reliable on Android: track the actual chat body layout height.
+  // Some devices/IMEs don't update `Dimensions.get('window')` consistently with keyboard changes.
+  const bodyHeightRef = React.useRef(0);
+  const baseBodyHeightRef = React.useRef(0);
+  const lastKeyboardHeightRef = React.useRef(0);
 
   const listRef = React.useRef<FlatList<TicketChat>>(null);
   const inputRef = React.useRef<any>(null);
 
   const scrollToLatest = React.useCallback((animated = true) => {
+    const runAfterIdle = (fn: () => void) => {
+      const ric = (globalThis as any)?.requestIdleCallback;
+      if (typeof ric === 'function') {
+        // Give layout/animations a chance to settle; timeout ensures it still runs.
+        ric(fn, { timeout: 500 });
+        return;
+      }
+      setTimeout(fn, 0);
+    };
+
     // FlatList scroll-to-bottom can be flaky if called before layout settles
     // (especially when keyboard height and composer height change).
-    InteractionManager.runAfterInteractions(() => {
+    runAfterIdle(() => {
       requestAnimationFrame(() => {
         // Small delay lets RN commit content size + margin changes first.
         const run = (anim: boolean) => {
@@ -166,22 +184,71 @@ export default function TicketChatScreen() {
     const hideEvt =
       Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
 
+    const getKeyboardHeight = (e: any) => {
+      // Android keyboard event coordinates are not consistent across OEMs/IMEs:
+      // - sometimes `height` is 0
+      // - sometimes `screenY` is in *screen* coords, sometimes closer to *window* coords
+      //
+      // We compute multiple candidates and pick the largest reasonable one.
+      const screenH = Dimensions.get('screen').height;
+      const windowH = Dimensions.get('window').height;
+
+      const screenYRaw =
+        e?.endCoordinates?.screenY != null ? Number(e.endCoordinates.screenY) : NaN;
+      const directHRaw =
+        e?.endCoordinates?.height != null ? Number(e.endCoordinates.height) : NaN;
+
+      const directH =
+        Number.isFinite(directHRaw) && directHRaw > 0 ? directHRaw : 0;
+      const computedFromScreenYScreen =
+        Number.isFinite(screenYRaw) && screenYRaw > 0
+          ? Math.max(0, screenH - screenYRaw)
+          : 0;
+      const computedFromScreenYWindow =
+        Number.isFinite(screenYRaw) && screenYRaw > 0
+          ? Math.max(0, windowH - screenYRaw)
+          : 0;
+
+      const h = Math.max(directH, computedFromScreenYScreen, computedFromScreenYWindow);
+      return Number.isFinite(h) ? Math.max(0, h) : 0;
+    };
+
+    const applyAndroidKeyboard = (keyboardH: number) => {
+      const nowWindowH = Dimensions.get('window').height;
+      const windowDelta = Math.max(0, baseWindowHeightRef.current - nowWindowH);
+      const bodyDelta =
+        baseBodyHeightRef.current > 0 && bodyHeightRef.current > 0
+          ? Math.max(0, baseBodyHeightRef.current - bodyHeightRef.current)
+          : 0;
+
+      // Prefer body delta (actual layout), fallback to window delta.
+      const resizeDelta = Math.max(bodyDelta, windowDelta);
+      const effective = Math.max(0, keyboardH - resizeDelta);
+      setKeyboardHeight(effective);
+      keyboardAnim.setValue(effective);
+    };
+
     const onShow = (e: any) => {
-      const h = e?.endCoordinates?.height ? Number(e.endCoordinates.height) : 0;
+      const h = getKeyboardHeight(e);
       // When typing, keep focus on conversation: collapse details.
       setDetailsOpen(false);
-      setKeyboardHeight(h);
       // Smoothly track keyboard (iOS), snap on Android.
       keyboardAnim.stopAnimation();
-      if (Platform.OS === 'ios') {
+      if (Platform.OS === 'android') {
+        // Some Android IMEs (and keyboardDidChangeFrame) can report 0 height transiently.
+        // If we already have a non-zero height, ignore bogus 0 updates to avoid pushing
+        // the composer back under the keyboard on subsequent open cycles.
+        const stableH = h > 0 ? h : lastKeyboardHeightRef.current;
+        if (stableH > 0) lastKeyboardHeightRef.current = stableH;
+        applyAndroidKeyboard(stableH);
+      } else {
+        setKeyboardHeight(h);
         Animated.timing(keyboardAnim, {
           toValue: h,
           duration: typeof e?.duration === 'number' ? e.duration : 260,
           easing: Easing.out(Easing.cubic),
           useNativeDriver: true,
         }).start();
-      } else {
-        keyboardAnim.setValue(h);
       }
 
       // When keyboard opens, ensure the latest message is visible (WhatsApp-like).
@@ -191,15 +258,22 @@ export default function TicketChatScreen() {
     const onHide = (e: any) => {
       setKeyboardHeight(0);
       keyboardAnim.stopAnimation();
-      if (Platform.OS === 'ios') {
+      if (Platform.OS === 'android') {
+        keyboardAnim.setValue(0);
+        lastKeyboardHeightRef.current = 0;
+        // Refresh baseline after the keyboard is gone (covers orientation/layout changes).
+        // Delay a bit so layout + Dimensions settle after IME hides.
+        setTimeout(() => {
+          baseWindowHeightRef.current = Dimensions.get('window').height;
+          if (bodyHeightRef.current > 0) baseBodyHeightRef.current = bodyHeightRef.current;
+        }, 80);
+      } else {
         Animated.timing(keyboardAnim, {
           toValue: 0,
           duration: typeof e?.duration === 'number' ? e.duration : 220,
           easing: Easing.out(Easing.cubic),
           useNativeDriver: true,
         }).start();
-      } else {
-        keyboardAnim.setValue(0);
       }
 
       // When keyboard closes (tap outside), keep view anchored to latest message.
@@ -207,9 +281,20 @@ export default function TicketChatScreen() {
     };
 
     const s1 = Keyboard.addListener(showEvt as any, onShow);
+    const s1b =
+      Platform.OS === 'android'
+        ? Keyboard.addListener('keyboardDidChangeFrame' as any, (e: any) => {
+            const h = getKeyboardHeight(e);
+            if (h > 0) {
+              lastKeyboardHeightRef.current = h;
+              applyAndroidKeyboard(h);
+            }
+          })
+        : null;
     const s2 = Keyboard.addListener(hideEvt as any, onHide);
     return () => {
       s1.remove();
+      s1b?.remove?.();
       s2.remove();
     };
   }, [keyboardAnim, scrollToLatest]);
@@ -386,7 +471,22 @@ export default function TicketChatScreen() {
         )}
       </Surface>
 
-      <View style={styles.body}>
+      <View
+        style={styles.body}
+        onLayout={e => {
+          const h = e?.nativeEvent?.layout?.height
+            ? Number(e.nativeEvent.layout.height)
+            : 0;
+          if (!Number.isFinite(h) || h <= 0) return;
+          bodyHeightRef.current = h;
+          // When keyboard is closed, capture a fresh baseline height.
+          if (Platform.OS === 'android') {
+            if (keyboardHeight === 0) baseBodyHeightRef.current = h;
+          } else if (baseBodyHeightRef.current <= 0) {
+            baseBodyHeightRef.current = h;
+          }
+        }}
+      >
         {/* 💬 CHAT LIST */}
         <FlatList
           ref={listRef}
