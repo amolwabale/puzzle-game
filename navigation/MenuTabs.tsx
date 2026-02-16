@@ -6,7 +6,7 @@ import {
   useNavigation,
 } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 import { ActivityIndicator, Icon, Text, useTheme } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -102,6 +102,7 @@ function MenuSupportStack() {
 export default function MenuTabs() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const isAndroid = Platform.OS === 'android';
 
   return (
     <Tab.Navigator
@@ -114,9 +115,9 @@ export default function MenuTabs() {
         tabBarStyle: {
           paddingTop: 8,
           // Add safe-area inset so the app tab bar never sits under Android system navigation.
-          // (Also correct for iOS home indicator.)
-          paddingBottom: 10 + insets.bottom,
-          height: 78 + insets.bottom,
+          // iOS already accounts for the home indicator; don't double-apply insets.
+          paddingBottom: 10 + (isAndroid ? insets.bottom : 0),
+          height: 78 + (isAndroid ? insets.bottom : 0),
           backgroundColor: theme.colors.background,
         },
         tabBarActiveTintColor: theme.colors.primary,

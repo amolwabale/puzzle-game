@@ -1,6 +1,7 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Icon, useTheme } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Platform } from 'react-native';
 
 import DashboardStack from './DashboardStack';
 import TenantStack from './TenantStack';
@@ -14,6 +15,7 @@ const Tab = createBottomTabNavigator();
 export default function MainTabs() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const isAndroid = Platform.OS === 'android';
 
   return (
     <Tab.Navigator
@@ -24,9 +26,9 @@ export default function MainTabs() {
         tabBarStyle: {
           paddingTop: 8,
           // Add safe-area inset so the app tab bar never sits under Android system navigation.
-          // (Also correct for iOS home indicator.)
-          paddingBottom: 10 + insets.bottom,
-          height: 78 + insets.bottom,
+          // iOS already accounts for the home indicator; don't double-apply insets.
+          paddingBottom: 10 + (isAndroid ? insets.bottom : 0),
+          height: 78 + (isAndroid ? insets.bottom : 0),
           backgroundColor: theme.colors.background,
         },
         tabBarActiveTintColor: theme.colors.primary,
