@@ -1,5 +1,6 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTheme } from 'react-native-paper';
+import { Platform } from 'react-native';
 import PaymentScreen from '../screen/Payment/PaymentScreen';
 import PaymentFormScreen from '../screen/Payment/PaymentFormScreen';
 import PaymentViewScreen from '../screen/Payment/PaymentViewScreen';
@@ -25,12 +26,16 @@ export default function PaymentsStack() {
         const showBack = route.name !== 'PaymentList';
         return {
           ...baseHeader,
+          headerTitleAlign:
+            Platform.OS === 'android' && showBack ? 'center' : 'left',
           headerBackVisible: false,
           headerBackTitleVisible: false,
           headerLeft: () =>
             showBack ? (
               <TopBackButton
                 label="Payments"
+                // Keep consistent UX across platforms: icon-only back on internal pages.
+                variant="icon"
                 onPress={() => navigation.goBack()}
               />
             ) : null,

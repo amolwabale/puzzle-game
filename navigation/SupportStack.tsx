@@ -1,6 +1,7 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTheme } from 'react-native-paper';
+import { Platform } from 'react-native';
 import { SupportStackParamList } from './StackParam';
 import SupportScreen from '../screen/Menu/SupportScreen';
 import AddTicketScreen from '../screen/Support/AddTicketScreen';
@@ -27,12 +28,16 @@ export default function SupportStack() {
         const showBack = route.name !== 'SupportTicketList';
         return {
           ...baseHeader,
+          headerTitleAlign:
+            Platform.OS === 'android' && showBack ? 'center' : 'left',
           headerBackVisible: false,
           headerBackTitleVisible: false,
           headerLeft: () =>
             showBack ? (
               <TopBackButton
                 label="Support"
+                // Keep consistent UX across platforms: icon-only back on internal pages.
+                variant="icon"
                 onPress={() => navigation.goBack()}
               />
             ) : null,

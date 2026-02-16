@@ -6,9 +6,11 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 export function TopBackButton({
   onPress,
   label,
+  variant = 'pill',
 }: {
   onPress: () => void;
   label: string;
+  variant?: 'pill' | 'icon';
 }) {
   const theme = useTheme();
 
@@ -18,11 +20,11 @@ export function TopBackButton({
       borderless
       style={styles.hit}
       accessibilityRole="button"
-      accessibilityLabel="Go back"
+      accessibilityLabel={label ? `Go back to ${label}` : 'Go back'}
     >
       <View
         style={[
-          styles.labelPill,
+          variant === 'icon' ? styles.circle : styles.labelPill,
           {
             borderColor: theme.colors.primary,
             backgroundColor: theme.colors.primaryContainer,
@@ -32,17 +34,19 @@ export function TopBackButton({
         <View style={styles.iconTextRow}>
           <MaterialCommunityIcons
             name="chevron-left"
-            size={20}
+            size={variant === 'icon' ? 22 : 20}
             color={theme.colors.primary}
           />
 
-          <Text
-            style={[styles.labelText, { color: theme.colors.primary }]}
-            numberOfLines={1}
-            ellipsizeMode="tail"
-          >
-            {label}
-          </Text>
+          {variant === 'pill' ? (
+            <Text
+              style={[styles.labelText, { color: theme.colors.primary }]}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {label}
+            </Text>
+          ) : null}
         </View>
       </View>
     </TouchableRipple>
@@ -51,10 +55,22 @@ export function TopBackButton({
 
 const styles = StyleSheet.create({
   hit: {
-    height: 47,
+    // Keep a stable hit-box for native-stack headers.
+    width: 36,
+    height: 36,
     borderRadius: 999,
     marginLeft: 0,
     justifyContent: 'center',
+    alignItems: 'center',
+  },
+  circle: {
+    width: 33,
+    height: 33,
+    borderRadius: 999,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
   },
   labelPill: {
     marginLeft: 0,

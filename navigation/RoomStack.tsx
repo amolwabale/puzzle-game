@@ -1,5 +1,6 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTheme } from 'react-native-paper';
+import { Platform } from 'react-native';
 import RoomScreen from '../screen/Room/RoomScreen';
 import RoomFormScreen from '../screen/Room/RoomFormScreen';
 import { RoomStackParamList } from './StackParam';
@@ -25,12 +26,16 @@ export function RoomStack() {
         const showBack = route.name !== 'RoomList';
         return {
           ...baseHeader,
+          headerTitleAlign:
+            Platform.OS === 'android' && showBack ? 'center' : 'left',
           headerBackVisible: false,
           headerBackTitleVisible: false,
           headerLeft: () =>
             showBack ? (
               <TopBackButton
                 label="Rooms"
+                // Keep consistent UX across platforms: icon-only back on internal pages.
+                variant="icon"
                 onPress={() => navigation.goBack()}
               />
             ) : null,

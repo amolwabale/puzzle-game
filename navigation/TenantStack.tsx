@@ -1,5 +1,6 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useTheme } from 'react-native-paper';
+import { Platform } from 'react-native';
 import { TenantStackParamList } from './StackParam';
 import TenantScreen from '../screen/Tenant/TenantScreen.tsx';
 import TenantFormScreen from '../screen/Tenant/TenantFormScreen.tsx';
@@ -28,6 +29,8 @@ export default function TenantStack() {
           route.name === 'TenantDocument' ? 'Tenant' : 'Tenants';
         return {
           ...baseHeader,
+          headerTitleAlign:
+            Platform.OS === 'android' && showBack ? 'center' : 'left',
           // Hide default back (arrow + label) so only our styled button shows.
           headerBackVisible: false,
           headerBackTitleVisible: false,
@@ -35,6 +38,8 @@ export default function TenantStack() {
             showBack ? (
               <TopBackButton
                 label={backLabel}
+                // Keep consistent UX across platforms: icon-only back on internal pages.
+                variant="icon"
                 onPress={() => navigation.goBack()}
               />
             ) : null,

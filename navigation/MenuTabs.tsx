@@ -117,7 +117,7 @@ export default function MenuTabs() {
           // Add safe-area inset so the app tab bar never sits under Android system navigation.
           // iOS already accounts for the home indicator; don't double-apply insets.
           paddingBottom: 10 + (isAndroid ? insets.bottom : 0),
-          height: 78 + (isAndroid ? insets.bottom : 0),
+          height: 68 + (isAndroid ? insets.bottom : 0),
           backgroundColor: theme.colors.background,
         },
         tabBarActiveTintColor: theme.colors.primary,
