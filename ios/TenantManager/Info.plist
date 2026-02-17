@@ -73,5 +73,20 @@
 		<string>FontAwesome6_Brands.ttf</string>
 		<string>MaterialIcons.ttf</string>
 	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+	<dict>
+		<key>CFBundleURLSchemes</key>
+		<array>
+		<string>tenantmanager</string>
+		</array>
+	</dict>
+	<dict>
+		<key>CFBundleURLSchemes</key>
+		<array>
+		<string>com.googleusercontent.apps.753719167263-ga45v1ork0l9hjrg22g4048kcp736294</string>
+		</array>
+	</dict>
+	</array>
 </dict>
 </plist>

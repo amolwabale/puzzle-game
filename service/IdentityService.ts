@@ -36,3 +36,17 @@ export async function Login(email: string, password: string) {
 
   return { data, error };
 }
+
+export async function LoginWithGoogleIdToken(idToken: string) {
+  try {
+    const { data, error } = await supabase.auth.signInWithIdToken({
+      provider: 'google',
+      token: idToken,
+    });
+
+    return { data, error };
+  } catch (e: any) {
+    // Ensure callers never receive an unhandled rejection (Android shows redbox).
+    return { data: null, error: e };
+  }
+}

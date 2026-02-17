@@ -19,9 +19,10 @@ export default function AuthStack() {
         component={LoginScreen}
         options={{
           // Show header bar but keep it text-free and without a back button.
-          headerTitle: 'Login',
+          headerTitle: '',
           headerBackTitle: '',
           headerBackVisible: false,
+          headerLeft: () => null,
         }}
       />
       <Stack.Screen
@@ -29,9 +30,10 @@ export default function AuthStack() {
         component={RegisterScreen}
         options={{
           // Show header bar but keep it text-free and without a back button.
-          headerTitle: 'Register',
+          headerTitle: '',
           headerBackTitle: '',
           headerBackVisible: false,
+          headerLeft: () => null,
         }}
       />
     </Stack.Navigator>
