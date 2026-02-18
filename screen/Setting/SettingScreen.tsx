@@ -7,6 +7,7 @@ import {
   Button,
   Chip,
   Dialog,
+  FAB,
   Portal,
   Surface,
   Text,
@@ -324,17 +325,16 @@ export default function SettingScreen() {
             the last day of that month.
           </Text>
 
-          <Button
-            mode="contained"
-            onPress={handleSave}
-            loading={saving}
-            disabled={saving}
-            style={styles.primaryButton}
-          >
-            Save Settings
-          </Button>
         </Section>
       </ScrollView>
+
+      <FAB
+        icon="content-save"
+        style={styles.fab}
+        loading={saving}
+        onPress={handleSave}
+        disabled={saving}
+      />
 
       {/* ---------- DAY PICKER (DAY OF MONTH) ---------- */}
       <Portal>
@@ -511,7 +511,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     padding: 16,
-    paddingBottom: 40,
+    paddingBottom: 100,
   },
 
   hero: {
@@ -601,8 +601,10 @@ const styles = StyleSheet.create({
   dayGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   dayChip: { borderRadius: 12, borderWidth: 1 },
 
-  primaryButton: {
-    marginTop: 8,
+  fab: {
+    position: 'absolute',
+    right: 16,
+    bottom: 24,
   },
 
   loader: {

@@ -1,9 +1,10 @@
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import React from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import {
   ActivityIndicator,
   Button,
+  FAB,
   Icon,
   IconButton,
   Avatar,
@@ -11,10 +12,11 @@ import {
   Text,
   useTheme,
 } from 'react-native-paper';
-import { fetchUserProfile, UserProfile } from '../../service/MenuService';
+import { fetchUserProfile, UserProfile } from '../../../service/MenuService';
 
 export default function ProfileScreen() {
   const theme = useTheme();
+  const navigation = useNavigation<any>();
   const [profile, setProfile] = React.useState<UserProfile | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
@@ -62,126 +64,132 @@ export default function ProfileScreen() {
     : 'Registered -';
 
   return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* 
-        ✅ Support-module standard: single top card with icon + hierarchy + meta pill.
-        Business logic unchanged; only presentation refactor.
-      */}
-      <Surface style={styles.heroCard} elevation={2}>
-        <View style={styles.heroTopRow}>
-          <View
-            style={[
-              styles.heroIcon,
-              { backgroundColor: theme.colors.primaryContainer },
-            ]}
-          >
-            <Icon
-              source="account-circle-outline"
-              size={18}
-              color={theme.colors.primary}
-            />
-          </View>
-
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={styles.heroKicker} numberOfLines={1}>
-              Profile
-            </Text>
-            <Text style={styles.heroTitle} numberOfLines={1}>
-              {primaryTitle}
-            </Text>
-            <Text style={styles.heroSub} numberOfLines={1}>
-              {subtitleLine}
-            </Text>
-          </View>
-
-          <Avatar.Text
-            size={44}
-            label={(fullName || 'U')
-              .trim()
-              .split(/\s+/)
-              .filter(Boolean)
-              .slice(0, 2)
-              .map(p => p[0]?.toUpperCase())
-              .join('')}
-            style={{ backgroundColor: theme.colors.primaryContainer }}
-            color={theme.colors.primary}
-          />
-        </View>
-
-        <View style={styles.heroMetaRow}>
-          <View style={styles.metaPill}>
-            <Icon source="calendar" size={14} color="#6B7280" />
-            <Text style={styles.metaText} numberOfLines={1}>
-              {createdLine}
-            </Text>
-          </View>
-          <Button
-            mode="text"
-            onPress={() => void loadProfile()}
-            icon="refresh"
-            compact
-          >
-            Refresh
-          </Button>
-        </View>
-      </Surface>
-
-      {error ? (
-        <Surface style={styles.noticeCard} elevation={1}>
-          <View style={styles.noticeRow}>
+    <>
+      <ScrollView
+        style={styles.screen}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        <Surface style={styles.heroCard} elevation={2}>
+          <View style={styles.heroTopRow}>
             <View
               style={[
-                styles.noticeIcon,
+                styles.heroIcon,
                 { backgroundColor: theme.colors.primaryContainer },
               ]}
             >
               <Icon
-                source="alert-circle-outline"
+                source="account-circle-outline"
                 size={18}
                 color={theme.colors.primary}
               />
             </View>
+
             <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={styles.noticeTitle}>Could not load profile</Text>
-              <Text style={styles.noticeSub} numberOfLines={2}>
-                {error}
+              <Text style={styles.heroKicker} numberOfLines={1}>
+                Profile
+              </Text>
+              <Text style={styles.heroTitle} numberOfLines={1}>
+                {primaryTitle}
+              </Text>
+              <Text style={styles.heroSub} numberOfLines={1}>
+                {subtitleLine}
               </Text>
             </View>
-            <IconButton icon="refresh" onPress={() => void loadProfile()} />
+
+            <Avatar.Text
+              size={44}
+              label={(fullName || 'U')
+                .trim()
+                .split(/\s+/)
+                .filter(Boolean)
+                .slice(0, 2)
+                .map(p => p[0]?.toUpperCase())
+                .join('')}
+              style={{ backgroundColor: theme.colors.primaryContainer }}
+              color={theme.colors.primary}
+            />
+          </View>
+
+          <View style={styles.heroMetaRow}>
+            <View style={styles.metaPill}>
+              <Icon source="calendar" size={14} color="#6B7280" />
+              <Text style={styles.metaText} numberOfLines={1}>
+                {createdLine}
+              </Text>
+            </View>
+            <Button
+              mode="text"
+              onPress={() => void loadProfile()}
+              icon="refresh"
+              compact
+            >
+              Refresh
+            </Button>
           </View>
         </Surface>
-      ) : null}
 
-      <Section title="Basic information">
-        <InfoRow
-          icon="account-outline"
-          label="First name"
-          value={profile?.first_name}
-        />
-        <InfoRow
-          icon="account-outline"
-          label="Last name"
-          value={profile?.last_name}
-        />
-      </Section>
+        {error ? (
+          <Surface style={styles.noticeCard} elevation={1}>
+            <View style={styles.noticeRow}>
+              <View
+                style={[
+                  styles.noticeIcon,
+                  { backgroundColor: theme.colors.primaryContainer },
+                ]}
+              >
+                <Icon
+                  source="alert-circle-outline"
+                  size={18}
+                  color={theme.colors.primary}
+                />
+              </View>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={styles.noticeTitle}>Could not load profile</Text>
+                <Text style={styles.noticeSub} numberOfLines={2}>
+                  {error}
+                </Text>
+              </View>
+              <IconButton icon="refresh" onPress={() => void loadProfile()} />
+            </View>
+          </Surface>
+        ) : null}
 
-      <Section title="Contact">
-        <InfoRow icon="phone" label="Mobile" value={profile?.mobile} />
-        <InfoRow icon="email-outline" label="Email" value={profile?.email} />
-      </Section>
+        <Section title="Basic information">
+          <InfoRow
+            icon="account-outline"
+            label="First name"
+            value={profile?.first_name}
+          />
+          <InfoRow
+            icon="account-outline"
+            label="Last name"
+            value={profile?.last_name}
+          />
+        </Section>
 
-      <Section title="Address">
-        <InfoRow icon="map-marker" label="Address" value={profile?.address} />
-      </Section>
-    </ScrollView>
+        <Section title="Contact">
+          <InfoRow icon="phone" label="Mobile" value={profile?.mobile} />
+          <InfoRow icon="email-outline" label="Email" value={profile?.email} />
+        </Section>
+
+        <Section title="Address">
+          <InfoRow
+            icon="map-marker"
+            label="Address"
+            value={profile?.address}
+          />
+        </Section>
+      </ScrollView>
+
+      <FAB
+        icon="pencil"
+        style={styles.fab}
+        onPress={() => navigation.navigate('MenuProfileFormScreen')}
+      />
+    </>
   );
 }
-
-/* ---------------- UI COMPONENTS (Support-module standard) ---------------- */
 
 const Section = ({
   title,
@@ -220,7 +228,7 @@ const InfoRow = ({
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#F4F6FA' },
-  content: { padding: 16, paddingBottom: 24 },
+  content: { padding: 16, paddingBottom: 100 },
 
   heroCard: {
     borderRadius: 18,
@@ -315,6 +323,12 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#111827',
     marginTop: 2,
+  },
+
+  fab: {
+    position: 'absolute',
+    right: 16,
+    bottom: 24,
   },
 
   loader: {

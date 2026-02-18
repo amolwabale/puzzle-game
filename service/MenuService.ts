@@ -92,6 +92,31 @@ export async function fetchUserProfile(): Promise<UserProfile | null> {
   }
 }
 
+export type UpdateProfilePayload = {
+  first_name?: string;
+  last_name?: string;
+  mobile?: string;
+  email?: string;
+  address?: string;
+};
+
+export async function updateUserProfile(
+  payload: UpdateProfilePayload,
+): Promise<UserProfile | null> {
+  const user = await getCurrentAuthUser();
+  const userId = user.id;
+
+  const { data, error } = await supabase
+    .from('User')
+    .update(payload)
+    .eq('user_id', userId)
+    .select('created_at, first_name, last_name, mobile, email, address')
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
+
 export async function changePasswordAndLogout(newPassword: string) {
   const pwd = String(newPassword || '');
   if (pwd.length < 6)

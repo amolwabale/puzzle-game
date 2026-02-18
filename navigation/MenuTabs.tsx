@@ -10,10 +10,12 @@ import { Platform, View } from 'react-native';
 import { ActivityIndicator, Icon, Text, useTheme } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import ProfileScreen from '../screen/Menu/ProfileScreen';
+import ProfileScreen from '../screen/Menu/Profile/ProfileScreen';
+import ProfileFormScreen from '../screen/Menu/Profile/ProfileFormScreen';
 import ChangePasswordScreen from '../screen/Menu/ChangePasswordScreen';
 import SupportStack from './SupportStack';
 import { TopMenuButton } from './TopMenuButton.tsx';
+import { TopBackButton } from './TopBackButton';
 import { trackScreen } from '../service/analyticsTracker.ts';
 
 const Tab = createBottomTabNavigator();
@@ -60,12 +62,37 @@ function MenuProfileStack() {
   };
 
   return (
-    <Stack.Navigator screenOptions={baseHeader}>
+    <Stack.Navigator
+      screenOptions={({ navigation, route }) => {
+        const showBack = route.name !== 'MenuProfileScreen';
+        return {
+          ...baseHeader,
+          headerTitleAlign:
+            Platform.OS === 'android' && showBack ? 'center' : 'left',
+          headerBackVisible: false,
+          headerLeft: () =>
+            showBack ? (
+              <TopBackButton
+                label="Profile"
+                variant="icon"
+                onPress={() => navigation.goBack()}
+              />
+            ) : null,
+        };
+      }}
+    >
       <Stack.Screen
         name="MenuProfileScreen"
         component={ProfileScreen}
         options={{
           title: 'Profile',
+        }}
+      />
+      <Stack.Screen
+        name="MenuProfileFormScreen"
+        component={ProfileFormScreen}
+        options={{
+          title: 'Edit Profile',
         }}
       />
     </Stack.Navigator>
