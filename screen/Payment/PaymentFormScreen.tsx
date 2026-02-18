@@ -136,6 +136,10 @@ export default function PaymentFormScreen() {
 
   const [errors, setErrors] = React.useState<Record<string, string>>({});
 
+  React.useEffect(() => {
+    if (saving) setBillingMonthOpen(false);
+  }, [saving]);
+
   const load = React.useCallback(async () => {
     try {
       setLoading(true);
@@ -389,7 +393,10 @@ export default function PaymentFormScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <View>
+          <View
+            pointerEvents={saving ? 'none' : 'auto'}
+            style={saving ? styles.formDisabled : undefined}
+          >
             {/* HERO (RoomForm-style) */}
             <Surface style={styles.hero} elevation={2}>
               <View style={styles.sectionTitleRow}>
@@ -857,10 +864,11 @@ export default function PaymentFormScreen() {
         ]}
         loading={saving}
         onPress={save}
+        disabled={saving}
       />
 
       <BillingMonthPickerDialog
-        visible={billingMonthOpen}
+        visible={billingMonthOpen && !saving}
         value={billingMonth}
         onDismiss={() => setBillingMonthOpen(false)}
         onConfirm={d => {
@@ -1362,4 +1370,5 @@ const styles = StyleSheet.create({
   metaPillText: { fontWeight: '800', color: '#1A73E8', fontSize: 14, flex: 1 },
 
   fab: { position: 'absolute', right: 16 },
+  formDisabled: { opacity: 0.6 },
 });

@@ -75,6 +75,10 @@ export default function SettingScreen() {
     };
   }, []);
 
+  React.useEffect(() => {
+    if (saving) setDayPickerOpenFor(null);
+  }, [saving]);
+
   const selectDay = React.useCallback(
     (day: number) => {
       const v = String(day);
@@ -267,89 +271,94 @@ export default function SettingScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* HERO (Support/Room style) */}
-        <Surface style={styles.hero} elevation={2}>
-          <View style={styles.heroTop}>
-            <View
-              style={[
-                styles.heroIconWrap,
-                { backgroundColor: theme.colors.primaryContainer },
-              ]}
-            >
-              <Avatar.Icon
-                size={18}
-                icon="office-building-outline"
-                style={{ backgroundColor: 'transparent' }}
-              />
+        <View
+          pointerEvents={saving ? 'none' : 'auto'}
+          style={saving ? styles.formDisabled : undefined}
+        >
+          {/* HERO (Support/Room style) */}
+          <Surface style={styles.hero} elevation={2}>
+            <View style={styles.heroTop}>
+              <View
+                style={[
+                  styles.heroIconWrap,
+                  { backgroundColor: theme.colors.primaryContainer },
+                ]}
+              >
+                <Avatar.Icon
+                  size={18}
+                  icon="office-building-outline"
+                  style={{ backgroundColor: 'transparent' }}
+                />
+              </View>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={styles.heroTitle} numberOfLines={1}>
+                  Property settings
+                </Text>
+                <Text style={styles.heroSubtitle} numberOfLines={1}>
+                  Manage your property configuration
+                </Text>
+              </View>
             </View>
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={styles.heroTitle} numberOfLines={1}>
-                Property settings
-              </Text>
-              <Text style={styles.heroSubtitle} numberOfLines={1}>
-                Manage your property configuration
-              </Text>
-            </View>
-          </View>
-        </Surface>
+          </Surface>
 
-        <Section title="Property details" icon="office-building-outline">
-          <FormInput
-            label="Property Name *"
-            value={propertyName}
-            onChange={setPropertyName}
-            error={errors.propertyName}
-            maxLength={70}
-          />
-          <FormInput
-            label="Property Address"
-            value={propertyAddress}
-            onChange={setPropertyAddress}
-            maxLength={255}
-            multiline={true}
-          />
-        </Section>
+          <Section title="Property details" icon="office-building-outline">
+            <FormInput
+              label="Property Name *"
+              value={propertyName}
+              onChange={setPropertyName}
+              error={errors.propertyName}
+              maxLength={70}
+            />
+            <FormInput
+              label="Property Address"
+              value={propertyAddress}
+              onChange={setPropertyAddress}
+              maxLength={255}
+              multiline={true}
+            />
+          </Section>
 
-        <Section title="Utility charges" icon="water-outline">
-          <FormInput
-            label="Water (numeric)"
-            value={water}
-            onChange={setWater}
-            error={errors.water}
-            keyboard="number-pad"
-            maxLength={5}
-          />
-          <FormInput
-            label="Electricity unit (numeric)"
-            value={electricity}
-            onChange={setElectricity}
-            error={errors.electricity}
-            keyboard="number-pad"
-            maxLength={5}
-          />
-        </Section>
+          <Section title="Utility charges" icon="water-outline">
+            <FormInput
+              label="Water (numeric)"
+              value={water}
+              onChange={setWater}
+              error={errors.water}
+              keyboard="number-pad"
+              maxLength={5}
+            />
+            <FormInput
+              label="Electricity unit (numeric)"
+              value={electricity}
+              onChange={setElectricity}
+              error={errors.electricity}
+              keyboard="number-pad"
+              maxLength={5}
+            />
+          </Section>
 
-        <Section title="Rent cycle" icon="calendar-month-outline">
-          <DaySelectRow
-            label="Rent date (day of month)"
-            value={rentDate}
-            error={errors.rentDate}
-            onPress={() => setDayPickerOpenFor('rentDate')}
-          />
-          <DaySelectRow
-            label="Rent due date (day of month)"
-            value={rentDueDate}
-            error={errors.rentDueDate}
-            onPress={() => setDayPickerOpenFor('rentDueDate')}
-          />
+          <Section title="Rent cycle" icon="calendar-month-outline">
+            <DaySelectRow
+              label="Rent date (day of month)"
+              value={rentDate}
+              error={errors.rentDate}
+              onPress={() => setDayPickerOpenFor('rentDate')}
+            />
+            <DaySelectRow
+              label="Rent due date (day of month)"
+              value={rentDueDate}
+              error={errors.rentDueDate}
+              onPress={() => setDayPickerOpenFor('rentDueDate')}
+            />
 
-          <Text style={styles.rentHint}>
-            Tip: Due date can be in the next month (e.g. Rent = Last day, Due =
-            5). If you choose 29/30/31, months with fewer days will treat it as
-            the last day of that month.
-          </Text>
+            <Text style={styles.rentHint}>
+              Tip: Due date can be in the next month (e.g. Rent = Last day, Due =
+              5). If you choose 29/30/31, months with fewer days will treat it as
+              the last day of that month.
+            </Text>
 
-        </Section>
+          </Section>
+        </View>
       </ScrollView>
 
       <FAB
@@ -363,7 +372,7 @@ export default function SettingScreen() {
       {/* ---------- DAY PICKER (DAY OF MONTH) ---------- */}
       <Portal>
         <Dialog
-          visible={dayPickerOpenFor != null}
+          visible={dayPickerOpenFor != null && !saving}
           onDismiss={() => setDayPickerOpenFor(null)}
         >
           <Dialog.Title>
@@ -628,6 +637,9 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     right: 16,
+  },
+  formDisabled: {
+    opacity: 0.6,
   },
 
   loader: {

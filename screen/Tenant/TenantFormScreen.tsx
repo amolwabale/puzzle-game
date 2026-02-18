@@ -192,6 +192,43 @@ export default function TenantFormScreen() {
     setProfileSignedUrl(undefined); // local preview takes over
   };
 
+  const pickFromGallery = async (setter: (f: FileState) => void) => {
+    try {
+      const r = await launchImageLibrary({
+        mediaType: 'photo',
+        selectionLimit: 1,
+      });
+      const a = r.assets?.[0];
+      if (!a?.uri) return;
+
+      const fileSize =
+        (a as any).fileSize != null ? Number((a as any).fileSize) : null;
+      if (
+        fileSize != null &&
+        Number.isFinite(fileSize) &&
+        fileSize > MAX_FILE_BYTES
+      ) {
+        Alert.alert('File too large', 'Please choose a file smaller than 20 MB.');
+        return;
+      }
+
+      setter({
+        file: { uri: a.uri, name: a.fileName || 'photo.jpg', type: a.type },
+        url: null,
+      });
+    } catch (e: any) {
+      console.error('Gallery pick failed', e);
+    }
+  };
+
+  const pickDocWithChoice = (setter: (f: FileState) => void) => {
+    Alert.alert('Upload document', 'Choose where to pick from', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Gallery', onPress: () => void pickFromGallery(setter) },
+      { text: 'Files', onPress: () => void pickFile(setter) },
+    ]);
+  };
+
   const pickFile = async (setter: (f: FileState) => void) => {
     try {
       const results = await pick({
@@ -324,119 +361,125 @@ export default function TenantFormScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView contentContainerStyle={styles.container}>
-          {/* HERO */}
-          <Surface style={styles.hero} elevation={4}>
-            <AvatarDisplay uri={avatarUri} size={88} />
+          <View
+            pointerEvents={saving ? 'none' : 'auto'}
+            style={saving ? styles.formDisabled : undefined}
+          >
+            {/* HERO */}
+            <Surface style={styles.hero} elevation={4}>
+              <AvatarDisplay uri={avatarUri} size={88} />
 
-            <View style={{ marginLeft: 16, flex: 1 }}>
-              <Text variant="titleLarge" style={styles.heroTitle}>
-                {mode === 'edit' ? 'Edit Tenant' : 'Add Tenant'}
-              </Text>
+              <View style={{ marginLeft: 16, flex: 1 }}>
+                <Text variant="titleLarge" style={styles.heroTitle}>
+                  {mode === 'edit' ? 'Edit Tenant' : 'Add Tenant'}
+                </Text>
 
-              <TouchableRipple
-                onPress={pickPhoto}
-                borderless
-                style={[
-                  styles.photoAction,
-                  {
-                    borderColor: theme.colors.primary,
-                    backgroundColor: theme.colors.primaryContainer,
-                  },
-                ]}
-              >
-                <View style={styles.photoActionContent}>
-                  <IconButton
-                    icon={
-                      profile.file || profile.url
-                        ? 'camera-outline'
-                        : 'upload-outline'
-                    }
-                    size={18}
-                    style={styles.photoIcon}
-                  />
-                  <Text style={styles.photoActionText}>
-                    {profile.file || profile.url
-                      ? 'Change photo'
-                      : 'Upload photo'}
-                  </Text>
-                </View>
-              </TouchableRipple>
-            </View>
-          </Surface>
+                <TouchableRipple
+                  onPress={pickPhoto}
+                  borderless
+                  style={[
+                    styles.photoAction,
+                    {
+                      borderColor: theme.colors.primary,
+                      backgroundColor: theme.colors.primaryContainer,
+                    },
+                  ]}
+                >
+                  <View style={styles.photoActionContent}>
+                    <IconButton
+                      icon={
+                        profile.file || profile.url
+                          ? 'camera-outline'
+                          : 'upload-outline'
+                      }
+                      size={18}
+                      style={styles.photoIcon}
+                    />
+                    <Text style={styles.photoActionText}>
+                      {profile.file || profile.url
+                        ? 'Change photo'
+                        : 'Upload photo'}
+                    </Text>
+                  </View>
+                </TouchableRipple>
+              </View>
+            </Surface>
 
-          {/* PERSONAL */}
-          <Section title="Personal Information">
-            <FormInput
-              label="Full Name *"
-              value={name}
-              onChange={setName}
-              error={errors.name}
-              maxLength={70}
-            />
-            <FormInput
-              label="Mobile *"
-              value={mobile}
-              onChange={setMobile}
-              error={errors.mobile}
-              keyboard="number-pad"
-              maxLength={10}
-            />
-            <FormInput
-              label="Alternate Mobile"
-              value={alternateMobile}
-              onChange={setAlternateMobile}
-              maxLength={10}
-            />
-            <FormInput
-              label="Family Members"
-              value={familyMembers}
-              onChange={setFamilyMembers}
-              keyboard="number-pad"
-              maxLength={2}
-            />
-          </Section>
-
-          {/* ADDRESS */}
-          <Section title="Address & Work">
-            <FormInput
-              label="Address *"
-              value={address}
-              onChange={setAddress}
-              error={errors.address}
-              multiline={true}
-              maxLength={255}
-            />
-            <FormInput
-              label="Company Name"
-              value={company}
-              onChange={setCompany}
-              maxLength={50}
-            />
-          </Section>
-
-          {/* DOCUMENTS */}
-          <Section title="Documents">
-            <View style={styles.docGrid}>
-              <DocTile
-                icon="card-account-details"
-                label="Aadhaar"
-                state={adhar}
-                onPick={() => pickFile(setAdhar)}
+            {/* PERSONAL */}
+            <Section title="Personal Information">
+              <FormInput
+                label="Full Name *"
+                value={name}
+                onChange={setName}
+                error={errors.name}
+                maxLength={70}
               />
-              <DocTile
-                icon="card-bulleted"
-                label="PAN"
-                state={pan}
-                onPick={() => pickFile(setPan)}
+              <FormInput
+                label="Mobile *"
+                value={mobile}
+                onChange={setMobile}
+                error={errors.mobile}
+                keyboard="number-pad"
+                maxLength={10}
               />
-              <DocTile
-                icon="file-document"
-                label="Agreement"
-                state={agreement}
-                onPick={() => pickFile(setAgreement)}
+              <FormInput
+                label="Alternate Mobile"
+                value={alternateMobile}
+                onChange={setAlternateMobile}
+                maxLength={10}
+                keyboard="number-pad"
               />
-            </View>
-          </Section>
+              <FormInput
+                label="Family Members"
+                value={familyMembers}
+                onChange={setFamilyMembers}
+                keyboard="number-pad"
+                maxLength={2}
+              />
+            </Section>
+
+            {/* ADDRESS */}
+            <Section title="Address & Work">
+              <FormInput
+                label="Address *"
+                value={address}
+                onChange={setAddress}
+                error={errors.address}
+                multiline={true}
+                maxLength={255}
+              />
+              <FormInput
+                label="Company Name"
+                value={company}
+                onChange={setCompany}
+                maxLength={50}
+              />
+            </Section>
+
+            {/* DOCUMENTS */}
+            <Section title="Documents">
+              <View style={styles.docGrid}>
+                <DocTile
+                  icon="card-account-details"
+                  label="Aadhaar"
+                  state={adhar}
+                  onPick={() => pickDocWithChoice(setAdhar)}
+                />
+                <DocTile
+                  icon="card-bulleted"
+                  label="PAN"
+                  state={pan}
+                  onPick={() => pickDocWithChoice(setPan)}
+                />
+                <DocTile
+                  icon="file-document"
+                  label="Agreement"
+                  state={agreement}
+                  onPick={() => pickDocWithChoice(setAgreement)}
+                />
+              </View>
+            </Section>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -445,6 +488,7 @@ export default function TenantFormScreen() {
         style={[styles.fab, { bottom: fabBottom }]}
         loading={saving}
         onPress={save}
+        disabled={saving}
       />
     </>
   );
@@ -529,6 +573,9 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     right: 16,
+  },
+  formDisabled: {
+    opacity: 0.6,
   },
   loader: {
     flex: 1,

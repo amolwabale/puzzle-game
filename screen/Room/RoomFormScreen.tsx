@@ -111,6 +111,10 @@ export default function RoomFormScreen() {
     };
   }, []);
 
+  React.useEffect(() => {
+    if (saving) setDateModalOpen(false);
+  }, [saving]);
+
   /* ROOM */
   const [name, setName] = React.useState('');
   const [type, setType] = React.useState('');
@@ -438,6 +442,10 @@ export default function RoomFormScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
+          <View
+            pointerEvents={saving ? 'none' : 'auto'}
+            style={saving ? styles.formDisabled : undefined}
+          >
           {/* ===== ROOM DETAILS ===== */}
           <Surface style={styles.roomHero} elevation={2}>
             <View style={styles.sectionTitleRow}>
@@ -866,6 +874,7 @@ export default function RoomFormScreen() {
               ))}
             </Surface>
           )}
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -877,12 +886,13 @@ export default function RoomFormScreen() {
         ]}
         loading={saving}
         onPress={save}
+        disabled={saving}
       />
 
       <DatePickerModal
         locale="en"
         mode="single"
-        visible={dateModalOpen}
+        visible={dateModalOpen && !saving}
         date={joiningDate ?? new Date()}
         onDismiss={() => setDateModalOpen(false)}
         onConfirm={({ date }) => {
@@ -907,6 +917,7 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
   },
   fab: { position: 'absolute', right: 16 },
+  formDisabled: { opacity: 0.6 },
   loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
   roomHero: {

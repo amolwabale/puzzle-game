@@ -176,86 +176,91 @@ export default function ProfileFormScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Surface style={styles.heroCard} elevation={2}>
-          <View style={styles.heroRow}>
-            <View
-              style={[
-                styles.heroIcon,
-                { backgroundColor: theme.colors.primaryContainer },
-              ]}
-            >
-              <Icon
-                source="account-edit-outline"
-                size={18}
-                color={theme.colors.primary}
-              />
+        <View
+          pointerEvents={saving ? 'none' : 'auto'}
+          style={saving ? styles.formDisabled : undefined}
+        >
+          <Surface style={styles.heroCard} elevation={2}>
+            <View style={styles.heroRow}>
+              <View
+                style={[
+                  styles.heroIcon,
+                  { backgroundColor: theme.colors.primaryContainer },
+                ]}
+              >
+                <Icon
+                  source="account-edit-outline"
+                  size={18}
+                  color={theme.colors.primary}
+                />
+              </View>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={styles.heroKicker}>Edit</Text>
+                <Text style={styles.heroTitle}>Profile</Text>
+              </View>
             </View>
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={styles.heroKicker}>Edit</Text>
-              <Text style={styles.heroTitle}>Profile</Text>
-            </View>
-          </View>
-        </Surface>
+          </Surface>
 
-        <Surface style={styles.section} elevation={2}>
-          <Text variant="titleMedium" style={styles.sectionTitle}>
-            Basic information
-          </Text>
-          <FormInput
-            label="First name"
-            value={fields.first_name}
-            onChange={v => setField('first_name', v)}
-            error={errors.first_name}
-            maxLength={MAX.first_name}
-            autoCapitalize="words"
-          />
-          <FormInput
-            label="Last name"
-            value={fields.last_name}
-            onChange={v => setField('last_name', v)}
-            error={errors.last_name}
-            maxLength={MAX.last_name}
-            autoCapitalize="words"
-          />
-        </Surface>
+          <Surface style={styles.section} elevation={2}>
+            <Text variant="titleMedium" style={styles.sectionTitle}>
+              Basic information
+            </Text>
+            <FormInput
+              label="First name"
+              value={fields.first_name}
+              onChange={v => setField('first_name', v)}
+              error={errors.first_name}
+              maxLength={MAX.first_name}
+              autoCapitalize="words"
+            />
+            <FormInput
+              label="Last name"
+              value={fields.last_name}
+              onChange={v => setField('last_name', v)}
+              error={errors.last_name}
+              maxLength={MAX.last_name}
+              autoCapitalize="words"
+            />
+          </Surface>
 
-        <Surface style={styles.section} elevation={2}>
-          <Text variant="titleMedium" style={styles.sectionTitle}>
-            Contact
-          </Text>
-          <FormInput
-            label="Mobile"
-            value={fields.mobile}
-            onChange={v => setField('mobile', v)}
-            error={errors.mobile}
-            maxLength={MAX.mobile}
-            keyboard="number-pad"
-          />
-          <FormInput
-            label="Email"
-            value={fields.email}
-            onChange={v => setField('email', v)}
-            error={errors.email}
-            maxLength={MAX.email}
-            keyboard="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-          />
-        </Surface>
+          <Surface style={styles.section} elevation={2}>
+            <Text variant="titleMedium" style={styles.sectionTitle}>
+              Contact
+            </Text>
+            <FormInput
+              label="Mobile"
+              value={fields.mobile}
+              onChange={v => setField('mobile', v)}
+              error={errors.mobile}
+              maxLength={MAX.mobile}
+              keyboard="number-pad"
+            />
+            <FormInput
+              label="Email"
+              value={fields.email}
+              onChange={v => setField('email', v)}
+              error={errors.email}
+              maxLength={MAX.email}
+              keyboard="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </Surface>
 
-        <Surface style={styles.section} elevation={2}>
-          <Text variant="titleMedium" style={styles.sectionTitle}>
-            Address
-          </Text>
-          <FormInput
-            label="Address"
-            value={fields.address}
-            onChange={v => setField('address', v)}
-            error={errors.address}
-            maxLength={MAX.address}
-            multiline
-          />
-        </Surface>
+          <Surface style={styles.section} elevation={2}>
+            <Text variant="titleMedium" style={styles.sectionTitle}>
+              Address
+            </Text>
+            <FormInput
+              label="Address"
+              value={fields.address}
+              onChange={v => setField('address', v)}
+              error={errors.address}
+              maxLength={MAX.address}
+              multiline
+            />
+          </Surface>
+        </View>
 
       </ScrollView>
 
@@ -321,5 +326,8 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     right: 16,
+  },
+  formDisabled: {
+    opacity: 0.6,
   },
 });
