@@ -5,7 +5,7 @@ import {
 } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React from 'react';
-import { Alert, ScrollView, Share, StyleSheet, View } from 'react-native';
+import { Alert, Platform, ScrollView, Share, StyleSheet, View } from 'react-native';
 import {
   ActivityIndicator,
   Avatar,
@@ -53,6 +53,7 @@ export default function TenantViewScreen() {
   const [loading, setLoading] = React.useState(false);
   const skipNextReloadRef = React.useRef(false);
   const [sharingLabel, setSharingLabel] = React.useState<string | null>(null);
+  const [profileDownloading, setProfileDownloading] = React.useState(false);
 
   const createSignedUrl = async (fullUrl?: string | null) => {
     if (!fullUrl) return undefined;
@@ -76,6 +77,96 @@ export default function TenantViewScreen() {
       return data.signedUrl;
     } catch {
       return undefined;
+    }
+  };
+
+  const getExtFromUrl = (u: string) => {
+    const cleaned = u.split('?')[0];
+    const dot = cleaned.lastIndexOf('.');
+    if (dot === -1) return '';
+    const ext = cleaned.substring(dot + 1).toLowerCase();
+    return ext.length <= 6 ? ext : '';
+  };
+
+  const getMimeFromExt = (ext: string) => {
+    const e = (ext || '').toLowerCase();
+    if (e === 'jpg' || e === 'jpeg') return 'image/jpeg';
+    if (e === 'png') return 'image/png';
+    if (e === 'webp') return 'image/webp';
+    if (e === 'heic' || e === 'heif') return 'image/heic';
+    return 'application/octet-stream';
+  };
+
+  const downloadProfilePhoto = async () => {
+    const rawUrl = (tenant as any)?.profile_photo_url as string | null | undefined;
+    if (!rawUrl) {
+      Alert.alert('Not available', 'Profile photo not uploaded');
+      return;
+    }
+
+    try {
+      setProfileDownloading(true);
+      const signed = await createSignedUrl(rawUrl);
+      if (!signed) {
+        Alert.alert(
+          'Download failed',
+          'Could not generate a secure link. Please try again.',
+        );
+        return;
+      }
+
+      const safeBase = String(tenant?.name || 'tenant')
+        .toLowerCase()
+        .replace(/[^\w]+/g, '_')
+        .slice(0, 40);
+      const ext = getExtFromUrl(rawUrl) || 'jpg';
+      const fileName = `${safeBase || 'tenant'}_profile_${tenantId}.${ext}`;
+      const mime = getMimeFromExt(ext);
+
+      if (Platform.OS === 'android') {
+        const destPath = `${RNBlobUtil.fs.dirs.DownloadDir}/${fileName}`;
+        await RNBlobUtil.config({
+          fileCache: true,
+          addAndroidDownloads: {
+            useDownloadManager: true,
+            notification: true,
+            mediaScannable: true,
+            title: fileName,
+            description: 'Tenant profile photo',
+            mime,
+            path: destPath,
+          },
+        }).fetch('GET', signed);
+
+        trackEvent('Tenant_ProfilePhoto_Downloaded', {
+          source: 'Tenant',
+          tenant_id: tenantId,
+        });
+        Alert.alert('Downloaded', 'Saved to Downloads.');
+        return;
+      }
+
+      // iOS: download to cache and present share sheet (Save Image / Save to Files).
+      const destPath = `${RNBlobUtil.fs.dirs.CacheDir}/${fileName}`;
+      await RNBlobUtil.config({ path: destPath, fileCache: true }).fetch(
+        'GET',
+        signed,
+      );
+      const fileUrl = `file://${destPath}`;
+
+      trackEvent('Tenant_ProfilePhoto_Downloaded', {
+        source: 'Tenant',
+        tenant_id: tenantId,
+      });
+      await Share.share({
+        title: 'Profile photo',
+        message: 'Tenant profile photo',
+        url: fileUrl,
+      });
+    } catch (err: any) {
+      Alert.alert('Download failed', err?.message || 'Could not download photo');
+    } finally {
+      setProfileDownloading(false);
     }
   };
 
@@ -232,7 +323,35 @@ export default function TenantViewScreen() {
       <ScrollView contentContainerStyle={styles.container}>
         {/* HERO */}
         <Surface style={styles.hero} elevation={2}>
-          <AvatarDisplay uri={profileSignedUrl} size={88} />
+          <View style={styles.avatarWrap}>
+            <AvatarDisplay uri={profileSignedUrl} size={88} />
+            <IconButton
+              icon={
+                profileDownloading
+                  ? () => (
+                      <ActivityIndicator size={14} color={theme.colors.primary} />
+                    )
+                  : 'download'
+              }
+              size={16}
+              onPress={() => {
+                Alert.alert('Profile photo', 'What would you like to do?', [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Download', onPress: () => void downloadProfilePhoto() },
+                ]);
+              }}
+              disabled={profileDownloading}
+              iconColor={theme.colors.primary}
+              style={[
+                styles.avatarActionBtn,
+                {
+                  backgroundColor: theme.colors.primaryContainer,
+                  borderColor: theme.colors.primary,
+                },
+              ]}
+              accessibilityLabel="Download profile photo"
+            />
+          </View>
           <View style={styles.heroText}>
             <Text variant="titleLarge" style={styles.tenantName}>
               {tenant.name}
@@ -459,6 +578,22 @@ const styles = StyleSheet.create({
   heroText: {
     flex: 1,
     marginLeft: 16,
+  },
+  avatarWrap: {
+    position: 'relative',
+  },
+  avatarActionBtn: {
+    position: 'absolute',
+    right: -6,
+    bottom: -6,
+    margin: 0,
+    width: 34,
+    height: 34,
+    borderRadius: 999,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 2,
   },
   tenantName: {
     fontWeight: '900',
