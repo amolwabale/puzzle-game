@@ -53,6 +53,9 @@ export default function TenantViewScreen() {
   const [loading, setLoading] = React.useState(false);
   const skipNextReloadRef = React.useRef(false);
   const [sharingLabel, setSharingLabel] = React.useState<string | null>(null);
+  const [downloadingLabel, setDownloadingLabel] = React.useState<string | null>(
+    null,
+  );
   const [profileDownloading, setProfileDownloading] = React.useState(false);
 
   const createSignedUrl = async (fullUrl?: string | null) => {
@@ -90,6 +93,7 @@ export default function TenantViewScreen() {
 
   const getMimeFromExt = (ext: string) => {
     const e = (ext || '').toLowerCase();
+    if (e === 'pdf') return 'application/pdf';
     if (e === 'jpg' || e === 'jpeg') return 'image/jpeg';
     if (e === 'png') return 'image/png';
     if (e === 'webp') return 'image/webp';
@@ -283,14 +287,7 @@ export default function TenantViewScreen() {
       // - Save Image (for images)
       // - Save to Files (for PDFs)
       const safeBase = label.toLowerCase().replace(/\s+/g, '_');
-      const extFromUrl = (() => {
-        const cleaned = url.split('?')[0];
-        const dot = cleaned.lastIndexOf('.');
-        if (dot === -1) return '';
-        const ext = cleaned.substring(dot + 1).toLowerCase();
-        return ext.length <= 5 ? ext : '';
-      })();
-      const ext = extFromUrl || 'pdf';
+      const ext = getExtFromUrl(url) || 'pdf';
       const fileName = `${safeBase}_${tenantId}.${ext}`;
       const destPath = `${RNBlobUtil.fs.dirs.CacheDir}/${fileName}`;
 
@@ -315,6 +312,80 @@ export default function TenantViewScreen() {
       Alert.alert('Share failed', err?.message || 'Could not share document');
     } finally {
       setSharingLabel(null);
+    }
+  };
+
+  const downloadSignedDoc = async (label: string, url?: string | null) => {
+    if (!url) {
+      Alert.alert('Not available', 'Document not uploaded');
+      return;
+    }
+
+    try {
+      setDownloadingLabel(label);
+      const signed = await createSignedUrl(url);
+      if (!signed) {
+        Alert.alert(
+          'Download failed',
+          'Could not generate a secure link. Please try again.',
+        );
+        return;
+      }
+
+      const safeBase = label.toLowerCase().replace(/\s+/g, '_');
+      const ext = getExtFromUrl(url) || 'pdf';
+      const fileName = `${safeBase}_${tenantId}.${ext}`;
+      const mime = getMimeFromExt(ext);
+
+      if (Platform.OS === 'android') {
+        const destPath = `${RNBlobUtil.fs.dirs.DownloadDir}/${fileName}`;
+        await RNBlobUtil.config({
+          fileCache: true,
+          addAndroidDownloads: {
+            useDownloadManager: true,
+            notification: true,
+            mediaScannable: true,
+            title: fileName,
+            description: `${label} document`,
+            mime,
+            path: destPath,
+          },
+        }).fetch('GET', signed);
+
+        trackEvent('Tenant_Document_Downloaded_' + label, {
+          source: 'Tenant',
+          tenant_id: tenantId,
+          document_label: label,
+        });
+        Alert.alert('Downloaded', 'Saved to Downloads.');
+        return;
+      }
+
+      // iOS: download to cache and open share sheet (Save to Files / Save Image).
+      const destPath = `${RNBlobUtil.fs.dirs.CacheDir}/${fileName}`;
+      await RNBlobUtil.config({ path: destPath, fileCache: true }).fetch(
+        'GET',
+        signed,
+      );
+      const fileUrl = `file://${destPath}`;
+
+      trackEvent('Tenant_Document_Downloaded_' + label, {
+        source: 'Tenant',
+        tenant_id: tenantId,
+        document_label: label,
+      });
+      await Share.share({
+        title: label,
+        message: `${label} document`,
+        url: fileUrl,
+      });
+    } catch (err: any) {
+      Alert.alert(
+        'Download failed',
+        err?.message || 'Could not download document',
+      );
+    } finally {
+      setDownloadingLabel(null);
     }
   };
 
@@ -397,7 +468,11 @@ export default function TenantViewScreen() {
               url={tenant.adhar_card_url}
               onPress={() => openSignedDoc('Aadhaar', tenant.adhar_card_url)}
               onShare={() => shareSignedDoc('Aadhaar', tenant.adhar_card_url)}
+              onDownload={() =>
+                downloadSignedDoc('Aadhaar', tenant.adhar_card_url)
+              }
               sharing={sharingLabel === 'Aadhaar'}
+              downloading={downloadingLabel === 'Aadhaar'}
               shareTone={{
                 bg: theme.colors.primaryContainer,
                 border: theme.colors.primary,
@@ -410,7 +485,9 @@ export default function TenantViewScreen() {
               url={tenant.pan_card_url}
               onPress={() => openSignedDoc('PAN', tenant.pan_card_url)}
               onShare={() => shareSignedDoc('PAN', tenant.pan_card_url)}
+              onDownload={() => downloadSignedDoc('PAN', tenant.pan_card_url)}
               sharing={sharingLabel === 'PAN'}
+              downloading={downloadingLabel === 'PAN'}
               shareTone={{
                 bg: theme.colors.primaryContainer,
                 border: theme.colors.primary,
@@ -423,7 +500,11 @@ export default function TenantViewScreen() {
               url={tenant.agreement_url}
               onPress={() => openSignedDoc('Agreement', tenant.agreement_url)}
               onShare={() => shareSignedDoc('Agreement', tenant.agreement_url)}
+              onDownload={() =>
+                downloadSignedDoc('Agreement', tenant.agreement_url)
+              }
               sharing={sharingLabel === 'Agreement'}
+              downloading={downloadingLabel === 'Agreement'}
               shareTone={{
                 bg: theme.colors.primaryContainer,
                 border: theme.colors.primary,
@@ -491,7 +572,9 @@ const DocTile = ({
   url,
   onPress,
   onShare,
+  onDownload,
   sharing,
+  downloading,
   shareTone,
 }: {
   icon: string;
@@ -499,34 +582,42 @@ const DocTile = ({
   url?: string | null;
   onPress: () => void;
   onShare: () => void;
+  onDownload: () => void;
   sharing: boolean;
+  downloading: boolean;
   shareTone: { bg: string; border: string; icon: string };
 }) => (
   <Surface style={styles.docTile} elevation={1}>
     <View style={styles.docTileRow}>
-      <View style={styles.docInfoCol}>
-        <IconButton icon={icon} size={28} style={styles.docIconBtn} />
-        <Text style={styles.docLabel} numberOfLines={1} ellipsizeMode="tail">
-          {label}
-        </Text>
-        {!url ? (
-          <Text style={styles.muted} numberOfLines={1} ellipsizeMode="tail">
-            Not uploaded
+      <View style={styles.docInfoRow}>
+        <View style={styles.docIconWrap}>
+          <IconButton icon={icon} size={22} style={styles.docIconBtn} />
+        </View>
+        <View style={styles.docTextCol}>
+          <Text style={styles.docLabel} numberOfLines={1} ellipsizeMode="tail">
+            {label}
           </Text>
-        ) : null}
+          {!url ? (
+            <Text style={styles.muted} numberOfLines={1} ellipsizeMode="tail">
+              Not uploaded
+            </Text>
+          ) : null}
+        </View>
       </View>
 
       {url ? (
-        <View style={styles.docActionsCol}>
+        <View style={styles.docActionsRow}>
           <IconButton
             icon="eye-outline"
             size={18}
             onPress={onPress}
+            disabled={sharing || downloading}
             iconColor={shareTone.icon}
             style={[
               styles.docActionPill,
               { backgroundColor: shareTone.bg, borderColor: shareTone.border },
             ]}
+            accessibilityLabel={`View ${label}`}
           />
           <IconButton
             icon={
@@ -536,12 +627,29 @@ const DocTile = ({
             }
             size={18}
             onPress={onShare}
-            disabled={sharing}
+            disabled={sharing || downloading}
             iconColor={shareTone.icon}
             style={[
               styles.docActionPill,
               { backgroundColor: shareTone.bg, borderColor: shareTone.border },
             ]}
+            accessibilityLabel={`Share ${label}`}
+          />
+          <IconButton
+            icon={
+              downloading
+                ? () => <ActivityIndicator size={16} color={shareTone.icon} />
+                : 'file-download-outline'
+            }
+            size={18}
+            onPress={onDownload}
+            disabled={sharing || downloading}
+            iconColor={shareTone.icon}
+            style={[
+              styles.docActionPill,
+              { backgroundColor: shareTone.bg, borderColor: shareTone.border },
+            ]}
+            accessibilityLabel={`Download ${label}`}
           />
         </View>
       ) : null}
@@ -657,38 +765,46 @@ const styles = StyleSheet.create({
   },
 
   docGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: 'column',
     gap: 12,
   },
   docTile: {
-    width: '48%',
-    borderRadius: 14,
-    padding: 12,
-    minHeight: 120, // keep tile size consistent after layout change
+    width: '100%',
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    minHeight: 76,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
   docTileRow: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  docInfoCol: {
+  docInfoRow: {
     flex: 1,
     minWidth: 0,
-    flexDirection: 'column',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingRight: 10,
+    gap: 10,
+  },
+  docIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingRight: 8,
+    backgroundColor: '#F4F6FA',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#E5E7EB',
   },
-  docIconBtn: {
-    margin: 0,
-  },
-  docActionsCol: {
-    flexDirection: 'column',
+  docIconBtn: { margin: 0 },
+  docTextCol: { flex: 1, minWidth: 0 },
+  docActionsRow: {
+    flexDirection: 'row',
     gap: 10,
     alignItems: 'center',
     justifyContent: 'center',
@@ -702,12 +818,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   docLabel: {
-    fontWeight: '600',
-    marginBottom: 2,
-    fontSize: 16,
-    maxWidth: '100%',
-    flexShrink: 1,
-    textAlign: 'center',
+    fontWeight: '900',
+    fontSize: 15,
+    color: '#111827',
   },
   muted: {
     color: '#6B7280',
