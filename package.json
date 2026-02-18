@@ -10,7 +10,7 @@
     "start": "react-native start --reset-cache",
     "test": "jest",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,md}\"",
-    "build-android": "cd android && ./gradlew assembleRelease",
+    "package-android": "cd android && ./gradlew assembleRelease",
     "update-ios": "cd ios && pod install && cd ..",
     "update-android": "cd android && ./gradlew clean && cd ..",
     "android:nuke": "rm -rf android/.cxx android/app/.cxx android/build android/app/build && rm -rf ~/.gradle/caches && cd android && ./gradlew clean && cd .."
