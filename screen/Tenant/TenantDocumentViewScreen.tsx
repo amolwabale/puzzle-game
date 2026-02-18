@@ -9,6 +9,17 @@ type Props = NativeStackScreenProps<TenantStackParamList, 'TenantDocument'>;
 
 export default function TenantDocumentViewScreen({ route }: Props) {
   const { url } = route.params;
+
+  // Android WebView cannot reliably render PDFs inline (often triggers a download),
+  // while iOS WKWebView renders PDFs natively. Use Google viewer for Android PDFs.
+  const isPdf = /\.pdf(\?|#|$)/i.test(String(url).split('?')[0] ?? '');
+  const viewerUrl =
+    Platform.OS === 'android' && isPdf
+      ? `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(
+          url,
+        )}`
+      : url;
+
   const zoomViewportScript = `
     (function() {
       var meta = document.querySelector('meta[name=viewport]');
@@ -25,9 +36,11 @@ export default function TenantDocumentViewScreen({ route }: Props) {
   return (
     <View style={styles.container}>
       <WebView
-        source={{ uri: url }}
+        source={{ uri: viewerUrl }}
         startInLoadingState
         scalesPageToFit
+        javaScriptEnabled
+        domStorageEnabled
         setBuiltInZoomControls={Platform.OS === 'android'}
         setDisplayZoomControls={false}
         scrollEnabled
