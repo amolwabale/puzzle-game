@@ -13,7 +13,12 @@ if (__DEV__) {
     const { Platform, Alert } = require('react-native');
     if (Platform.OS === 'android') {
       const rejectionTracking = require('promise/setimmediate/rejection-tracking');
-      const ExceptionsManager = require('react-native/Libraries/Core/ExceptionsManager');
+      const globalHandler =
+        global?.ErrorUtils?.getGlobalHandler?.() ??
+        ((err, _isFatal) => {
+          // Fallback: at least surface it in logs.
+          console.error(err);
+        });
 
       rejectionTracking.enable({
         allRejections: true,
@@ -37,7 +42,7 @@ if (__DEV__) {
             message = typeof rejection === 'string' ? rejection : JSON.stringify(rejection);
           }
 
-          ExceptionsManager.handleException(
+          globalHandler(
             new Error(
               `Uncaught (in promise, id: ${id})${message ? `: "${message}"` : ''}`,
               { cause: rejection },
