@@ -1,9 +1,9 @@
 import React from 'react';
 import { Alert, ScrollView, StyleSheet, View } from 'react-native';
-import { pick } from '@react-native-documents/picker';
+import { pick, types as pickerTypes } from '@react-native-documents/picker';
+import { launchImageLibrary } from 'react-native-image-picker';
 import {
   Button,
-  HelperText,
   Icon,
   IconButton,
   Surface,
@@ -13,15 +13,14 @@ import {
 import { createTicket } from '../../service/ticketService';
 import type { FileInput, Ticket } from '../../service/ticketTypes';
 import { useNavigation } from '@react-navigation/native';
-import { SmartTextInput } from '../../ui/SmartTextInput';
 import { FormInput } from '../../components/FormInput';
-import analytics from '@react-native-firebase/analytics';
-import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
 import { trackEvent } from '../../service/analyticsTracker';
 
 export default function AddTicketScreen() {
   const theme = useTheme();
   const navigation = useNavigation<any>();
+
+  const MAX_FILE_BYTES = 20 * 1024 * 1024; // 20 MB
 
   const [title, setTitle] = React.useState('');
   const [description, setDescription] = React.useState('');
@@ -40,24 +39,68 @@ export default function AddTicketScreen() {
     return Object.keys(next).length === 0;
   }, [title, description]);
 
-  const pickFile = React.useCallback(async () => {
+  const pickFromGallery = React.useCallback(async () => {
+    try {
+      const r = await launchImageLibrary({
+        mediaType: 'photo',
+        selectionLimit: 1,
+      });
+      const a = r.assets?.[0];
+      if (!a?.uri) return;
+
+      const fileSize =
+        (a as any).fileSize != null ? Number((a as any).fileSize) : null;
+      if (fileSize != null && Number.isFinite(fileSize) && fileSize > MAX_FILE_BYTES) {
+        Alert.alert('File too large', 'Please choose a file smaller than 20 MB.');
+        return;
+      }
+
+      setFile({
+        uri: a.uri,
+        name: a.fileName || 'photo.jpg',
+        type: a.type ?? undefined,
+      });
+    } catch (e: any) {
+      Alert.alert('Pick failed', e?.message || 'Could not select photo');
+    }
+  }, []);
+
+  const pickFromFiles = React.useCallback(async () => {
     try {
       const result = await pick({
-        type: ['image/*', 'application/pdf'],
-        multiple: false,
+        // Allow any file type (pdf, images, docs, etc).
+        type: [pickerTypes.allFiles],
+        allowMultiSelection: false,
       });
 
       const file = result?.[0];
-  
+      if (!file?.uri) return;
+
+      const size =
+        (file as any).size != null ? Number((file as any).size) : null;
+      if (size != null && Number.isFinite(size) && size > MAX_FILE_BYTES) {
+        Alert.alert('File too large', 'Please choose a file smaller than 20 MB.');
+        return;
+      }
+
       setFile({
         uri: file.uri,
         name: file.name ?? 'attachment',
         type: file.type ?? undefined,
       });
     } catch (e: any) {
+      if (e?.code === 'DOCUMENT_PICKER_CANCELED') return;
       Alert.alert('Pick failed', e?.message || 'Could not select file');
     }
   }, []);
+
+  const pickAttachmentWithChoice = React.useCallback(() => {
+    Alert.alert('Attach file', 'Choose where to pick from', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Gallery', onPress: () => void pickFromGallery() },
+      { text: 'Files', onPress: () => void pickFromFiles() },
+    ]);
+  }, [pickFromFiles, pickFromGallery]);
 
   const onSubmit = React.useCallback(async () => {
     if (!validate()) return;
@@ -138,8 +181,9 @@ export default function AddTicketScreen() {
         <View style={styles.attachRow}>
           <Button
             mode="outlined"
-            onPress={() => void pickFile()}
+            onPress={pickAttachmentWithChoice}
             icon="paperclip"
+            disabled={saving}
           >
             Attach file
           </Button>
@@ -160,6 +204,7 @@ export default function AddTicketScreen() {
                 icon="close"
                 size={16}
                 onPress={() => setFile(null)}
+                disabled={saving}
               />
             </View>
           ) : null}
