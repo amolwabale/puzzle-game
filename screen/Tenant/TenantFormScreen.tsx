@@ -507,11 +507,39 @@ const Section = ({ title, children }: any) => (
 
 const DocTile = ({ icon, label, state, onPick }: any) => (
   <Surface style={styles.docTile} elevation={2}>
-    <IconButton icon={icon} size={28} />
-    <Text style={styles.docLabel}>{label}</Text>
-    <Button mode="text" onPress={onPick} labelStyle={styles.docButtonLabel}>
-      {state.file || state.url ? 'Change' : 'Upload'}
-    </Button>
+    <View style={styles.docTileRow}>
+      <View style={styles.docInfoRow}>
+        <View style={styles.docIconWrap}>
+          <IconButton icon={icon} size={22} style={styles.docIconBtn} />
+        </View>
+        <View style={styles.docTextCol}>
+          <Text
+            style={styles.docLabel}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {label}
+          </Text>
+          {!state.file && !state.url ? (
+            <Text style={styles.docMuted} numberOfLines={1} ellipsizeMode="tail">
+              Not uploaded
+            </Text>
+          ) : null}
+        </View>
+      </View>
+
+      <View style={styles.docActionsRow}>
+        <Button
+          mode="outlined"
+          onPress={onPick}
+          compact
+          style={styles.docPickBtn}
+          labelStyle={styles.docPickBtnLabel}
+        >
+          {state.file || state.url ? 'Change' : 'Upload'}
+        </Button>
+      </View>
+    </View>
   </Surface>
 );
 
@@ -553,23 +581,46 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   docGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: 'column',
     gap: 12,
   },
   docTile: {
-    width: '48%',
-    borderRadius: 14,
-    padding: 12,
-    alignItems: 'center',
+    width: '100%',
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
     backgroundColor: '#FFFFFF',
   },
-  docLabel: {
-    fontWeight: '600',
-    marginVertical: 6,
-    fontSize: 16,
+  docTileRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  docButtonLabel: { fontSize: 15 },
+  docInfoRow: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingRight: 10,
+    gap: 10,
+  },
+  docIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F4F6FA',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#E5E7EB',
+  },
+  docIconBtn: { margin: 0 },
+  docTextCol: { flex: 1, minWidth: 0 },
+  docLabel: { fontWeight: '900', fontSize: 15, color: '#111827' },
+  docMuted: { marginTop: 3, color: '#6B7280', fontSize: 12, fontWeight: '800' },
+  docActionsRow: { alignItems: 'flex-end', justifyContent: 'center' },
+  docPickBtn: { borderRadius: 999, borderColor: '#E5E7EB' },
+  docPickBtnLabel: { fontWeight: '900', fontSize: 12 },
   fab: {
     position: 'absolute',
     right: 16,
