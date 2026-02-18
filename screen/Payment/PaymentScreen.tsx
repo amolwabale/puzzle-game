@@ -20,13 +20,74 @@ import {
   TouchableRipple,
   useTheme,
 } from 'react-native-paper';
-import { fetchBills, BillRecord } from '../../service/BillService';
+import {
+  fetchBills,
+  BillRecord,
+  fetchLatestSetting,
+} from '../../service/BillService';
 import { fetchRooms } from '../../service/RoomService';
 import { fetchTenants, TenantRecord } from '../../service/tenantService';
 import { supabase } from '../../service/SupabaseClient';
-import analytics from '@react-native-firebase/analytics';
-import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
+import { fetchUserProfile, type UserProfile } from '../../service/MenuService';
 import { trackEvent } from '../../service/analyticsTracker';
+
+type MissingBasicGroup = 'property' | 'profile';
+type MissingBasic = {
+  key:
+    | 'property_name'
+    | 'property_address'
+    | 'first_name'
+    | 'last_name'
+    | 'mobile'
+    | 'email'
+    | 'address';
+  label: string;
+  group: MissingBasicGroup;
+};
+
+const isBlank = (v: unknown) => String(v ?? '').trim().length === 0;
+
+function computeMissingBasics(input: {
+  setting?: { property_name?: string | null; property_address?: string | null } | null;
+  profile?: UserProfile | null;
+}): MissingBasic[] {
+  const missing: MissingBasic[] = [];
+  const s = input.setting ?? null;
+  const p = input.profile ?? null;
+
+  if (!s || isBlank(s.property_name)) {
+    missing.push({
+      key: 'property_name',
+      label: 'Property name',
+      group: 'property',
+    });
+  }
+  if (!s || isBlank(s.property_address)) {
+    missing.push({
+      key: 'property_address',
+      label: 'Property address',
+      group: 'property',
+    });
+  }
+
+  if (!p || isBlank(p.first_name)) {
+    missing.push({ key: 'first_name', label: 'First name', group: 'profile' });
+  }
+  if (!p || isBlank(p.last_name)) {
+    missing.push({ key: 'last_name', label: 'Last name', group: 'profile' });
+  }
+  if (!p || isBlank(p.mobile)) {
+    missing.push({ key: 'mobile', label: 'Mobile', group: 'profile' });
+  }
+  if (!p || isBlank(p.email)) {
+    missing.push({ key: 'email', label: 'Email', group: 'profile' });
+  }
+  if (!p || isBlank(p.address)) {
+    missing.push({ key: 'address', label: 'Address', group: 'profile' });
+  }
+
+  return missing;
+}
 
 const formatMoney = (n?: number | null) => {
   const v = Math.round(Number(n || 0));
@@ -40,22 +101,6 @@ const formatMoney = (n?: number | null) => {
     return `₹${String(v).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
   }
 };
-const formatMoneyCompact = (n?: number | null) => {
-  const v = Math.round(Number(n || 0));
-  const trim = (s: string) => s.replace(/\.0$/, '');
-  if (v >= 1e7) return `₹${trim((v / 1e7).toFixed(1))}Cr`;
-  if (v >= 1e5) return `₹${trim((v / 1e5).toFixed(1))}L`;
-  if (v >= 1e3) return `₹${trim((v / 1e3).toFixed(1))}k`;
-  return `₹${v}`;
-};
-const formatDate = (d?: string | null) =>
-  d
-    ? new Date(d).toLocaleDateString('en-GB', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-      })
-    : '-';
 
 const formatMonthYear = (d?: string | null) =>
   d
@@ -73,6 +118,7 @@ export default function PaymentScreen() {
   const [initialLoading, setInitialLoading] = React.useState(true);
   const [refreshing, setRefreshing] = React.useState(false);
   const [bills, setBills] = React.useState<BillRecord[]>([]);
+  const [missingBasics, setMissingBasics] = React.useState<MissingBasic[]>([]);
   const [query, setQuery] = React.useState('');
   const [paymentFilter, setPaymentFilter] = React.useState<
     'ALL' | 'PAID' | 'UNPAID' | 'PARTIAL'
@@ -128,10 +174,12 @@ export default function PaymentScreen() {
     try {
       isRefresh ? setRefreshing(true) : setInitialLoading(true);
 
-      const [billRows, rooms, tenants] = await Promise.all([
+      const [billRows, rooms, tenants, setting, profile] = await Promise.all([
         fetchBills(),
         fetchRooms(),
         fetchTenants(),
+        fetchLatestSetting().catch(() => null as any),
+        fetchUserProfile().catch(() => null),
       ]);
 
       const roomMap: Record<number, string> = {};
@@ -146,6 +194,7 @@ export default function PaymentScreen() {
       setRoomNameById(roomMap);
       setTenantNameById(tenantMap);
       setBills(billRows || []);
+      setMissingBasics(computeMissingBasics({ setting, profile }));
       generateSignedUrls((tenants || []) as any, (billRows || []) as any);
     } catch (e: any) {
       Alert.alert('Load Failed', e.message || 'Could not load payments');
@@ -230,6 +279,31 @@ export default function PaymentScreen() {
     });
   }, [baseBills, paymentFilter, normalizeStatus]);
 
+  const canAddPayment = missingBasics.length === 0;
+  const goToSettings = React.useCallback(() => {
+    // PaymentStack -> MainTabs (bottom tabs)
+    const tabs = navigation.getParent?.();
+    tabs?.navigate?.('Settings');
+  }, [navigation]);
+
+  const goToProfile = React.useCallback(() => {
+    // PaymentStack -> MainTabs -> RootStack (has MenuTabs)
+    const root = navigation.getParent?.()?.getParent?.();
+    root?.navigate?.('MenuTabs', { screen: 'MenuProfile' });
+  }, [navigation]);
+
+  const showBasicsAlert = React.useCallback(() => {
+    Alert.alert(
+      'Basic details missing',
+      'Please complete Property and Profile details before you can add or record payments.',
+      [
+        { text: 'Open Settings', onPress: goToSettings },
+        { text: 'Open Profile', onPress: goToProfile },
+        { text: 'OK', style: 'cancel' },
+      ],
+    );
+  }, [goToProfile, goToSettings]);
+
   const renderItem = ({ item }: { item: BillRecord }) => (
     <PaymentCard
       item={item}
@@ -239,6 +313,10 @@ export default function PaymentScreen() {
         item.tenant_id != null ? tenantPhotoById[item.tenant_id] : undefined
       }
       onRecord={() => {
+        if (!canAddPayment) {
+          showBasicsAlert();
+          return;
+        }
         trackEvent('Navigation_PaymentList_To_PaymentViewRecord', {
           source: 'Payment',
           bill_id: item.id,
@@ -264,7 +342,13 @@ export default function PaymentScreen() {
           <ActivityIndicator size="large" />
         </View>
       ) : bills.length === 0 ? (
-        <EmptyState onAdd={() => navigation.navigate('PaymentForm')} />
+        <EmptyState
+          canAdd={canAddPayment}
+          missing={missingBasics}
+          onAdd={() => navigation.navigate('PaymentForm')}
+          onGoSettings={goToSettings}
+          onGoProfile={goToProfile}
+        />
       ) : (
         <FlatList
           data={visibleBills}
@@ -273,6 +357,13 @@ export default function PaymentScreen() {
           contentContainerStyle={styles.listContent}
           ListHeaderComponent={
             <View style={styles.listHeader}>
+              {!canAddPayment ? (
+                <SetupRequiredCard
+                  missing={missingBasics}
+                  onGoSettings={goToSettings}
+                  onGoProfile={goToProfile}
+                />
+              ) : null}
               <Searchbar
                 placeholder="Search payments"
                 placeholderTextColor="#9CA3AF"
@@ -403,17 +494,19 @@ export default function PaymentScreen() {
         />
       )}
 
-      <FAB
-        icon="plus"
-        style={styles.fab}
-        onPress={() => {
-          trackEvent('Navigation_PaymentList_To_PaymentAdd', {
-            source: 'Payment',
-            mode: 'Add',
-          });
-          navigation.navigate('PaymentForm');
-        }}
-      />
+      {canAddPayment ? (
+        <FAB
+          icon="plus"
+          style={styles.fab}
+          onPress={() => {
+            trackEvent('Navigation_PaymentList_To_PaymentAdd', {
+              source: 'Payment',
+              mode: 'Add',
+            });
+            navigation.navigate('PaymentForm');
+          }}
+        />
+      ) : null}
     </View>
   );
 }
@@ -567,20 +660,170 @@ const AvatarDisplay = ({ uri, size }: { uri?: string; size: number }) =>
     <Avatar.Icon size={size} icon="account" />
   );
 
+/* ---------------- SETUP GATE ---------------- */
+
+const SetupRequiredCard = ({
+  missing,
+  onGoSettings,
+  onGoProfile,
+}: {
+  missing: MissingBasic[];
+  onGoSettings: () => void;
+  onGoProfile: () => void;
+}) => {
+  const theme = useTheme();
+  const outline = (theme.colors as any).outlineVariant ?? theme.colors.outline;
+  const propertyMissing = (missing || []).filter(m => m.group === 'property');
+  const profileMissing = (missing || []).filter(m => m.group === 'profile');
+
+  return (
+    <Surface style={[styles.setupCard, { borderColor: outline }]} elevation={1}>
+   
+
+      {profileMissing.length > 0 ? (
+        <View style={styles.setupSection}>
+          <View style={styles.setupSectionHeader}>
+            <View
+              style={[
+                styles.setupSectionIcon,
+                { backgroundColor: theme.colors.primaryContainer },
+              ]}
+            >
+              <Icon
+                source="account-circle-outline"
+                size={16}
+                color={theme.colors.primary}
+              />
+            </View>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={styles.setupSectionTitle}>Profile details</Text>
+              <Text style={styles.setupSectionSub}>
+                Required before recording payments.
+              </Text>
+            </View>
+            <View style={styles.setupCountPill}>
+              <Text style={[styles.setupCountPillText, { color: '#6B7280' }]}>
+                {profileMissing.length}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.setupItems}>
+            {profileMissing.map(m => (
+              <View key={m.key} style={styles.setupItemRow}>
+                <Icon source="alert-circle-outline" size={16} color="#EF4444" />
+                <Text style={styles.setupItemText}>{m.label}</Text>
+              </View>
+            ))}
+          </View>
+
+          <Button
+            mode="outlined"
+            onPress={onGoProfile}
+            icon="account-circle-outline"
+            style={styles.setupSectionBtn}
+            contentStyle={styles.setupSectionBtnContent}
+          >
+            Open Profile
+          </Button>
+        </View>
+      ) : null}
+
+      {propertyMissing.length > 0 ? (
+        <View style={styles.setupSection}>
+          <View style={styles.setupSectionHeader}>
+            <View
+              style={[
+                styles.setupSectionIcon,
+                { backgroundColor: theme.colors.primaryContainer },
+              ]}
+            >
+              <Icon
+                source="cog-outline"
+                size={16}
+                color={theme.colors.primary}
+              />
+            </View>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={styles.setupSectionTitle}>Settings details</Text>
+              <Text style={styles.setupSectionSub}>
+                Property info shown on invoices.
+              </Text>
+            </View>
+            <View style={styles.setupCountPill}>
+              <Text style={[styles.setupCountPillText, { color: '#6B7280' }]}>
+                {propertyMissing.length}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.setupItems}>
+            {propertyMissing.map(m => (
+              <View key={m.key} style={styles.setupItemRow}>
+                <Icon source="alert-circle-outline" size={16} color="#EF4444" />
+                <Text style={styles.setupItemText}>{m.label}</Text>
+              </View>
+            ))}
+          </View>
+
+          <Button
+            mode="contained"
+            onPress={onGoSettings}
+            icon="cog-outline"
+            style={styles.setupSectionBtn}
+            contentStyle={styles.setupSectionBtnContent}
+          >
+            Open Settings
+          </Button>
+        </View>
+      ) : null}
+    </Surface>
+  );
+};
+
 /* ---------------- EMPTY ---------------- */
 
-const EmptyState = ({ onAdd }: { onAdd: () => void }) => (
+const EmptyState = ({
+  canAdd,
+  missing,
+  onAdd,
+  onGoSettings,
+  onGoProfile,
+}: {
+  canAdd: boolean;
+  missing: MissingBasic[];
+  onAdd: () => void;
+  onGoSettings: () => void;
+  onGoProfile: () => void;
+}) => (
   <View style={styles.emptyState}>
     <Avatar.Icon size={72} icon="receipt" style={styles.emptyIcon} />
     <Text variant="titleMedium" style={styles.emptyTitle}>
-      No payments yet
+      Payments Paused
     </Text>
-    <Text style={styles.emptySubtitle}>
-      Create your first bill to start tracking rent and collections.
-    </Text>
-    <Button mode="contained" onPress={onAdd}>
-      Add Payment
-    </Button>
+
+    {!canAdd ? (
+      <>
+        <Text style={styles.emptySubtitle}>
+          Add your basic details first, then you can start creating bills and
+          tracking collections.
+        </Text>
+        <SetupRequiredCard
+          missing={missing}
+          onGoSettings={onGoSettings}
+          onGoProfile={onGoProfile}
+        />
+      </>
+    ) : (
+      <>
+        <Text style={styles.emptySubtitle}>
+          Create your first bill to start tracking rent and collections.
+        </Text>
+        <Button mode="contained" onPress={onAdd}>
+          Add Payment
+        </Button>
+      </>
+    )}
   </View>
 );
 
@@ -694,6 +937,77 @@ const styles = StyleSheet.create({
   },
 
   fab: { position: 'absolute', right: 16, bottom: 24 },
+
+  setupCard: {
+    width: '100%',
+    alignSelf: 'stretch',
+    borderRadius: 16,
+    padding: 14,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    marginBottom: 12,
+  },
+  setupHeroRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  setupHeroIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  setupHeroTitle: { fontWeight: '900', fontSize: 15, color: '#111827' },
+  setupHeroSub: {
+    marginTop: 3,
+    fontWeight: '800',
+    fontSize: 13,
+    color: '#6B7280',
+    lineHeight: 18,
+  },
+
+  setupSection: {
+    marginTop: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    padding: 12,
+    backgroundColor: '#FFFFFF',
+  },
+  setupSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  setupSectionIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  setupSectionTitle: { fontWeight: '900', fontSize: 14, color: '#111827' },
+  setupSectionSub: {
+    marginTop: 2,
+    fontWeight: '800',
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  setupCountPill: {
+    minWidth: 28,
+    height: 28,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: '#F8FAFC',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+  },
+  setupCountPillText: { fontWeight: '900', fontSize: 12 },
+  setupItems: { marginTop: 10, gap: 8 },
+  setupItemRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  setupItemText: { flex: 1, fontWeight: '900', color: '#111827' },
+  setupSectionBtn: { marginTop: 12, borderRadius: 14 },
+  setupSectionBtnContent: { paddingVertical: 6 },
 
   emptyState: {
     flex: 1,
