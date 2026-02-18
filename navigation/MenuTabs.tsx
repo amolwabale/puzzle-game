@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ProfileScreen from '../screen/Menu/Profile/ProfileScreen';
 import ProfileFormScreen from '../screen/Menu/Profile/ProfileFormScreen';
 import ChangePasswordScreen from '../screen/Menu/ChangePasswordScreen';
+import AboutUsScreen from '../screen/Menu/About/AboutUsScreen';
 import SupportStack from './SupportStack';
 import { TopMenuButton } from './TopMenuButton.tsx';
 import { TopBackButton } from './TopBackButton';
@@ -122,6 +123,29 @@ function MenuChangePasswordStack() {
   );
 }
 
+function MenuAboutStack() {
+  const theme = useTheme();
+  const baseHeader = {
+    headerTitleAlign: 'left' as const,
+    headerStyle: { backgroundColor: theme.colors.background },
+    headerTitleStyle: { fontWeight: '700' as const },
+    headerTintColor: theme.colors.primary,
+    headerRight: () => <TopMenuButton />,
+  };
+
+  return (
+    <Stack.Navigator screenOptions={baseHeader}>
+      <Stack.Screen
+        name="MenuAboutScreen"
+        component={AboutUsScreen}
+        options={{
+          title: 'About us',
+        }}
+      />
+    </Stack.Navigator>
+  );
+}
+
 function MenuSupportStack() {
   return <SupportStack />;
 }
@@ -200,6 +224,17 @@ export default function MenuTabs() {
           tabBarLabel: 'Support',
           tabBarIcon: ({ color, size }) => (
             <Icon source="lifebuoy" color={color} size={size} />
+          ),
+        }}
+      />
+
+      <Tab.Screen
+        name="MenuAbout"
+        component={MenuAboutStack}
+        options={{
+          tabBarLabel: 'About',
+          tabBarIcon: ({ color, size }) => (
+            <Icon source="information-outline" color={color} size={size} />
           ),
         }}
       />

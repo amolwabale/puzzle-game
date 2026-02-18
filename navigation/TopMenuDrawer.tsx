@@ -26,7 +26,7 @@ export function useTopMenu() {
   return v;
 }
 
-const PANEL_HEIGHT = 320;
+const PANEL_HEIGHT = 375;
 
 export function TopMenuProvider({
   navigationRef,
@@ -152,6 +152,11 @@ export function TopMenuProvider({
                   icon="lifebuoy"
                   label="Support"
                   onPress={() => go('MenuTabs', { screen: 'MenuSupport' })}
+                />
+                <MenuItem
+                  icon="information-outline"
+                  label="About us"
+                  onPress={() => go('MenuTabs', { screen: 'MenuAbout' })}
                 />
 
                 <View
