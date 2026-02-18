@@ -2,6 +2,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import React from 'react';
 import {
   Alert,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -16,6 +17,7 @@ import {
   Text,
   useTheme,
 } from 'react-native-paper';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FormInput } from '../../../components/FormInput';
 import {
   fetchUserProfile,
@@ -32,8 +34,8 @@ type Fields = {
 };
 
 const MAX = {
-  first_name: 50,
-  last_name: 50,
+  first_name: 100,
+  last_name: 100,
   mobile: 10,
   email: 100,
   address: 250,
@@ -45,6 +47,7 @@ export default function ProfileFormScreen() {
   const theme = useTheme();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
+  const insets = useSafeAreaInsets();
 
   const passedProfile: UserProfile | undefined = route.params?.profile;
 
@@ -58,6 +61,7 @@ export default function ProfileFormScreen() {
   const [errors, setErrors] = React.useState<Partial<Record<keyof Fields, string>>>({});
   const [loading, setLoading] = React.useState(!passedProfile);
   const [saving, setSaving] = React.useState(false);
+  const [keyboardHeight, setKeyboardHeight] = React.useState(0);
 
   React.useEffect(() => {
     if (passedProfile) {
@@ -89,6 +93,25 @@ export default function ProfileFormScreen() {
       }
     })();
   }, [passedProfile]);
+
+  React.useEffect(() => {
+    const showEvent =
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent =
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const subShow = Keyboard.addListener(showEvent as any, e => {
+      setKeyboardHeight(e?.endCoordinates?.height ?? 0);
+    });
+    const subHide = Keyboard.addListener(hideEvent as any, () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      subShow.remove();
+      subHide.remove();
+    };
+  }, []);
 
   const setField = <K extends keyof Fields>(k: K, v: Fields[K]) => {
     const sanitised = k === 'mobile' ? v.replace(/[^0-9]/g, '') : v;
@@ -138,6 +161,8 @@ export default function ProfileFormScreen() {
       </View>
     );
   }
+
+  const fabBottom = 50 + Math.max(0, keyboardHeight - insets.bottom);
 
   return (
     <KeyboardAvoidingView
@@ -236,7 +261,7 @@ export default function ProfileFormScreen() {
 
       <FAB
         icon="content-save"
-        style={styles.fab}
+        style={[styles.fab, { bottom: fabBottom }]}
         loading={saving}
         onPress={handleSave}
         disabled={saving}
@@ -296,6 +321,5 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     right: 16,
-    bottom: 24,
   },
 });

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Keyboard, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import {
   ActivityIndicator,
@@ -14,6 +14,7 @@ import {
   TouchableRipple,
   useTheme,
 } from 'react-native-paper';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import supabase from '../../service/SupabaseClient';
 import { FormInput } from '../../components/FormInput';
 import analytics from '@react-native-firebase/analytics';
@@ -33,6 +34,7 @@ type Errors = Partial<
 
 export default function SettingScreen() {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
 
   /* ---------------- FORM STATE ---------------- */
 
@@ -52,6 +54,26 @@ export default function SettingScreen() {
   const [dayPickerOpenFor, setDayPickerOpenFor] = React.useState<
     null | 'rentDate' | 'rentDueDate'
   >(null);
+  const [keyboardHeight, setKeyboardHeight] = React.useState(0);
+
+  React.useEffect(() => {
+    const showEvent =
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent =
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const subShow = Keyboard.addListener(showEvent as any, e => {
+      setKeyboardHeight(e?.endCoordinates?.height ?? 0);
+    });
+    const subHide = Keyboard.addListener(hideEvent as any, () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      subShow.remove();
+      subHide.remove();
+    };
+  }, []);
 
   const selectDay = React.useCallback(
     (day: number) => {
@@ -236,6 +258,8 @@ export default function SettingScreen() {
     );
   }
 
+  const fabBottom = 50 + Math.max(0, keyboardHeight - insets.bottom);
+
   return (
     <>
       <ScrollView
@@ -330,7 +354,7 @@ export default function SettingScreen() {
 
       <FAB
         icon="content-save"
-        style={styles.fab}
+        style={[styles.fab, { bottom: fabBottom }]}
         loading={saving}
         onPress={handleSave}
         disabled={saving}
@@ -604,7 +628,6 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     right: 16,
-    bottom: 24,
   },
 
   loader: {

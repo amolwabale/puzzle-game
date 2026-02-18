@@ -6,6 +6,7 @@ import {
 import React from 'react';
 import {
   Alert,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -24,6 +25,7 @@ import {
   Text,
   useTheme,
 } from 'react-native-paper';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   createBill,
   fetchBillById,
@@ -75,12 +77,33 @@ export default function PaymentFormScreen() {
   const theme = useTheme();
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
+  const insets = useSafeAreaInsets();
   const billId: number | undefined = route.params?.billId;
   const isEdit = !!billId;
 
   const [loading, setLoading] = React.useState(true);
   const [saving, setSaving] = React.useState(false);
+  const [keyboardHeight, setKeyboardHeight] = React.useState(0);
   const [editingBill, setEditingBill] = React.useState<BillRecord | null>(null);
+
+  React.useEffect(() => {
+    const showEvent =
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent =
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const subShow = Keyboard.addListener(showEvent as any, e => {
+      setKeyboardHeight(e?.endCoordinates?.height ?? 0);
+    });
+    const subHide = Keyboard.addListener(hideEvent as any, () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      subShow.remove();
+      subHide.remove();
+    };
+  }, []);
 
   const [rooms, setRooms] = React.useState<RoomRecord[]>([]);
   const [assignments, setAssignments] = React.useState<
@@ -828,7 +851,10 @@ export default function PaymentFormScreen() {
 
       <FAB
         icon="content-save"
-        style={styles.fab}
+        style={[
+          styles.fab,
+          { bottom: 50 + Math.max(0, keyboardHeight - insets.bottom) },
+        ]}
         loading={saving}
         onPress={save}
       />
@@ -1335,5 +1361,5 @@ const styles = StyleSheet.create({
   },
   metaPillText: { fontWeight: '800', color: '#1A73E8', fontSize: 14, flex: 1 },
 
-  fab: { position: 'absolute', right: 16, bottom: 24 },
+  fab: { position: 'absolute', right: 16 },
 });

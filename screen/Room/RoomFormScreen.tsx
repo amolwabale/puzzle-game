@@ -7,6 +7,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React from 'react';
 import {
   Alert,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -25,6 +26,7 @@ import {
   Icon,
   useTheme,
 } from 'react-native-paper';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DatePickerModal } from 'react-native-paper-dates';
 
 import { RoomStackParamList } from '../../navigation/StackParam';
@@ -81,12 +83,33 @@ export default function RoomFormScreen() {
   const navigation = useNavigation();
   const route = useRoute<Props['route']>();
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
 
   const mode = route.params?.mode ?? 'add';
   const roomId = mode === 'edit' ? route.params?.roomId : undefined;
 
   const [loading, setLoading] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
+  const [keyboardHeight, setKeyboardHeight] = React.useState(0);
+
+  React.useEffect(() => {
+    const showEvent =
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent =
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const subShow = Keyboard.addListener(showEvent as any, e => {
+      setKeyboardHeight(e?.endCoordinates?.height ?? 0);
+    });
+    const subHide = Keyboard.addListener(hideEvent as any, () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      subShow.remove();
+      subHide.remove();
+    };
+  }, []);
 
   /* ROOM */
   const [name, setName] = React.useState('');
@@ -848,7 +871,10 @@ export default function RoomFormScreen() {
 
       <FAB
         icon="content-save"
-        style={styles.fab}
+        style={[
+          styles.fab,
+          { bottom: 50 + Math.max(0, keyboardHeight - insets.bottom) },
+        ]}
         loading={saving}
         onPress={save}
       />
@@ -880,7 +906,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
-  fab: { position: 'absolute', right: 16, bottom: 24 },
+  fab: { position: 'absolute', right: 16 },
   loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
   roomHero: {
