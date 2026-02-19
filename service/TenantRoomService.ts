@@ -1,5 +1,6 @@
 import supabase from './SupabaseClient';
 import { TenantRecord } from './tenantService';
+import { getCurrentUserId } from './authSession';
 
 /* ===================== TYPES ===================== */
 
@@ -23,15 +24,6 @@ export type ActiveTenantAssignment = {
   tenant_id: number;
   room_id: number;
   joining_date: string;
-};
-
-/* ===================== AUTH ===================== */
-
-const getCurrentUserId = async () => {
-  const { data, error } = await supabase.auth.getUser();
-  if (error) throw error;
-  if (!data.user?.id) throw new Error('User not found');
-  return data.user.id;
 };
 
 /* ===================== HELPERS ===================== */

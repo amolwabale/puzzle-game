@@ -1,4 +1,5 @@
 import supabase from './SupabaseClient';
+import { getCurrentUserId } from './authSession';
 
 export type BillRecord = {
   id: number;
@@ -54,13 +55,6 @@ export type UpdateBillPayload = {
   adHocComment?: string;
   paidAmount: number;
   status: string;
-};
-
-const getCurrentUserId = async () => {
-  const { data, error } = await supabase.auth.getUser();
-  if (error) throw error;
-  if (!data.user?.id) throw new Error('User not found. Please login again.');
-  return data.user.id;
 };
 
 export async function fetchBills(): Promise<BillRecord[]> {

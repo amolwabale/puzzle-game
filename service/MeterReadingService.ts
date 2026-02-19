@@ -1,4 +1,5 @@
 import supabase from './SupabaseClient';
+import { getCurrentSessionUser } from './authSession';
 
 export type MeterReadingInsert = {
   roomId: number;
@@ -69,8 +70,7 @@ export async function updateMeterReading(params: { id: number; unit: number }) {
 export async function createMeterReading(
   payload: MeterReadingInsert,
 ): Promise<MeterReadingRow> {
-  const { data: userData, error: userError } = await supabase.auth.getUser();
-  if (userError) throw userError;
+  const user = await getCurrentSessionUser();
 
   const insertWithUser = await supabase
     .from('meter_reading')
@@ -78,7 +78,7 @@ export async function createMeterReading(
       room_id: payload.roomId,
       unit: payload.unit,
       tenant_id: payload.tenantId,
-      user_id: (userData.user?.id as any) ?? null,
+      user_id: (user?.id as any) ?? null,
     })
     .select('id')
     .maybeSingle();

@@ -1,4 +1,5 @@
 import supabase from './SupabaseClient';
+import { getCurrentUserId } from './authSession';
 
 /* ===================== TYPES ===================== */
 
@@ -23,15 +24,6 @@ type SavePayload = {
   rent?: string;
   deposit?: string;
   comment?: string;
-};
-
-/* ===================== AUTH ===================== */
-
-const getCurrentUserId = async () => {
-  const { data, error } = await supabase.auth.getUser();
-  if (error) throw error;
-  if (!data.user?.id) throw new Error('User not found. Please login again.');
-  return data.user.id;
 };
 
 /* ===================== FETCH ===================== */

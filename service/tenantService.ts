@@ -1,5 +1,6 @@
 import supabase from './SupabaseClient';
 import { readUriAsArrayBuffer } from './readUriAsArrayBuffer';
+import { getCurrentUserId } from './authSession';
 
 /* ===================== TYPES ===================== */
 
@@ -51,15 +52,6 @@ type SavePayload = {
 
 const BUCKET = 'tenant-manager';
 const MAX_UPLOAD_BYTES = 20 * 1024 * 1024; // 20 MB
-
-/* ===================== AUTH ===================== */
-
-const getCurrentUserId = async () => {
-  const { data, error } = await supabase.auth.getUser();
-  if (error) throw error;
-  if (!data.user?.id) throw new Error('User not found. Please login again.');
-  return data.user.id;
-};
 
 /* ===================== FETCH ===================== */
 

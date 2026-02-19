@@ -1,5 +1,6 @@
 import supabase from './SupabaseClient';
 import { readUriAsArrayBuffer } from './readUriAsArrayBuffer';
+import { getCurrentSessionUser, getCurrentUserId } from './authSession';
 import type {
   FileInput,
   Ticket,
@@ -19,10 +20,7 @@ export type UserProfile = {
 type DbUserRow = UserProfile & { id: number; user_id: string | null };
 
 const getCurrentAuthUser = async () => {
-  const { data, error } = await supabase.auth.getUser();
-  if (error) throw error;
-  if (!data.user?.id) throw new Error('User not found. Please login again.');
-  return data.user;
+  return await getCurrentSessionUser();
 };
 
 export async function fetchUserProfile(): Promise<UserProfile | null> {
@@ -190,11 +188,6 @@ export async function createSignedUrlFromPublicUrl(
   if (error) return undefined;
   return data.signedUrl;
 }
-
-const getCurrentUserId = async () => {
-  const u = await getCurrentAuthUser();
-  return u.id;
-};
 
 export async function fetchSupportTickets(): Promise<Ticket[]> {
   const userId = await getCurrentUserId();
