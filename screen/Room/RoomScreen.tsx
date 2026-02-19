@@ -110,7 +110,6 @@ export default function RoomScreen() {
       else {
         const hasCache = !!queryClient.getQueryData(roomsKey);
         if (!hasCache) setInitialLoading(true);
-        else setRefreshing(true);
       }
 
       const data = await queryClient.fetchQuery({
@@ -130,7 +129,6 @@ export default function RoomScreen() {
       if (isRefresh) setRefreshing(false);
       else {
         setInitialLoading(false);
-        setRefreshing(false);
       }
     }
   }, [queryClient]);

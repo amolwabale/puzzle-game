@@ -81,7 +81,6 @@ export default function TenantScreen() {
         // If cache was empty, keep current behavior (spinner).
         const hasCache = !!queryClient.getQueryData(tenantsKey);
         if (!hasCache) setInitialLoading(true);
-        else setRefreshing(true);
       }
 
       const data = await queryClient.fetchQuery({
@@ -117,7 +116,6 @@ export default function TenantScreen() {
       if (isRefresh) setRefreshing(false);
       else {
         setInitialLoading(false);
-        setRefreshing(false);
       }
     }
   }, [queryClient]);

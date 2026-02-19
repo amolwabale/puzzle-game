@@ -238,7 +238,6 @@ export default function PaymentScreen() {
           !!queryClient.getQueryData(['rooms']) ||
           !!queryClient.getQueryData(['tenants']);
         if (!hasCache) setInitialLoading(true);
-        else setRefreshing(true);
       }
 
       const [billRows, rooms, tenants, setting, profile] = await Promise.all([
@@ -289,7 +288,6 @@ export default function PaymentScreen() {
       if (isRefresh) setRefreshing(false);
       else {
         setInitialLoading(false);
-        setRefreshing(false);
       }
     }
   }, [queryClient]);
