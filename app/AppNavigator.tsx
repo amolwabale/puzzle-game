@@ -7,6 +7,7 @@ import {
 } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ActivityIndicator, useTheme } from 'react-native-paper';
+import BootSplash from 'react-native-bootsplash';
 
 import MainTabs from '../navigation/MainTabs';
 import MenuTabs from '../navigation/MenuTabs';
@@ -76,7 +77,14 @@ export default function AppNavigator() {
 
   return (
     <TopMenuProvider navigationRef={navRef as any}>
-      <NavigationContainer ref={navRef} theme={NavigationDefaultTheme}>
+      <NavigationContainer
+        ref={navRef}
+        theme={NavigationDefaultTheme}
+        onReady={() => {
+          // Hide native splash once navigation is mounted.
+          void BootSplash.hide({ fade: true });
+        }}
+      >
         <RootStack.Navigator screenOptions={{ headerShown: false }}>
           {session ? (
             <>
