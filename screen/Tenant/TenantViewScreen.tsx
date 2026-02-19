@@ -5,7 +5,7 @@ import {
 } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React from 'react';
-import { Alert, Platform, ScrollView, Share, StyleSheet, View } from 'react-native';
+import { Alert, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import {
   ActivityIndicator,
   Avatar,
@@ -16,13 +16,12 @@ import {
   useTheme,
 } from 'react-native-paper';
 import RNBlobUtil from 'react-native-blob-util';
+import Share from 'react-native-share';
 import { TenantStackParamList } from '../../navigation/StackParam';
 import { fetchTenantById, TenantRecord } from '../../service/tenantService';
 import { supabase } from '../../service/SupabaseClient'; // ✅ REQUIRED
 import { fetchRooms } from '../../service/RoomService';
 import { fetchActiveRoomForTenants } from '../../service/TenantRoomService';
-import analytics from '@react-native-firebase/analytics';
-import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
 import { trackEvent } from '../../service/analyticsTracker';
 
 type Props = NativeStackScreenProps<TenantStackParamList, 'TenantView'>;
@@ -101,6 +100,14 @@ export default function TenantViewScreen() {
     return 'application/octet-stream';
   };
 
+  const toFileUrl = (u: string) => {
+    const s = String(u ?? '').trim();
+    if (!s) return '';
+    // If it already has a scheme (file://, content://, http://, etc) keep it.
+    if (/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(s)) return s;
+    return `file://${s}`;
+  };
+
   const downloadProfilePhoto = async () => {
     const rawUrl = (tenant as any)?.profile_photo_url as string | null | undefined;
     if (!rawUrl) {
@@ -156,16 +163,19 @@ export default function TenantViewScreen() {
         'GET',
         signed,
       );
-      const fileUrl = `file://${destPath}`;
+      const fileUrl = toFileUrl(destPath);
+      if (!fileUrl) throw new Error('Could not prepare file for sharing.');
 
       trackEvent('Tenant_ProfilePhoto_Downloaded', {
         source: 'Tenant',
         tenant_id: tenantId,
       });
-      await Share.share({
+      await Share.open({
         title: 'Profile photo',
         message: 'Tenant profile photo',
-        url: fileUrl,
+        urls: [fileUrl],
+        type: mime,
+        failOnCancel: false,
       });
     } catch (err: any) {
       Alert.alert('Download failed', err?.message || 'Could not download photo');
@@ -290,12 +300,14 @@ export default function TenantViewScreen() {
       const ext = getExtFromUrl(url) || 'pdf';
       const fileName = `${safeBase}_${tenantId}.${ext}`;
       const destPath = `${RNBlobUtil.fs.dirs.CacheDir}/${fileName}`;
+      const mime = getMimeFromExt(ext);
 
       await RNBlobUtil.config({ path: destPath, fileCache: true }).fetch(
         'GET',
         signed,
       );
-      const fileUrl = `file://${destPath}`;
+      const fileUrl = toFileUrl(destPath);
+      if (!fileUrl) throw new Error('Could not prepare file for sharing.');
 
       const sharedEvent = 'Tenant_Document_Shared_' + label;
       trackEvent(sharedEvent, {
@@ -303,10 +315,12 @@ export default function TenantViewScreen() {
         tenant_id: tenantId,
         document_label: label,
       });
-      await Share.share({
+      await Share.open({
         title: label,
         message: `${label} document`,
-        url: fileUrl,
+        urls: [fileUrl],
+        type: mime,
+        failOnCancel: false,
       });
     } catch (err: any) {
       Alert.alert('Share failed', err?.message || 'Could not share document');
@@ -367,17 +381,20 @@ export default function TenantViewScreen() {
         'GET',
         signed,
       );
-      const fileUrl = `file://${destPath}`;
+      const fileUrl = toFileUrl(destPath);
+      if (!fileUrl) throw new Error('Could not prepare file for sharing.');
 
       trackEvent('Tenant_Document_Downloaded_' + label, {
         source: 'Tenant',
         tenant_id: tenantId,
         document_label: label,
       });
-      await Share.share({
+      await Share.open({
         title: label,
         message: `${label} document`,
-        url: fileUrl,
+        urls: [fileUrl],
+        type: mime,
+        failOnCancel: false,
       });
     } catch (err: any) {
       Alert.alert(
