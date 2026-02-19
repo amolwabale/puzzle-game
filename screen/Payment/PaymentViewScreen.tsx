@@ -8,7 +8,7 @@ import {
   Alert,
   Dimensions,
   Image,
-  KeyboardAvoidingView,
+  Keyboard,
   NativeModules,
   Platform,
   ScrollView,
@@ -20,10 +20,10 @@ import {
   ActivityIndicator,
   Avatar,
   Button,
-  Dialog,
   FAB,
   Icon,
   IconButton,
+  Modal,
   ProgressBar,
   Portal,
   Surface,
@@ -148,6 +148,7 @@ export default function PaymentViewScreen() {
   const [paymentNote, setPaymentNote] = React.useState('');
   const [billDeleting, setBillDeleting] = React.useState(false);
   const shareShotRef = React.useRef<ViewShot>(null);
+  const [dialogKeyboardHeight, setDialogKeyboardHeight] = React.useState(0);
 
   const dialogMaxHeight = React.useMemo(
     () => Math.round(Dimensions.get('window').height * 0.88),
@@ -157,6 +158,32 @@ export default function PaymentViewScreen() {
     () => Math.round(Dimensions.get('window').height * 0.52),
     [],
   );
+
+  React.useEffect(() => {
+    const showEvent =
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent =
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const subShow = Keyboard.addListener(showEvent as any, e => {
+      setDialogKeyboardHeight(e?.endCoordinates?.height ?? 0);
+    });
+    const subHide = Keyboard.addListener(hideEvent as any, () => {
+      setDialogKeyboardHeight(0);
+    });
+
+    return () => {
+      subShow.remove();
+      subHide.remove();
+    };
+  }, []);
+
+  const effectiveDialogScrollMaxHeight = React.useMemo(() => {
+    // Give the scroll area some room to breathe when keyboard is open,
+    // and ensure it never collapses too small to use.
+    const reduced = dialogScrollMaxHeight - Math.round(dialogKeyboardHeight * 0.55);
+    return Math.max(220, reduced);
+  }, [dialogScrollMaxHeight, dialogKeyboardHeight]);
 
   // same approach as Tenant/Payment list (signed URLs for private bucket)
   const createSignedUrl = async (fullUrl?: string | null) => {
@@ -1344,14 +1371,17 @@ export default function PaymentViewScreen() {
       ) : null}
 
       <Portal>
-        <KeyboardAvoidingView
-          style={styles.dialogKav}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={0}
+        <Modal
+          visible={paymentDialogOpen}
+          onDismiss={() => setPaymentDialogOpen(false)}
+          contentContainerStyle={[
+            styles.payModalContainer,
+            dialogKeyboardHeight > 0
+              ? styles.payModalContainerKeyboardOpen
+              : styles.payModalContainerKeyboardClosed,
+          ]}
         >
-          <Dialog
-            visible={paymentDialogOpen}
-            onDismiss={() => setPaymentDialogOpen(false)}
+          <Surface
             style={[
               styles.payDialog,
               {
@@ -1360,6 +1390,7 @@ export default function PaymentViewScreen() {
                 borderWidth: 1,
               },
             ]}
+            elevation={2}
           >
             <View
               style={[styles.payDialogHeader, { borderBottomColor: outline }]}
@@ -1387,6 +1418,16 @@ export default function PaymentViewScreen() {
                   </Text>
                 </View>
 
+                <IconButton
+                  icon="close"
+                  onPress={() => setPaymentDialogOpen(false)}
+                  disabled={paymentSaving}
+                  accessibilityLabel="Close"
+                  style={styles.payDialogCloseBtn}
+                />
+              </View>
+
+              <View style={styles.payDialogHeaderMetaRow}>
                 <View
                   style={[
                     styles.statusPill,
@@ -1406,11 +1447,51 @@ export default function PaymentViewScreen() {
               </View>
             </View>
 
-            <Dialog.ScrollArea style={{ maxHeight: dialogScrollMaxHeight }}>
+            <View
+              style={[
+                styles.payDialogTopActions,
+                { borderBottomColor: outline },
+              ]}
+            >
+              <Button
+                mode="outlined"
+                onPress={() => setPaymentDialogOpen(false)}
+                disabled={paymentSaving}
+                style={styles.topActionBtn}
+                contentStyle={styles.topActionBtnContent}
+                labelStyle={styles.topActionBtnLabel}
+              >
+                Cancel
+              </Button>
+              <Button
+                mode="contained"
+                onPress={savePayment}
+                loading={paymentSaving}
+                disabled={!isAmountValid || paymentSaving}
+                style={styles.topActionBtn}
+                contentStyle={styles.topActionBtnContent}
+                labelStyle={styles.topActionBtnLabel}
+              >
+                Save
+              </Button>
+            </View>
+
+            <View
+              style={[
+                styles.payDialogScrollArea,
+                { maxHeight: effectiveDialogScrollMaxHeight },
+              ]}
+            >
               <ScrollView
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
-                contentContainerStyle={styles.dialogContent}
+                contentContainerStyle={[
+                  styles.dialogContent,
+                  {
+                    // Critical: allow scrolling the last field (Note) above the keyboard.
+                    paddingBottom: 12 + Math.max(0, dialogKeyboardHeight),
+                  },
+                ]}
               >
                 <FormInput
                   label="Amount received"
@@ -1629,30 +1710,9 @@ export default function PaymentViewScreen() {
                   )}
                 </Surface>
               </ScrollView>
-            </Dialog.ScrollArea>
-
-            <Dialog.Actions style={styles.dialogActions}>
-              <Button
-                onPress={() => setPaymentDialogOpen(false)}
-                disabled={paymentSaving}
-                style={styles.dialogActionBtn}
-                contentStyle={styles.dialogActionBtnContent}
-              >
-                Cancel
-              </Button>
-              <Button
-                mode="contained"
-                onPress={savePayment}
-                loading={paymentSaving}
-                disabled={!isAmountValid}
-                style={styles.dialogActionBtn}
-                contentStyle={styles.dialogActionBtnContent}
-              >
-                Save
-              </Button>
-            </Dialog.Actions>
-          </Dialog>
-        </KeyboardAvoidingView>
+            </View>
+          </Surface>
+        </Modal>
       </Portal>
     </>
   );
@@ -2148,13 +2208,26 @@ const styles = StyleSheet.create({
   payDialog: {
     borderRadius: 18,
     backgroundColor: '#FFFFFF',
+    width: '100%',
+    maxWidth: 560,
+    overflow: 'hidden',
   },
-  dialogKav: {
-    flex: 1,
-    justifyContent: 'center',
+  payModalContainer: {
+    alignItems: 'center',
+  },
+  payModalContainerKeyboardClosed: {
+    paddingHorizontal: 18,
+  },
+  payModalContainerKeyboardOpen: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 16,
+    paddingHorizontal: 18,
+    alignItems: 'center',
   },
   payDialogHeader: {
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingTop: 14,
     paddingBottom: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
@@ -2164,6 +2237,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
+  payDialogCloseBtn: { margin: 0 },
+  payDialogHeaderMetaRow: {
+    marginTop: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+  },
+  payDialogTopActions: {
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 10,
+    flexDirection: 'row',
+    gap: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  topActionBtn: { flex: 1, borderRadius: 999 },
+  topActionBtnContent: { paddingVertical: 7 },
+  topActionBtnLabel: { fontWeight: '900', fontSize: 13, letterSpacing: 0.2 },
   payDialogIconWrap: {
     width: 36,
     height: 36,
@@ -2182,7 +2273,8 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
 
-  dialogContent: { paddingHorizontal: 5, paddingTop: 6, paddingBottom: 10 },
+  dialogContent: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 14 },
+  payDialogScrollArea: { flexGrow: 1, width: '100%', paddingTop: 2 },
 
   quickRow: { marginTop: 4 },
   quickLabel: {
@@ -2231,14 +2323,6 @@ const styles = StyleSheet.create({
   },
   methodChipInner: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   methodChipText: { fontWeight: '900', fontSize: 13, letterSpacing: 0.2 },
-  dialogActions: {
-    paddingTop: 0,
-    paddingHorizontal: 27,
-    paddingBottom: 12,
-    gap: 10,
-  },
-  dialogActionBtn: { flex: 1 },
-  dialogActionBtnContent: { paddingVertical: 6 },
   amountHint: { marginTop: 8, fontWeight: '800' },
 
   commentBox: {

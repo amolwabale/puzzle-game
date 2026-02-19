@@ -19,6 +19,7 @@ import {
   TouchableRipple,
   useTheme,
 } from 'react-native-paper';
+import { useQueryClient } from '@tanstack/react-query';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { TenantStackParamList } from '../../navigation/StackParam';
 import {
@@ -26,12 +27,11 @@ import {
   fetchTenants,
   TenantRecord,
 } from '../../service/tenantService';
-import { supabase } from '../../service/SupabaseClient';
-import { fetchRooms } from '../../service/RoomService';
-import { fetchActiveRoomForTenants } from '../../service/TenantRoomService';
+import { fetchActiveRoomAssignmentsForTenants } from '../../service/TenantRoomService';
 import analytics from '@react-native-firebase/analytics';
 import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
 import { trackEvent } from '../../service/analyticsTracker';
+import { getSignedUrlCached } from '../../service/signedUrlCache';
 
 type Nav = NativeStackNavigationProp<TenantStackParamList, 'TenantList'>;
 
@@ -49,6 +49,7 @@ const formatDate = (d?: string | null) =>
 
 export default function TenantScreen() {
   const navigation = useNavigation<Nav>();
+  const queryClient = useQueryClient();
 
   const [initialLoading, setInitialLoading] = React.useState(true);
   const [refreshing, setRefreshing] = React.useState(false);
@@ -57,43 +58,42 @@ export default function TenantScreen() {
   const [signedUrls, setSignedUrls] = React.useState<Record<number, string>>(
     {},
   );
+  const photoSourceByTenantRef = React.useRef<Record<number, string>>({});
   const [assignmentByTenant, setAssignmentByTenant] = React.useState<
     Record<number, { roomName?: string; joiningDate?: string } | null>
   >({});
 
-  const createSignedUrl = async (fullUrl?: string | null) => {
-    if (!fullUrl) return undefined;
-    const marker = '/tenant-manager/';
-    const index = fullUrl.indexOf(marker);
-    if (index === -1) return undefined;
-    const filePath = fullUrl.substring(index + marker.length);
-
-    const { data, error } = await supabase.storage
-      .from('tenant-manager')
-      .createSignedUrl(filePath, 60 * 60);
-
-    if (error) return undefined;
-    return data.signedUrl;
-  };
-
   const loadTenants = React.useCallback(async (isRefresh = false) => {
+    const tenantsKey = ['tenants'];
+
+    // Fast path: show cached data immediately (stale-while-revalidate)
+    if (!isRefresh) {
+      const cachedTenants = queryClient.getQueryData<TenantRecord[]>(tenantsKey);
+      if (cachedTenants && cachedTenants.length > 0) {
+        setTenants(cachedTenants);
+        setInitialLoading(false);
+      }
+    }
+
     try {
-      isRefresh ? setRefreshing(true) : setInitialLoading(true);
-      const data = await fetchTenants();
+      if (isRefresh) setRefreshing(true);
+      else {
+        // If cache was empty, keep current behavior (spinner).
+        const hasCache = !!queryClient.getQueryData(tenantsKey);
+        if (!hasCache) setInitialLoading(true);
+        else setRefreshing(true);
+      }
+
+      const data = await queryClient.fetchQuery({
+        queryKey: tenantsKey,
+        queryFn: fetchTenants,
+        staleTime: isRefresh ? 0 : undefined,
+      });
       setTenants(data || []);
-      generateSignedUrls(data || []);
 
       // room assignment for each tenant (active mapping = leaving_date is null)
       const tenantIds = (data || []).map(t => t.id);
-      const [rooms, activeMap] = await Promise.all([
-        fetchRooms(),
-        fetchActiveRoomForTenants(tenantIds),
-      ]);
-
-      const roomNameById: Record<number, string> = {};
-      (rooms || []).forEach((r: any) => {
-        if (r?.id != null) roomNameById[r.id] = r.name || '-';
-      });
+      const activeMap = await fetchActiveRoomAssignmentsForTenants(tenantIds);
 
       const viewMap: Record<
         number,
@@ -106,26 +106,73 @@ export default function TenantScreen() {
           return;
         }
         viewMap[id] = {
-          roomName: roomNameById[a.room_id] || '-',
+          roomName: a.room_name || '-',
           joiningDate: a.joining_date,
         };
       });
       setAssignmentByTenant(viewMap);
+    } catch (err: any) {
+      Alert.alert('Load Failed', err?.message || 'Could not load tenants');
     } finally {
-      isRefresh ? setRefreshing(false) : setInitialLoading(false);
+      if (isRefresh) setRefreshing(false);
+      else {
+        setInitialLoading(false);
+        setRefreshing(false);
+      }
     }
-  }, []);
+  }, [queryClient]);
 
-  const generateSignedUrls = async (data: TenantRecord[]) => {
-    const map: Record<number, string> = {};
-    await Promise.all(
-      data.map(async t => {
-        const signed = await createSignedUrl((t as any).profile_photo_url);
-        if (signed) map[t.id] = signed;
-      }),
-    );
-    setSignedUrls(map);
-  };
+  const ensureSignedUrlsForTenantIds = React.useCallback(
+    async (tenantIds: number[]) => {
+      const byId: Record<number, TenantRecord> = {};
+      (tenants || []).forEach(t => {
+        if (t?.id != null) byId[t.id] = t;
+      });
+
+      await Promise.all(
+        (tenantIds || []).map(async id => {
+          const t = byId[id];
+          const fullUrl = (t as any)?.profile_photo_url as
+            | string
+            | null
+            | undefined;
+          if (!fullUrl) return;
+
+          // If source URL unchanged and we already have a signed URL, skip.
+          if (photoSourceByTenantRef.current[id] === fullUrl && signedUrls[id])
+            return;
+
+          const signed = await getSignedUrlCached(queryClient, fullUrl).catch(
+            () => undefined,
+          );
+          if (!signed) return;
+          photoSourceByTenantRef.current[id] = fullUrl;
+          setSignedUrls(prev => (prev[id] === signed ? prev : { ...prev, [id]: signed }));
+        }),
+      );
+    },
+    [queryClient, tenants, signedUrls],
+  );
+
+  const ensureSignedUrlsRef = React.useRef(ensureSignedUrlsForTenantIds);
+  React.useEffect(() => {
+    ensureSignedUrlsRef.current = ensureSignedUrlsForTenantIds;
+  }, [ensureSignedUrlsForTenantIds]);
+
+  const viewabilityConfig = React.useRef({
+    itemVisiblePercentThreshold: 60,
+  }).current;
+
+  const onViewableItemsChanged = React.useRef(
+    ({ viewableItems }: any) => {
+      const ids = (viewableItems || [])
+        .map((v: any) => v?.item?.id)
+        .filter((x: any) => typeof x === 'number');
+      if (ids.length > 0) {
+        void ensureSignedUrlsRef.current(ids);
+      }
+    },
+  ).current;
 
   useFocusEffect(
     React.useCallback(() => {
@@ -210,6 +257,8 @@ export default function TenantScreen() {
           renderItem={renderItem}
           keyExtractor={item => item.id.toString()}
           contentContainerStyle={styles.listContent}
+          viewabilityConfig={viewabilityConfig}
+          onViewableItemsChanged={onViewableItemsChanged}
           ListHeaderComponent={
             <View style={styles.listHeader}>
               <Searchbar

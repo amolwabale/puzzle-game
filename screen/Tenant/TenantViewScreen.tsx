@@ -396,32 +396,40 @@ export default function TenantViewScreen() {
         <Surface style={styles.hero} elevation={2}>
           <View style={styles.avatarWrap}>
             <AvatarDisplay uri={profileSignedUrl} size={88} />
-            <IconButton
-              icon={
-                profileDownloading
-                  ? () => (
-                      <ActivityIndicator size={14} color={theme.colors.primary} />
-                    )
-                  : 'download'
-              }
-              size={16}
-              onPress={() => {
-                Alert.alert('Profile photo', 'What would you like to do?', [
-                  { text: 'Cancel', style: 'cancel' },
-                  { text: 'Download', onPress: () => void downloadProfilePhoto() },
-                ]);
-              }}
-              disabled={profileDownloading}
-              iconColor={theme.colors.primary}
-              style={[
-                styles.avatarActionBtn,
-                {
-                  backgroundColor: theme.colors.primaryContainer,
-                  borderColor: theme.colors.primary,
-                },
-              ]}
-              accessibilityLabel="Download profile photo"
-            />
+            {(tenant as any)?.profile_photo_url ? (
+              <IconButton
+                icon={
+                  profileDownloading
+                    ? () => (
+                        <ActivityIndicator
+                          size={14}
+                          color={theme.colors.primary}
+                        />
+                      )
+                    : 'download'
+                }
+                size={16}
+                onPress={() => {
+                  Alert.alert('Profile photo', 'What would you like to do?', [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                      text: 'Download',
+                      onPress: () => void downloadProfilePhoto(),
+                    },
+                  ]);
+                }}
+                disabled={profileDownloading}
+                iconColor={theme.colors.primary}
+                style={[
+                  styles.avatarActionBtn,
+                  {
+                    backgroundColor: theme.colors.primaryContainer,
+                    borderColor: theme.colors.primary,
+                  },
+                ]}
+                accessibilityLabel="Download profile photo"
+              />
+            ) : null}
           </View>
           <View style={styles.heroText}>
             <Text variant="titleLarge" style={styles.tenantName}>

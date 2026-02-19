@@ -1,4 +1,5 @@
 import React from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Alert, Keyboard, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import {
@@ -20,6 +21,7 @@ import { FormInput } from '../../components/FormInput';
 import analytics from '@react-native-firebase/analytics';
 import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
 import { trackEvent } from '../../service/analyticsTracker';
+import { getCurrentUserId } from '../../service/authSession';
 type Errors = Partial<
   Record<
     | 'propertyName'
@@ -35,6 +37,7 @@ type Errors = Partial<
 export default function SettingScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const queryClient = useQueryClient();
 
   /* ---------------- FORM STATE ---------------- */
 
@@ -196,13 +199,7 @@ export default function SettingScreen() {
 
     try {
       setSaving(true);
-
-      const { data: userData, error: userError } =
-        await supabase.auth.getUser();
-      if (userError) throw userError;
-
-      const userId = userData.user?.id;
-      if (!userId) throw new Error('User not found. Please login again.');
+      const userId = await getCurrentUserId();
 
       const payload = {
         property_name: propertyName.trim(),
@@ -241,6 +238,8 @@ export default function SettingScreen() {
         source: 'Setting',
         setting_id: result.data?.id,
       });
+
+      queryClient.invalidateQueries({ queryKey: ['latestSetting'] });
 
       Alert.alert('Saved', 'Settings have been saved successfully.');
 

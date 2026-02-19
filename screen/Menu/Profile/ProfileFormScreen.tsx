@@ -1,5 +1,6 @@
 import { useNavigation, useRoute } from '@react-navigation/native';
 import React from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Alert,
   Keyboard,
@@ -48,6 +49,7 @@ export default function ProfileFormScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const insets = useSafeAreaInsets();
+  const queryClient = useQueryClient();
 
   const passedProfile: UserProfile | undefined = route.params?.profile;
 
@@ -146,6 +148,7 @@ export default function ProfileFormScreen() {
         email: fields.email.trim(),
         address: fields.address.trim() || undefined,
       });
+      queryClient.invalidateQueries({ queryKey: ['userProfile'] });
       navigation.goBack();
     } catch (e: any) {
       Alert.alert('Error', e?.message || 'Could not save profile');

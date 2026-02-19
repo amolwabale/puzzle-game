@@ -28,6 +28,7 @@ import {
   TenantRecord,
 } from '../../service/tenantService';
 import { supabase } from '../../service/SupabaseClient';
+import { useQueryClient } from '@tanstack/react-query';
 
 type MonthRange = { start: Date; end: Date };
 
@@ -165,6 +166,7 @@ const UtilityStat = ({
 export default function DashboardScreen() {
   const theme = useTheme();
   const navigation = useNavigation<any>();
+  const queryClient = useQueryClient();
 
   const [loading, setLoading] = React.useState(true);
   const [refreshing, setRefreshing] = React.useState(false);
@@ -215,44 +217,89 @@ export default function DashboardScreen() {
   );
 
   const load = React.useCallback(async (isRefresh = false) => {
+    const roomsKey = ['rooms'];
+    const tenantsKey = ['tenants'];
+    const billsKey = ['bills'];
+    const settingKey = ['latestSetting'];
+
+    if (!isRefresh) {
+      const cachedRooms = queryClient.getQueryData<any[]>(roomsKey);
+      const cachedTenants = queryClient.getQueryData<any[]>(tenantsKey);
+      const cachedBills = queryClient.getQueryData<any[]>(billsKey);
+      const cachedSetting = queryClient.getQueryData<any>(settingKey);
+
+      if (cachedRooms) setRooms(cachedRooms as any);
+      if (cachedTenants) setTenants(cachedTenants as any);
+      if (cachedBills) setBills(cachedBills as any);
+      if (cachedSetting) setSetting(cachedSetting as any);
+
+      const hasAnyCache =
+        !!cachedRooms || !!cachedTenants || !!cachedBills || !!cachedSetting;
+      if (hasAnyCache) setLoading(false);
+    }
+
     try {
       isRefresh ? setRefreshing(true) : setLoading(true);
 
       const userId = await getCurrentUserId();
+      const mappingKey = ['tenantRoomMappings', userId];
 
       const [roomRows, tenantRows, billRows, latestSetting, mappingRows] =
         await Promise.all([
-          fetchRooms(),
-          fetchTenants(),
-          fetchBills(),
-          fetchLatestSetting().catch(() => ({
-            water: 0,
-            electricity_unit: 0,
-            rent_date: 0,
-            rent_due_date: 0,
-            property_name: undefined,
-            property_address: undefined,
-          })),
-          supabase
-            .from('tenant_room_mapping')
-            .select('id, room_id, tenant_id, joining_date, leaving_date')
-            .eq('user_id', userId),
+          queryClient.fetchQuery({
+            queryKey: roomsKey,
+            queryFn: fetchRooms,
+            staleTime: isRefresh ? 0 : undefined,
+          }),
+          queryClient.fetchQuery({
+            queryKey: tenantsKey,
+            queryFn: fetchTenants,
+            staleTime: isRefresh ? 0 : undefined,
+          }),
+          queryClient.fetchQuery({
+            queryKey: billsKey,
+            queryFn: fetchBills,
+            staleTime: isRefresh ? 0 : undefined,
+          }),
+          queryClient.fetchQuery({
+            queryKey: settingKey,
+            queryFn: () =>
+              fetchLatestSetting().catch(() => ({
+                water: 0,
+                electricity_unit: 0,
+                rent_date: 0,
+                rent_due_date: 0,
+                property_name: undefined,
+                property_address: undefined,
+              })),
+            staleTime: 2 * 60 * 1000,
+          }),
+          queryClient.fetchQuery({
+            queryKey: mappingKey,
+            queryFn: async () => {
+              const res = await supabase
+                .from('tenant_room_mapping')
+                .select('id, room_id, tenant_id, joining_date, leaving_date')
+                .eq('user_id', userId);
+              if (res.error) throw res.error;
+              return res.data || [];
+            },
+            staleTime: isRefresh ? 0 : undefined,
+          }),
         ]);
 
       setRooms(roomRows || []);
       setTenants(tenantRows || []);
       setBills(billRows || []);
       setSetting(latestSetting || null);
-
-      if (mappingRows.error) throw mappingRows.error;
-      setMappings((mappingRows.data || []) as any);
+      setMappings((mappingRows || []) as any);
     } catch (e: any) {
       // Keep UI usable even if one section fails
       console.warn('Dashboard load failed', e?.message || e);
     } finally {
       isRefresh ? setRefreshing(false) : setLoading(false);
     }
-  }, []);
+  }, [queryClient]);
 
   useFocusEffect(
     React.useCallback(() => {

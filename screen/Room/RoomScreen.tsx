@@ -28,10 +28,11 @@ import {
   hasAnyTenantMappingForRoom,
   TenantRoomRecord,
 } from '../../service/TenantRoomService';
-import supabase from '../../service/SupabaseClient';
 import analytics from '@react-native-firebase/analytics';
 import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
 import { trackEvent } from '../../service/analyticsTracker';
+import { useQueryClient } from '@tanstack/react-query';
+import { getSignedUrlCached } from '../../service/signedUrlCache';
 
 type Nav = NativeStackNavigationProp<RoomStackParamList, 'RoomList'>;
 
@@ -74,24 +75,10 @@ const getInitials = (name?: string | null) => {
   return parts.map(p => p[0]?.toUpperCase()).join('');
 };
 
-const createSignedUrl = async (fullUrl?: string | null) => {
-  if (!fullUrl) return undefined;
-  const marker = '/tenant-manager/';
-  const index = fullUrl.indexOf(marker);
-  if (index === -1) return undefined;
-  const filePath = fullUrl.substring(index + marker.length);
-
-  const { data, error } = await supabase.storage
-    .from('tenant-manager')
-    .createSignedUrl(filePath, 60 * 60);
-
-  if (error) return undefined;
-  return data.signedUrl;
-};
-
 export default function RoomScreen() {
   const navigation = useNavigation<Nav>();
   const theme = useTheme();
+  const queryClient = useQueryClient();
 
   const [initialLoading, setInitialLoading] = React.useState(true);
   const [refreshing, setRefreshing] = React.useState(false);
@@ -108,36 +95,88 @@ export default function RoomScreen() {
   >({});
 
   const loadRooms = React.useCallback(async (isRefresh = false) => {
+    const roomsKey = ['rooms'];
+
+    if (!isRefresh) {
+      const cachedRooms = queryClient.getQueryData<RoomRecord[]>(roomsKey);
+      if (cachedRooms && cachedRooms.length > 0) {
+        setRooms(cachedRooms);
+        setInitialLoading(false);
+      }
+    }
+
     try {
-      isRefresh ? setRefreshing(true) : setInitialLoading(true);
-      const data = await fetchRooms();
+      if (isRefresh) setRefreshing(true);
+      else {
+        const hasCache = !!queryClient.getQueryData(roomsKey);
+        if (!hasCache) setInitialLoading(true);
+        else setRefreshing(true);
+      }
+
+      const data = await queryClient.fetchQuery({
+        queryKey: roomsKey,
+        queryFn: fetchRooms,
+        staleTime: isRefresh ? 0 : undefined,
+      });
       setRooms(data || []);
 
       // Load occupant (active tenant) for each room in one call
       const map = await fetchActiveTenantsForRooms((data || []).map(r => r.id));
       setActiveByRoom(map);
-
-      // Signed URLs for occupant profile photos
-      const photoMap: Record<number, string> = {};
-      await Promise.all(
-        Object.entries(map).map(async ([roomIdStr, occ]) => {
-          if (!occ) return;
-          const roomId = Number(roomIdStr);
-          const fullUrl = (occ.tenant as any)?.profile_photo_url as
-            | string
-            | null
-            | undefined;
-          const signed = await createSignedUrl(fullUrl);
-          if (signed) photoMap[roomId] = signed;
-        }),
-      );
-      setOccupantPhotoByRoom(photoMap);
+      // Photo signed URLs are now generated lazily per visible row.
     } catch (err: any) {
       Alert.alert('Load Failed', err.message || 'Could not load rooms');
     } finally {
-      isRefresh ? setRefreshing(false) : setInitialLoading(false);
+      if (isRefresh) setRefreshing(false);
+      else {
+        setInitialLoading(false);
+        setRefreshing(false);
+      }
     }
-  }, []);
+  }, [queryClient]);
+
+  const viewabilityConfig = React.useRef({
+    itemVisiblePercentThreshold: 60,
+  }).current;
+
+  const ensureVisibleOccupantPhotos = React.useCallback(
+    async (roomIds: number[]) => {
+      const active = activeByRoom || {};
+      await Promise.all(
+        (roomIds || []).map(async roomId => {
+          if (occupantPhotoByRoom[roomId]) return;
+          const occ = active[roomId];
+          const fullUrl = (occ?.tenant as any)?.profile_photo_url as
+            | string
+            | null
+            | undefined;
+          if (!fullUrl) return;
+          const signed = await getSignedUrlCached(queryClient, fullUrl).catch(
+            () => undefined,
+          );
+          if (!signed) return;
+          setOccupantPhotoByRoom(prev =>
+            prev[roomId] === signed ? prev : { ...prev, [roomId]: signed },
+          );
+        }),
+      );
+    },
+    [activeByRoom, occupantPhotoByRoom, queryClient],
+  );
+
+  const ensureVisibleOccupantPhotosRef = React.useRef(ensureVisibleOccupantPhotos);
+  React.useEffect(() => {
+    ensureVisibleOccupantPhotosRef.current = ensureVisibleOccupantPhotos;
+  }, [ensureVisibleOccupantPhotos]);
+
+  const onViewableItemsChanged = React.useRef(
+    ({ viewableItems }: any) => {
+      const ids = (viewableItems || [])
+        .map((v: any) => v?.item?.id)
+        .filter((x: any) => typeof x === 'number');
+      if (ids.length > 0) void ensureVisibleOccupantPhotosRef.current(ids);
+    },
+  ).current;
 
   useFocusEffect(
     React.useCallback(() => {
@@ -255,6 +294,8 @@ export default function RoomScreen() {
           renderItem={renderItem}
           keyExtractor={item => item.id.toString()}
           contentContainerStyle={styles.listContent}
+          viewabilityConfig={viewabilityConfig}
+          onViewableItemsChanged={onViewableItemsChanged}
           ListHeaderComponent={
             <View style={styles.listHeader}>
               <Searchbar

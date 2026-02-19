@@ -27,9 +27,10 @@ import {
 } from '../../service/BillService';
 import { fetchRooms } from '../../service/RoomService';
 import { fetchTenants, TenantRecord } from '../../service/tenantService';
-import { supabase } from '../../service/SupabaseClient';
 import { fetchUserProfile, type UserProfile } from '../../service/MenuService';
 import { trackEvent } from '../../service/analyticsTracker';
+import { useQueryClient } from '@tanstack/react-query';
+import { getSignedUrlCached } from '../../service/signedUrlCache';
 
 type MissingBasicGroup = 'property' | 'profile';
 type MissingBasic = {
@@ -114,6 +115,7 @@ const AVATAR_SIZE = 58;
 export default function PaymentScreen() {
   const navigation = useNavigation<any>();
   const theme = useTheme();
+  const queryClient = useQueryClient();
 
   const [initialLoading, setInitialLoading] = React.useState(true);
   const [refreshing, setRefreshing] = React.useState(false);
@@ -132,54 +134,139 @@ export default function PaymentScreen() {
   const [tenantPhotoById, setTenantPhotoById] = React.useState<
     Record<number, string>
   >({});
+  const tenantPhotoSourceByIdRef = React.useRef<Record<number, string>>({});
 
-  // same approach as Tenant list screen (signed URLs for private bucket)
-  const createSignedUrl = async (fullUrl?: string | null) => {
-    if (!fullUrl) return undefined;
-    const marker = '/tenant-manager/';
-    const index = fullUrl.indexOf(marker);
-    if (index === -1) return undefined;
-    const filePath = fullUrl.substring(index + marker.length);
+  const ensureTenantPhotosForBills = React.useCallback(
+    async (billRows: BillRecord[]) => {
+      const usedTenantIds = Array.from(
+        new Set(
+          (billRows || [])
+            .map(b => b.tenant_id)
+            .filter((x): x is number => typeof x === 'number'),
+        ),
+      );
+      if (usedTenantIds.length === 0) return;
 
-    const { data, error } = await supabase.storage
-      .from('tenant-manager')
-      .createSignedUrl(filePath, 60 * 60);
+      const cachedTenants = queryClient.getQueryData<TenantRecord[]>(['tenants']) || [];
+      const tenantById: Record<number, TenantRecord> = {};
+      (cachedTenants || []).forEach(t => {
+        if (t?.id != null) tenantById[t.id] = t;
+      });
 
-    if (error) return undefined;
-    return data.signedUrl;
-  };
+      await Promise.all(
+        usedTenantIds.map(async tenantId => {
+          const t = tenantById[tenantId];
+          const fullUrl = (t as any)?.profile_photo_url as
+            | string
+            | null
+            | undefined;
+          if (!fullUrl) return;
 
-  const generateSignedUrls = async (
-    tenants: TenantRecord[],
-    billRows: BillRecord[],
-  ) => {
-    const usedTenantIds = new Set<number>();
-    (billRows || []).forEach(b => {
-      if (b.tenant_id != null) usedTenantIds.add(b.tenant_id);
-    });
+          if (
+            tenantPhotoSourceByIdRef.current[tenantId] === fullUrl &&
+            tenantPhotoById[tenantId]
+          )
+            return;
 
-    const map: Record<number, string> = {};
-    await Promise.all(
-      (tenants || [])
-        .filter(t => usedTenantIds.has(t.id))
-        .map(async t => {
-          const signed = await createSignedUrl((t as any).profile_photo_url);
-          if (signed) map[t.id] = signed;
+          const signed = await getSignedUrlCached(queryClient, fullUrl).catch(
+            () => undefined,
+          );
+          if (!signed) return;
+
+          tenantPhotoSourceByIdRef.current[tenantId] = fullUrl;
+          setTenantPhotoById(prev =>
+            prev[tenantId] === signed ? prev : { ...prev, [tenantId]: signed },
+          );
         }),
-    );
-    setTenantPhotoById(map);
-  };
+      );
+    },
+    [queryClient, tenantPhotoById],
+  );
+
+  const ensureTenantPhotosForBillsRef = React.useRef(ensureTenantPhotosForBills);
+  React.useEffect(() => {
+    ensureTenantPhotosForBillsRef.current = ensureTenantPhotosForBills;
+  }, [ensureTenantPhotosForBills]);
 
   const load = React.useCallback(async (isRefresh = false) => {
+    const billsKey = ['bills'];
+    const roomsKey = ['rooms'];
+    const tenantsKey = ['tenants'];
+    const settingKey = ['latestSetting'];
+    const profileKey = ['userProfile'];
+
+    if (!isRefresh) {
+      const cachedBills = queryClient.getQueryData<BillRecord[]>(billsKey);
+      const cachedRooms = queryClient.getQueryData<any[]>(roomsKey);
+      const cachedTenants = queryClient.getQueryData<TenantRecord[]>(tenantsKey);
+      const cachedSetting = queryClient.getQueryData<any>(settingKey);
+      const cachedProfile = queryClient.getQueryData<any>(profileKey);
+
+      if (cachedBills) setBills(cachedBills);
+      if (cachedRooms) {
+        const roomMap: Record<number, string> = {};
+        (cachedRooms || []).forEach((r: any) => {
+          if (r?.id != null) roomMap[r.id] = r.name || '-';
+        });
+        setRoomNameById(roomMap);
+      }
+      if (cachedTenants) {
+        const tenantMap: Record<number, string> = {};
+        (cachedTenants || []).forEach((t: any) => {
+          if (t?.id != null) tenantMap[t.id] = t.name || '-';
+        });
+        setTenantNameById(tenantMap);
+      }
+      if (cachedSetting || cachedProfile) {
+        setMissingBasics(
+          computeMissingBasics({ setting: cachedSetting, profile: cachedProfile }),
+        );
+      }
+
+      const hasAnyCache =
+        !!cachedBills || !!cachedRooms || !!cachedTenants || !!cachedSetting || !!cachedProfile;
+      if (hasAnyCache) {
+        setInitialLoading(false);
+      }
+    }
+
     try {
-      isRefresh ? setRefreshing(true) : setInitialLoading(true);
+      if (isRefresh) setRefreshing(true);
+      else {
+        const hasCache =
+          !!queryClient.getQueryData(['bills']) ||
+          !!queryClient.getQueryData(['rooms']) ||
+          !!queryClient.getQueryData(['tenants']);
+        if (!hasCache) setInitialLoading(true);
+        else setRefreshing(true);
+      }
 
       const [billRows, rooms, tenants, setting, profile] = await Promise.all([
-        fetchBills(),
-        fetchRooms(),
-        fetchTenants(),
-        fetchLatestSetting().catch(() => null as any),
-        fetchUserProfile().catch(() => null),
+        queryClient.fetchQuery({
+          queryKey: billsKey,
+          queryFn: fetchBills,
+          staleTime: isRefresh ? 0 : undefined,
+        }),
+        queryClient.fetchQuery({
+          queryKey: roomsKey,
+          queryFn: fetchRooms,
+          staleTime: isRefresh ? 0 : undefined,
+        }),
+        queryClient.fetchQuery({
+          queryKey: tenantsKey,
+          queryFn: fetchTenants,
+          staleTime: isRefresh ? 0 : undefined,
+        }),
+        queryClient.fetchQuery({
+          queryKey: settingKey,
+          queryFn: () => fetchLatestSetting().catch(() => null as any),
+          staleTime: 2 * 60 * 1000,
+        }),
+        queryClient.fetchQuery({
+          queryKey: profileKey,
+          queryFn: () => fetchUserProfile().catch(() => null),
+          staleTime: 2 * 60 * 1000,
+        }),
       ]);
 
       const roomMap: Record<number, string> = {};
@@ -195,13 +282,30 @@ export default function PaymentScreen() {
       setTenantNameById(tenantMap);
       setBills(billRows || []);
       setMissingBasics(computeMissingBasics({ setting, profile }));
-      generateSignedUrls((tenants || []) as any, (billRows || []) as any);
+      // Photos are loaded lazily per visible row.
     } catch (e: any) {
       Alert.alert('Load Failed', e.message || 'Could not load payments');
     } finally {
-      isRefresh ? setRefreshing(false) : setInitialLoading(false);
+      if (isRefresh) setRefreshing(false);
+      else {
+        setInitialLoading(false);
+        setRefreshing(false);
+      }
     }
-  }, []);
+  }, [queryClient]);
+
+  const viewabilityConfig = React.useRef({
+    itemVisiblePercentThreshold: 60,
+  }).current;
+
+  const onViewableItemsChanged = React.useRef(
+    ({ viewableItems }: any) => {
+      const bills = (viewableItems || [])
+        .map((v: any) => v?.item)
+        .filter(Boolean) as BillRecord[];
+      if (bills.length > 0) void ensureTenantPhotosForBillsRef.current(bills);
+    },
+  ).current;
 
   useFocusEffect(
     React.useCallback(() => {
@@ -355,6 +459,8 @@ export default function PaymentScreen() {
           renderItem={renderItem}
           keyExtractor={i => i.id.toString()}
           contentContainerStyle={styles.listContent}
+          viewabilityConfig={viewabilityConfig}
+          onViewableItemsChanged={onViewableItemsChanged}
           ListHeaderComponent={
             <View style={styles.listHeader}>
               {!canAddPayment ? (

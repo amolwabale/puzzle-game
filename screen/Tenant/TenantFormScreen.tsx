@@ -5,6 +5,7 @@ import {
 } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Alert,
   Keyboard,
@@ -53,6 +54,7 @@ export default function TenantFormScreen() {
   const route = useRoute<Props['route']>();
   const { mode, tenantId } = route.params || { mode: 'add' as const };
   const insets = useSafeAreaInsets();
+  const queryClient = useQueryClient();
 
   const [loading, setLoading] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
@@ -318,6 +320,15 @@ export default function TenantFormScreen() {
         company_name: company,
         files: { profile, adhar, pan, agreement },
       });
+
+      // Ensure cached list screens refresh immediately after save.
+      queryClient.invalidateQueries({ queryKey: ['tenants'] });
+      queryClient.invalidateQueries({
+        queryKey: ['tenantRoomMappings'],
+        exact: false,
+      });
+      queryClient.invalidateQueries({ queryKey: ['bills'] });
+
       if (mode === 'add') {
         trackEvent('Tenant_Created', {
           source: 'Tenant',
