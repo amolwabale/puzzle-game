@@ -12,10 +12,10 @@ import {
   NativeModules,
   Platform,
   ScrollView,
-  Share,
   StyleSheet,
   View,
 } from 'react-native';
+import Share from 'react-native-share';
 import {
   ActivityIndicator,
   Avatar,
@@ -43,8 +43,6 @@ import { fetchRooms } from '../../service/RoomService';
 import { fetchTenants } from '../../service/tenantService';
 import { supabase } from '../../service/SupabaseClient';
 import { FormInput } from '../../components/FormInput';
-import analytics from '@react-native-firebase/analytics';
-import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
 import { trackEvent } from '../../service/analyticsTracker';
 
 const PDFModule =
@@ -114,6 +112,14 @@ function appendPaymentComment(
 ) {
   const base = (existing || '').trim();
   return base.length ? `${base}\n${line}` : line;
+}
+
+function toFileUrl(u: string) {
+  const s = String(u ?? '').trim();
+  if (!s) return '';
+  // If it already has a scheme (file://, content://, http://, etc) keep it.
+  if (/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(s)) return s;
+  return `file://${s}`;
 }
 
 export default function PaymentViewScreen() {
@@ -728,28 +734,41 @@ export default function PaymentViewScreen() {
         'PDF module not available. Rebuild the app (pod install) and try again.',
       );
     }
-    const file = await PDFModule.convert({
+    // IMPORTANT (Android): react-native-share’s FileProvider only exposes cache + Download.
+    // If we generate into externalFilesDir("Documents"), Android share will open but attach nothing.
+    // So: use default cache path on Android, keep Documents on iOS.
+    const pdfOptions: any = {
       html: buildShareHtml(),
       fileName: `bill_${bill.id}`,
-      directory: 'Documents',
-    });
-    const filePath = file.filePath?.startsWith('file://')
-      ? file.filePath
-      : `file://${file.filePath}`;
-    await Share.share({
+    };
+    if (Platform.OS === 'ios') pdfOptions.directory = 'Documents';
+
+    const file = await PDFModule.convert(pdfOptions);
+    const raw = file?.filePath;
+    if (!raw) throw new Error('Could not generate PDF file to share.');
+    const filePath = toFileUrl(String(raw));
+    if (!filePath) throw new Error('Could not generate PDF file to share.');
+    await Share.open({
       title: 'Payment Bill',
       message: `Payment bill for ${tenantName}`,
-      url: filePath,
+      urls: [filePath],
+      type: 'application/pdf',
+      failOnCancel: false,
     });
   };
 
   const shareImage = async () => {
     const uri = await shareShotRef.current?.capture?.();
     if (!uri) throw new Error('Could not generate image');
-    await Share.share({
+    // view-shot sometimes returns a raw path on Android; ensure file://
+    const fileUrl = toFileUrl(uri);
+    if (!fileUrl) throw new Error('Could not generate image');
+    await Share.open({
       title: 'Payment Bill',
       message: `Payment bill for ${tenantName}`,
-      url: uri,
+      urls: [fileUrl],
+      type: 'image/png',
+      failOnCancel: false,
     });
   };
 
