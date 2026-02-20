@@ -438,16 +438,20 @@ export default function RoomFormScreen() {
         )
       : [];
 
+  const scrollPadBottom =
+    20 + (Platform.OS === 'android' ? Math.max(0, keyboardHeight) : 0);
+
   /* ---------------- UI ---------------- */
 
   return (
     <>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        // Android needs explicit behavior; 'height' is most reliable with ScrollView forms.
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <ScrollView
-          contentContainerStyle={styles.container}
+          contentContainerStyle={[styles.container, { paddingBottom: scrollPadBottom }]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
