@@ -7,6 +7,7 @@ import React from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   Alert,
+  Dimensions,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -94,16 +95,36 @@ export default function PaymentFormScreen() {
     const hideEvent =
       Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
 
+    const getKeyboardHeight = (e: any) => {
+      const h = Number(e?.endCoordinates?.height ?? 0);
+      if (Number.isFinite(h) && h > 0) return h;
+
+      const screenY = Number(e?.endCoordinates?.screenY ?? NaN);
+      if (Number.isFinite(screenY) && screenY > 0) {
+        const winH = Dimensions.get('window').height;
+        return Math.max(0, winH - screenY);
+      }
+
+      return 0;
+    };
+
     const subShow = Keyboard.addListener(showEvent as any, e => {
-      setKeyboardHeight(e?.endCoordinates?.height ?? 0);
+      setKeyboardHeight(getKeyboardHeight(e));
     });
     const subHide = Keyboard.addListener(hideEvent as any, () => {
       setKeyboardHeight(0);
     });
+    const subFrame =
+      Platform.OS === 'android'
+        ? Keyboard.addListener('keyboardDidChangeFrame' as any, e => {
+            setKeyboardHeight(getKeyboardHeight(e));
+          })
+        : null;
 
     return () => {
       subShow.remove();
       subHide.remove();
+      subFrame?.remove();
     };
   }, []);
 
@@ -864,7 +885,7 @@ export default function PaymentFormScreen() {
         icon="content-save"
         style={[
           styles.fab,
-          { bottom: 50 + Math.max(0, keyboardHeight - insets.bottom) },
+          { bottom: keyboardHeight > 0 ? keyboardHeight + 75 : 24 },
         ]}
         loading={saving}
         onPress={save}

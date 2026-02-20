@@ -8,6 +8,7 @@ import React from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   Alert,
+  Dimensions,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
@@ -82,16 +83,37 @@ export default function TenantFormScreen() {
     const hideEvent =
       Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
 
+    const getKeyboardHeight = (e: any) => {
+      const h = Number(e?.endCoordinates?.height ?? 0);
+      if (Number.isFinite(h) && h > 0) return h;
+
+      // Android fallback: some keyboards/devices report height=0 but provide screenY.
+      const screenY = Number(e?.endCoordinates?.screenY ?? NaN);
+      if (Number.isFinite(screenY) && screenY > 0) {
+        const winH = Dimensions.get('window').height;
+        return Math.max(0, winH - screenY);
+      }
+
+      return 0;
+    };
+
     const subShow = Keyboard.addListener(showEvent as any, e => {
-      setKeyboardHeight(e?.endCoordinates?.height ?? 0);
+      setKeyboardHeight(getKeyboardHeight(e));
     });
     const subHide = Keyboard.addListener(hideEvent as any, () => {
       setKeyboardHeight(0);
     });
+    const subFrame =
+      Platform.OS === 'android'
+        ? Keyboard.addListener('keyboardDidChangeFrame' as any, e => {
+            setKeyboardHeight(getKeyboardHeight(e));
+          })
+        : null;
 
     return () => {
       subShow.remove();
       subHide.remove();
+      subFrame?.remove();
     };
   }, []);
 
@@ -363,7 +385,9 @@ export default function TenantFormScreen() {
   }
 
   const avatarUri = profile.file ? profile.file.uri : profileSignedUrl;
-  const fabBottom = 50 + Math.max(0, keyboardHeight - insets.bottom);
+  // Keep FAB at its original baseline when keyboard is closed,
+  // and exactly 15px above the keyboard when it's open.
+  const fabBottom = keyboardHeight > 0 ? keyboardHeight + 75 : 24;
 
   return (
     <View style={styles.screenRoot}>
