@@ -1500,10 +1500,33 @@ export default function PaymentViewScreen() {
                   />
                 </View>
 
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={styles.payDialogTitle} numberOfLines={1}>
-                    Record payment
-                  </Text>
+                <View style={styles.payDialogTextCol}>
+                  <View style={styles.payDialogTitleRow}>
+                    <Text style={styles.payDialogTitle} numberOfLines={1}>
+                      Record payment
+                    </Text>
+                    <View
+                      style={[
+                        styles.statusPill,
+                        styles.payDialogStatusPill,
+                        {
+                          backgroundColor: statusTone.bg,
+                          borderColor: statusTone.border,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.statusPillText,
+                          styles.payDialogStatusPillText,
+                          { color: statusTone.text },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {status}
+                      </Text>
+                    </View>
+                  </View>
                   <Text style={styles.payDialogSub} numberOfLines={1}>
                     {tenantName} • {roomName}
                   </Text>
@@ -1516,25 +1539,6 @@ export default function PaymentViewScreen() {
                   accessibilityLabel="Close"
                   style={styles.payDialogCloseBtn}
                 />
-              </View>
-
-              <View style={styles.payDialogHeaderMetaRow}>
-                <View
-                  style={[
-                    styles.statusPill,
-                    {
-                      backgroundColor: statusTone.bg,
-                      borderColor: statusTone.border,
-                    },
-                  ]}
-                >
-                  <Text
-                    style={[styles.statusPillText, { color: statusTone.text }]}
-                    numberOfLines={1}
-                  >
-                    {status}
-                  </Text>
-                </View>
               </View>
             </View>
 
@@ -1601,10 +1605,32 @@ export default function PaymentViewScreen() {
                 <View style={styles.quickRow}>
                   <Text style={styles.quickLabel}>Quick fill</Text>
                   <View style={styles.quickChipsRow}>
+                    {(() => {
+                      const q25 = Math.max(1, Math.round(pending * 0.25));
+                      const q50 = Math.max(1, Math.round(pending * 0.5));
+                      const qFull = Math.max(1, Math.round(pending));
+                      const selected25 = pending > 0 && amountNum === q25;
+                      const selected50 = pending > 0 && amountNum === q50;
+                      const selectedFull = pending > 0 && amountNum === qFull;
+
+                      const pillTone = (selected: boolean) => ({
+                        bg: selected
+                          ? theme.colors.primaryContainer
+                          : theme.colors.surface,
+                        border: selected ? theme.colors.primary : outline,
+                        text: selected ? theme.colors.primary : '#6B7280',
+                      });
+
+                      const tone25 = pillTone(selected25);
+                      const tone50 = pillTone(selected50);
+                      const toneFull = pillTone(selectedFull);
+
+                      return (
+                        <>
                     <TouchableRipple
                       onPress={() =>
                         setPaymentAmount(
-                          String(Math.max(1, Math.round(pending * 0.25))),
+                          String(q25),
                         )
                       }
                       disabled={pending <= 0}
@@ -1612,21 +1638,23 @@ export default function PaymentViewScreen() {
                       style={[
                         styles.quickPill,
                         {
-                          backgroundColor: theme.colors.surface,
-                          borderColor: outline,
+                          backgroundColor: tone25.bg,
+                          borderColor: tone25.border,
                           opacity: pending > 0 ? 1 : 0.5,
                         },
                       ]}
                     >
                       <View style={styles.quickPillInner}>
-                        <Text style={styles.quickPillText}>25%</Text>
+                        <Text style={[styles.quickPillText, { color: tone25.text }]}>
+                          25%
+                        </Text>
                       </View>
                     </TouchableRipple>
 
                     <TouchableRipple
                       onPress={() =>
                         setPaymentAmount(
-                          String(Math.max(1, Math.round(pending * 0.5))),
+                          String(q50),
                         )
                       }
                       disabled={pending <= 0}
@@ -1634,40 +1662,44 @@ export default function PaymentViewScreen() {
                       style={[
                         styles.quickPill,
                         {
-                          backgroundColor: theme.colors.surface,
-                          borderColor: outline,
+                          backgroundColor: tone50.bg,
+                          borderColor: tone50.border,
                           opacity: pending > 0 ? 1 : 0.5,
                         },
                       ]}
                     >
                       <View style={styles.quickPillInner}>
-                        <Text style={styles.quickPillText}>50%</Text>
+                        <Text style={[styles.quickPillText, { color: tone50.text }]}>
+                          50%
+                        </Text>
                       </View>
                     </TouchableRipple>
 
                     <TouchableRipple
-                      onPress={() => setPaymentAmount(String(pending))}
+                      onPress={() => setPaymentAmount(String(qFull))}
                       disabled={pending <= 0}
                       borderless
                       style={[
                         styles.quickPill,
                         {
-                          backgroundColor: theme.colors.primaryContainer,
-                          borderColor: theme.colors.primary,
+                          backgroundColor: toneFull.bg,
+                          borderColor: toneFull.border,
                           opacity: pending > 0 ? 1 : 0.5,
                         },
                       ]}
                     >
                       <View style={styles.quickPillInner}>
-                        <Icon
-                          source="check-circle-outline"
-                          size={16}
-                          color={theme.colors.primary}
-                        />
+                        {selectedFull ? (
+                          <Icon
+                            source="check-circle-outline"
+                            size={16}
+                            color={toneFull.text}
+                          />
+                        ) : null}
                         <Text
                           style={[
                             styles.quickPillText,
-                            { color: theme.colors.primary },
+                            { color: toneFull.text },
                           ]}
                           numberOfLines={1}
                         >
@@ -1675,6 +1707,9 @@ export default function PaymentViewScreen() {
                         </Text>
                       </View>
                     </TouchableRipple>
+                        </>
+                      );
+                    })()}
                   </View>
                 </View>
 
@@ -1800,6 +1835,9 @@ export default function PaymentViewScreen() {
                     </Text>
                   )}
                 </Surface>
+
+                {/* Internal bottom breathing room (keeps content off dialog edge) */}
+                <View pointerEvents="none" style={styles.dialogBottomSpacer} />
               </ScrollView>
             </View>
           </Surface>
@@ -2319,8 +2357,8 @@ const styles = StyleSheet.create({
   },
   payDialogHeader: {
     paddingHorizontal: 16,
-    paddingTop: 14,
-    paddingBottom: 12,
+    paddingTop: 12,
+    paddingBottom: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   payDialogHeaderRow: {
@@ -2329,11 +2367,28 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   payDialogCloseBtn: { margin: 0 },
-  payDialogHeaderMetaRow: {
-    marginTop: 10,
+  payDialogTextCol: {
+    flex: 1,
+    minWidth: 0,
+  },
+  payDialogTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  payDialogStatusPill: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+    maxWidth: 96,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  payDialogStatusPillText: {
+    fontSize: 12,
+    fontWeight: '900',
   },
   payDialogTopActions: {
     paddingHorizontal: 16,
@@ -2365,7 +2420,14 @@ const styles = StyleSheet.create({
   },
 
   dialogContent: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 14 },
-  payDialogScrollArea: { flexGrow: 1, width: '100%', paddingTop: 2 },
+  payDialogScrollArea: {
+    flexGrow: 1,
+    width: '100%',
+    paddingTop: 2,
+  },
+  dialogBottomSpacer: {
+    height: 14,
+  },
 
   quickRow: { marginTop: 4 },
   quickLabel: {
