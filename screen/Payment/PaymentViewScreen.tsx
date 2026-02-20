@@ -272,6 +272,7 @@ export default function PaymentViewScreen() {
   const canRecordPaymentGate = !!bill && pendingForGate > 0;
 
   const openPaymentDialog = React.useCallback(() => {
+    Keyboard.dismiss();
     setPaymentAmount('');
     setPaymentMethod('UPI');
     setPaymentNote('');

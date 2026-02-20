@@ -551,6 +551,7 @@ export default function PaymentFormScreen() {
               {/* Billing month */}
               <TouchableOpacity
                 onPress={() => {
+                  Keyboard.dismiss();
                   setBillingMonthOpen(true);
                 }}
                 activeOpacity={0.85}

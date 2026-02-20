@@ -158,6 +158,7 @@ export default function AddTicketScreen() {
             label="Title *"
             value={title}
             error={errors.title}
+            disabled={saving}
             onChange={(t: any) => {
               setTitle(t);
             }}
@@ -170,6 +171,7 @@ export default function AddTicketScreen() {
             label="Description *"
             value={description}
             error={errors.description}
+            disabled={saving}
             onChange={(t: any) => {
               setDescription(t);
             }}
