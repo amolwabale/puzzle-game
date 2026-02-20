@@ -165,17 +165,24 @@ export default function ProfileFormScreen() {
     );
   }
 
-  const fabBottom = 50 + Math.max(0, keyboardHeight - insets.bottom);
+  const keyboardLift = Math.max(0, keyboardHeight - insets.bottom);
+  // Keep a fixed gap between FAB and keyboard on open.
+  const fabBottom = keyboardHeight > 0 ? keyboardHeight + 15 : 24 + insets.bottom;
 
   return (
     <KeyboardAvoidingView
       style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      // Android needs an explicit behavior to avoid the keyboard covering the form.
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
     >
       <ScrollView
         style={styles.screen}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[
+          styles.content,
+          // Ensure last field (Address) can be scrolled above the keyboard.
+          { paddingBottom: 100 + keyboardLift },
+        ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
@@ -209,7 +216,7 @@ export default function ProfileFormScreen() {
               Basic information
             </Text>
             <FormInput
-              label="First name"
+              label="First name *"
               value={fields.first_name}
               onChange={v => setField('first_name', v)}
               error={errors.first_name}
@@ -217,7 +224,7 @@ export default function ProfileFormScreen() {
               autoCapitalize="words"
             />
             <FormInput
-              label="Last name"
+              label="Last name *"
               value={fields.last_name}
               onChange={v => setField('last_name', v)}
               error={errors.last_name}
@@ -239,10 +246,11 @@ export default function ProfileFormScreen() {
               keyboard="number-pad"
             />
             <FormInput
-              label="Email"
+              label="Email *"
               value={fields.email}
               onChange={v => setField('email', v)}
               error={errors.email}
+              disabled
               maxLength={MAX.email}
               keyboard="email-address"
               autoCapitalize="none"

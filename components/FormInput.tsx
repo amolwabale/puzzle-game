@@ -14,6 +14,7 @@ type Props = {
   value: string;
   onChange: (v: string) => void;
   error?: string;
+  disabled?: boolean;
   keyboard?: any;
   multiline?: boolean;
   maxLength?: number;
@@ -42,6 +43,7 @@ export function FormInput({
   value,
   onChange,
   error,
+  disabled,
   keyboard,
   multiline,
   maxLength,
@@ -100,6 +102,8 @@ export function FormInput({
         <TextInput
           label={label}
           value={String(value ?? '')}
+          disabled={!!disabled}
+          editable={!disabled}
           onChangeText={t => {
             if (multiline) onChange(String(t ?? '').replace(/\r/g, ''));
             else onChange(sanitizeSingleLine(String(t ?? '')));
