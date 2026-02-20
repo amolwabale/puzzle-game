@@ -370,7 +370,6 @@ export {
   fetchActiveTenantForRoom,
   fetchActiveTenantsForRooms,
   fetchActiveRoomForTenants,
-  fetchActiveRoomAssignmentsForTenants,
   hasAnyTenantMappingForRoom,
   fetchTenantHistoryForRoom,
   addTenantToRoom,

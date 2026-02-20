@@ -5,7 +5,14 @@ import {
 } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React from 'react';
-import { Alert, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import {
+  Alert,
+  PermissionsAndroid,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
 import {
   ActivityIndicator,
   Avatar,
@@ -15,6 +22,7 @@ import {
   Text,
   useTheme,
 } from 'react-native-paper';
+import { CameraRoll } from '@react-native-camera-roll/camera-roll';
 import RNBlobUtil from 'react-native-blob-util';
 import Share from 'react-native-share';
 import { TenantStackParamList } from '../../navigation/StackParam';
@@ -57,18 +65,40 @@ export default function TenantViewScreen() {
   );
   const [profileDownloading, setProfileDownloading] = React.useState(false);
 
+  const STORAGE_BUCKET = 'tenant-manager';
+
+  const extractStoragePath = (fullUrlOrPath?: string | null) => {
+    const s = String(fullUrlOrPath ?? '').trim();
+    if (!s) return null;
+
+    // Accept:
+    // - public URL: .../storage/v1/object/public/<bucket>/<path>
+    // - signed URL: .../storage/v1/object/sign/<bucket>/<path>?token=...
+    // - already bucket-prefixed path: <bucket>/<path>
+    // - raw path: <path>
+    const marker = `/${STORAGE_BUCKET}/`;
+    const idx = s.indexOf(marker);
+    let p: string | null = null;
+
+    if (idx !== -1) p = s.substring(idx + marker.length);
+    else if (s.startsWith(`${STORAGE_BUCKET}/`))
+      p = s.substring(STORAGE_BUCKET.length + 1);
+    else if (!/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(s)) p = s;
+
+    if (!p) return null;
+    // Strip query/hash (important if caller passes a signed URL).
+    return p.split('?')[0].split('#')[0];
+  };
+
   const createSignedUrl = async (fullUrl?: string | null) => {
     if (!fullUrl) return undefined;
 
     try {
-      const marker = '/tenant-manager/';
-      const index = fullUrl.indexOf(marker);
-      if (index === -1) return undefined;
-
-      const filePath = fullUrl.substring(index + marker.length);
+      const filePath = extractStoragePath(fullUrl);
+      if (!filePath) return undefined;
 
       const { data, error } = await supabase.storage
-        .from('tenant-manager')
+        .from(STORAGE_BUCKET)
         .createSignedUrl(filePath, 60 * 60); // 1 hour
 
       if (error) {
@@ -108,6 +138,53 @@ export default function TenantViewScreen() {
     return `file://${s}`;
   };
 
+  const requestAndroidGalleryPermissionIfNeeded = async () => {
+    if (Platform.OS !== 'android') return true;
+    try {
+      const v = Number(Platform.Version) || 0;
+      // Android 13+
+      if (v >= 33) {
+        const res = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES,
+        );
+        return res === PermissionsAndroid.RESULTS.GRANTED;
+      }
+      // Android 10-12: read permission is usually enough for CameraRoll operations
+      if (v >= 29) {
+        const res = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
+        );
+        return res === PermissionsAndroid.RESULTS.GRANTED;
+      }
+      // Android 9 and below
+      const res = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+      );
+      return res === PermissionsAndroid.RESULTS.GRANTED;
+    } catch {
+      // Best-effort: if permission API fails, still attempt save.
+      return true;
+    }
+  };
+
+  const requestAndroidLegacyWritePermissionIfNeeded = async () => {
+    if (Platform.OS !== 'android') return true;
+    const v = Number(Platform.Version) || 0;
+    // Scoped storage: Android 10+ doesn't need legacy write permission.
+    if (v >= 29) return true;
+    try {
+      const res = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+      );
+      return res === PermissionsAndroid.RESULTS.GRANTED;
+    } catch {
+      return true;
+    }
+  };
+
+  const isImageMime = (mime?: string) =>
+    !!mime && String(mime).toLowerCase().startsWith('image/');
+
   const downloadProfilePhoto = async () => {
     const rawUrl = (tenant as any)?.profile_photo_url as string | null | undefined;
     if (!rawUrl) {
@@ -130,34 +207,83 @@ export default function TenantViewScreen() {
         .toLowerCase()
         .replace(/[^\w]+/g, '_')
         .slice(0, 40);
-      const ext = getExtFromUrl(rawUrl) || 'jpg';
-      const fileName = `${safeBase || 'tenant'}_profile_${tenantId}.${ext}`;
-      const mime = getMimeFromExt(ext);
+      // Profile photo must be treated as an image for Gallery/Photos save.
+      const rawExt = getExtFromUrl(rawUrl) || '';
+      const imgExt = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'].includes(
+        rawExt.toLowerCase(),
+      )
+        ? rawExt.toLowerCase()
+        : 'jpg';
+      const fileName = `${safeBase || 'tenant'}_profile_${tenantId}.${imgExt}`;
+      const mime = getMimeFromExt(imgExt);
 
       if (Platform.OS === 'android') {
-        const destPath = `${RNBlobUtil.fs.dirs.DownloadDir}/${fileName}`;
-        await RNBlobUtil.config({
+        // Android: Save to Gallery / Photos (user-visible).
+        // IMPORTANT: download to a path WITH an image extension,
+        // otherwise Android infers application/octet-stream and rejects insertion.
+        const destPath = `${RNBlobUtil.fs.dirs.CacheDir}/${fileName}`;
+        const res = await RNBlobUtil.config({
+          path: destPath,
           fileCache: true,
-          addAndroidDownloads: {
-            useDownloadManager: true,
-            notification: true,
-            mediaScannable: true,
-            title: fileName,
-            description: 'Tenant profile photo',
-            mime,
-            path: destPath,
-          },
+          overwrite: true,
         }).fetch('GET', signed);
+
+        const tempPath = res.path() || destPath;
+        if (!tempPath) throw new Error('Download failed.');
+
+        const fileUrl = toFileUrl(tempPath);
+        if (!fileUrl) throw new Error('Could not prepare file for saving.');
+
+        let saved = false;
+
+        // 1) Try CameraRoll (most "Gallery-friendly")
+        try {
+          await CameraRoll.saveAsset(fileUrl, { type: 'photo' });
+          saved = true;
+        } catch {
+          const ok = await requestAndroidGalleryPermissionIfNeeded();
+          if (ok) {
+            try {
+              await CameraRoll.saveAsset(fileUrl, { type: 'photo' });
+              saved = true;
+            } catch {}
+          }
+        }
+
+        // 2) Fallback to direct MediaStore insert
+        if (!saved) {
+          try {
+            await RNBlobUtil.MediaCollection.copyToMediaStore(
+              { name: fileName, mimeType: mime },
+              'Image',
+              tempPath,
+            );
+            saved = true;
+          } catch {}
+        }
+
+        // Best-effort cleanup.
+        try {
+          await RNBlobUtil.fs.unlink(tempPath);
+        } catch {}
+
+        if (!saved) {
+          Alert.alert(
+            'Save failed',
+            'Could not save to Gallery. Please allow Photos permission in Settings and try again.',
+          );
+          return;
+        }
 
         trackEvent('Tenant_ProfilePhoto_Downloaded', {
           source: 'Tenant',
           tenant_id: tenantId,
         });
-        Alert.alert('Downloaded', 'Saved to Downloads.');
+        Alert.alert('Saved', 'Profile photo saved to Gallery.');
         return;
       }
 
-      // iOS: download to cache and present share sheet (Save Image / Save to Files).
+      // iOS: save directly to Photos (Camera Roll). Fallback to share sheet if permission denied.
       const destPath = `${RNBlobUtil.fs.dirs.CacheDir}/${fileName}`;
       await RNBlobUtil.config({ path: destPath, fileCache: true }).fetch(
         'GET',
@@ -170,13 +296,18 @@ export default function TenantViewScreen() {
         source: 'Tenant',
         tenant_id: tenantId,
       });
-      await Share.open({
-        title: 'Profile photo',
-        message: 'Tenant profile photo',
-        urls: [fileUrl],
-        type: mime,
-        failOnCancel: false,
-      });
+      try {
+        await CameraRoll.saveAsset(fileUrl, { type: 'photo' });
+        Alert.alert('Saved', 'Profile photo saved to Photos.');
+      } catch {
+        await Share.open({
+          title: 'Profile photo',
+          message: 'Tenant profile photo',
+          urls: [fileUrl],
+          type: mime,
+          failOnCancel: false,
+        });
+      }
     } catch (err: any) {
       Alert.alert('Download failed', err?.message || 'Could not download photo');
     } finally {
@@ -347,31 +478,193 @@ export default function TenantViewScreen() {
       }
 
       const safeBase = label.toLowerCase().replace(/\s+/g, '_');
-      const ext = getExtFromUrl(url) || 'pdf';
+      const ext = (getExtFromUrl(url) || 'bin').toLowerCase();
       const fileName = `${safeBase}_${tenantId}.${ext}`;
       const mime = getMimeFromExt(ext);
+      const treatAsImage = isImageMime(mime);
 
       if (Platform.OS === 'android') {
-        const destPath = `${RNBlobUtil.fs.dirs.DownloadDir}/${fileName}`;
-        await RNBlobUtil.config({
+        // Download to a path WITH extension to preserve MIME inference.
+        const cachePath = `${RNBlobUtil.fs.dirs.CacheDir}/${fileName}`;
+        const res = await RNBlobUtil.config({
+          path: cachePath,
           fileCache: true,
-          addAndroidDownloads: {
-            useDownloadManager: true,
-            notification: true,
-            mediaScannable: true,
-            title: fileName,
-            description: `${label} document`,
-            mime,
-            path: destPath,
-          },
+          overwrite: true,
         }).fetch('GET', signed);
+        const tempPath = res.path() || cachePath;
+        if (!tempPath) throw new Error('Download failed.');
+
+        if (treatAsImage) {
+          // Save image to Gallery / Photos.
+          const fileUrl = toFileUrl(tempPath);
+          if (!fileUrl) throw new Error('Could not prepare file for saving.');
+
+          let saved = false;
+          try {
+            await CameraRoll.saveAsset(fileUrl, { type: 'photo' });
+            saved = true;
+          } catch {
+            const ok = await requestAndroidGalleryPermissionIfNeeded();
+            if (ok) {
+              try {
+                await CameraRoll.saveAsset(fileUrl, { type: 'photo' });
+                saved = true;
+              } catch {}
+            }
+          }
+
+          if (!saved) {
+            try {
+              await RNBlobUtil.MediaCollection.copyToMediaStore(
+                { name: fileName, mimeType: mime },
+                'Image',
+                tempPath,
+              );
+              saved = true;
+            } catch {}
+          }
+
+          // Best-effort cleanup.
+          try {
+            await RNBlobUtil.fs.unlink(tempPath);
+          } catch {}
+
+          if (!saved) {
+            Alert.alert(
+              'Save failed',
+              'Could not save to Gallery. Please allow Photos permission in Settings and try again.',
+            );
+            return;
+          }
+
+          trackEvent('Tenant_Document_Downloaded_' + label, {
+            source: 'Tenant',
+            tenant_id: tenantId,
+            document_label: label,
+          });
+          Alert.alert('Saved', `Saved to Gallery as “${fileName}”.`);
+          return;
+        }
+
+        // Non-image: save to Files/Downloads (user-visible in Files apps).
+        // Prefer MediaStore Downloads (shows up in Files apps reliably).
+        // Fallback: Download Manager into public Downloads.
+        let saved = false;
+        let savedUri: string | null = null;
+        let lastErrMsg = '';
+        try {
+          await requestAndroidLegacyWritePermissionIfNeeded();
+          // Use create + write (more reliable than copyToMediaStore on some OEMs).
+          const uri = await RNBlobUtil.MediaCollection.createMediafile(
+            { name: fileName, parentFolder: '', mimeType: mime },
+            'Download',
+          );
+          await RNBlobUtil.MediaCollection.writeToMediafile(uri, tempPath);
+          saved = true;
+          savedUri = uri;
+        } catch (e: any) {
+          lastErrMsg =
+            e?.message || e?.toString?.() || 'Failed to save via MediaStore.';
+        }
+
+        if (saved) {
+          // Cleanup temp cache file after successful MediaStore copy.
+          try {
+            await RNBlobUtil.fs.unlink(tempPath);
+          } catch {}
+
+          // Optional: offer to open the saved file to confirm success.
+          // Some file managers take time to index Downloads; opening confirms it exists.
+          Alert.alert('Saved', `Saved to Downloads as “${fileName}”.`, [
+            { text: 'OK' },
+            {
+              text: 'Open',
+              onPress: () => {
+                if (savedUri) {
+                  void RNBlobUtil.android
+                    .actionViewIntent(savedUri, mime)
+                    .catch(() => {});
+                }
+              },
+            },
+          ]);
+
+          trackEvent('Tenant_Document_Downloaded_' + label, {
+            source: 'Tenant',
+            tenant_id: tenantId,
+            document_label: label,
+          });
+          return;
+        } else {
+          // Fallback: Download Manager into the public Downloads directory.
+          try {
+            const destPath = `${RNBlobUtil.fs.dirs.DownloadDir}/${fileName}`;
+            await RNBlobUtil.config({
+              fileCache: true,
+              addAndroidDownloads: {
+                useDownloadManager: true,
+                notification: true,
+                mediaScannable: true,
+                title: fileName,
+                description: `${label} document`,
+                mime,
+                path: destPath,
+              },
+            }).fetch('GET', signed);
+            // Verify the file actually exists where we think it is.
+            const exists = await RNBlobUtil.fs.exists(destPath);
+            if (exists) {
+              // Ask media scanner to index it for file managers.
+              try {
+                await RNBlobUtil.fs.scanFile([{ path: destPath, mime } as any]);
+              } catch {}
+              // Register in Downloads app (helps visibility on some devices).
+              try {
+                await RNBlobUtil.android.addCompleteDownload({
+                  title: fileName,
+                  description: `${label} document`,
+                  mime,
+                  path: destPath,
+                  showNotification: true,
+                });
+              } catch {}
+              saved = true;
+            } else {
+              throw new Error('Download Manager did not create the file.');
+            }
+          } catch (e2: any) {
+            lastErrMsg =
+              (e2?.message || e2?.toString?.() || '') ||
+              lastErrMsg ||
+              'Failed to download via Download Manager.';
+          }
+        }
+
+        if (!saved) {
+          Alert.alert(
+            'Save failed',
+            `Could not save to Downloads.\n\n${lastErrMsg || ''}`.trim(),
+          );
+          return;
+        }
 
         trackEvent('Tenant_Document_Downloaded_' + label, {
           source: 'Tenant',
           tenant_id: tenantId,
           document_label: label,
         });
-        Alert.alert('Downloaded', 'Saved to Downloads.');
+        Alert.alert('Saved', `Saved to Downloads as “${fileName}”.`, [
+          { text: 'OK' },
+          {
+            text: 'Open',
+            onPress: () => {
+              const destPath = `${RNBlobUtil.fs.dirs.DownloadDir}/${fileName}`;
+              void RNBlobUtil.android
+                .actionViewIntent(destPath, mime)
+                .catch(() => {});
+            },
+          },
+        ]);
         return;
       }
 
