@@ -366,131 +366,128 @@ export default function TenantFormScreen() {
   const fabBottom = 50 + Math.max(0, keyboardHeight - insets.bottom);
 
   return (
-    <>
+    <View style={styles.screenRoot}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView contentContainerStyle={styles.container}>
-          <View
-            pointerEvents={saving ? 'none' : 'auto'}
-            style={saving ? styles.formDisabled : undefined}
-          >
-            {/* HERO */}
-            <Surface style={styles.hero} elevation={4}>
-              <AvatarDisplay uri={avatarUri} size={88} />
+          <View pointerEvents={saving ? 'none' : 'auto'}>
+              {/* HERO */}
+              <Surface style={styles.hero} elevation={4}>
+                <AvatarDisplay uri={avatarUri} size={88} />
 
-              <View style={{ marginLeft: 16, flex: 1 }}>
-                <Text variant="titleLarge" style={styles.heroTitle}>
-                  {mode === 'edit' ? 'Edit Tenant' : 'Add Tenant'}
-                </Text>
+                <View style={{ marginLeft: 16, flex: 1 }}>
+                  <Text variant="titleLarge" style={styles.heroTitle}>
+                    {mode === 'edit' ? 'Edit Tenant' : 'Add Tenant'}
+                  </Text>
 
-                <TouchableRipple
-                  onPress={pickPhoto}
-                  borderless
-                  style={[
-                    styles.photoAction,
-                    {
-                      borderColor: theme.colors.primary,
-                      backgroundColor: theme.colors.primaryContainer,
-                    },
-                  ]}
-                >
-                  <View style={styles.photoActionContent}>
-                    <IconButton
-                      icon={
-                        profile.file || profile.url
-                          ? 'camera-outline'
-                          : 'upload-outline'
-                      }
-                      size={18}
-                      style={styles.photoIcon}
-                    />
-                    <Text style={styles.photoActionText}>
-                      {profile.file || profile.url
-                        ? 'Change photo'
-                        : 'Upload photo'}
-                    </Text>
-                  </View>
-                </TouchableRipple>
-              </View>
-            </Surface>
+                  <TouchableRipple
+                    onPress={pickPhoto}
+                    borderless
+                    style={[
+                      styles.photoAction,
+                      {
+                        borderColor: theme.colors.primary,
+                        backgroundColor: theme.colors.primaryContainer,
+                      },
+                    ]}
+                  >
+                    <View style={styles.photoActionContent}>
+                      <IconButton
+                        icon={
+                          profile.file || profile.url
+                            ? 'camera-outline'
+                            : 'upload-outline'
+                        }
+                        size={18}
+                        style={styles.photoIcon}
+                      />
+                      <Text style={styles.photoActionText}>
+                        {profile.file || profile.url
+                          ? 'Change photo'
+                          : 'Upload photo'}
+                      </Text>
+                    </View>
+                  </TouchableRipple>
+                </View>
+              </Surface>
 
-            {/* PERSONAL */}
-            <Section title="Personal Information">
-              <FormInput
-                label="Full Name *"
-                value={name}
-                onChange={setName}
-                error={errors.name}
-                maxLength={70}
-              />
-              <FormInput
-                label="Mobile *"
-                value={mobile}
-                onChange={setMobile}
-                error={errors.mobile}
-                keyboard="number-pad"
-                maxLength={10}
-              />
-              <FormInput
-                label="Alternate Mobile"
-                value={alternateMobile}
-                onChange={setAlternateMobile}
-                maxLength={10}
-                keyboard="number-pad"
-              />
-              <FormInput
-                label="Family Members"
-                value={familyMembers}
-                onChange={setFamilyMembers}
-                keyboard="number-pad"
-                maxLength={2}
-              />
-            </Section>
-
-            {/* ADDRESS */}
-            <Section title="Address & Work">
-              <FormInput
-                label="Address *"
-                value={address}
-                onChange={setAddress}
-                error={errors.address}
-                multiline={true}
-                maxLength={255}
-              />
-              <FormInput
-                label="Company Name"
-                value={company}
-                onChange={setCompany}
-                maxLength={50}
-              />
-            </Section>
-
-            {/* DOCUMENTS */}
-            <Section title="Documents">
-              <View style={styles.docGrid}>
-                <DocTile
-                  icon="card-account-details"
-                  label="Aadhaar"
-                  state={adhar}
-                  onPick={() => pickDocWithChoice(setAdhar)}
+              {/* PERSONAL */}
+              <Section title="Personal Information">
+                <FormInput
+                  label="Full Name *"
+                  value={name}
+                  onChange={setName}
+                  error={errors.name}
+                  maxLength={70}
                 />
-                <DocTile
-                  icon="card-bulleted"
-                  label="PAN"
-                  state={pan}
-                  onPick={() => pickDocWithChoice(setPan)}
+                <FormInput
+                  label="Mobile *"
+                  value={mobile}
+                  onChange={setMobile}
+                  error={errors.mobile}
+                  keyboard="number-pad"
+                  maxLength={10}
                 />
-                <DocTile
-                  icon="file-document"
-                  label="Agreement"
-                  state={agreement}
-                  onPick={() => pickDocWithChoice(setAgreement)}
+                <FormInput
+                  label="Alternate Mobile"
+                  value={alternateMobile}
+                  onChange={setAlternateMobile}
+                  maxLength={10}
+                  keyboard="number-pad"
                 />
-              </View>
-            </Section>
-          </View>
+                <FormInput
+                  label="Family Members"
+                  value={familyMembers}
+                  onChange={setFamilyMembers}
+                  keyboard="number-pad"
+                  maxLength={2}
+                />
+              </Section>
+
+              {/* ADDRESS */}
+              <Section title="Address & Work">
+                <FormInput
+                  label="Address *"
+                  value={address}
+                  onChange={setAddress}
+                  error={errors.address}
+                  multiline={true}
+                  maxLength={255}
+                />
+                <FormInput
+                  label="Company Name"
+                  value={company}
+                  onChange={setCompany}
+                  maxLength={50}
+                />
+              </Section>
+
+              {/* DOCUMENTS */}
+              <Section title="Documents">
+                <View style={styles.docGrid}>
+                  <DocTile
+                    icon="card-account-details"
+                    label="Aadhaar"
+                    state={adhar}
+                    onPick={() => pickDocWithChoice(setAdhar)}
+                  />
+                  <DocTile
+                    icon="card-bulleted"
+                    label="PAN"
+                    state={pan}
+                    onPick={() => pickDocWithChoice(setPan)}
+                  />
+                  <DocTile
+                    icon="file-document"
+                    label="Agreement"
+                    state={agreement}
+                    onPick={() => pickDocWithChoice(setAgreement)}
+                  />
+                </View>
+              </Section>
+            </View>
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -501,7 +498,10 @@ export default function TenantFormScreen() {
         onPress={save}
         disabled={saving}
       />
-    </>
+
+      {/* Full-screen scrim while saving (Android + iOS). Avoids Android Surface+opacity artifacts. */}
+      {saving ? <View pointerEvents="none" style={styles.screenScrim} /> : null}
+    </View>
   );
 }
 
@@ -564,6 +564,10 @@ const AvatarDisplay = ({ uri, size }: any) =>
 /* ---------------- STYLES ---------------- */
 
 const styles = StyleSheet.create({
+  screenRoot: {
+    flex: 1,
+    position: 'relative',
+  },
   container: {
     padding: 16,
     paddingBottom: 120,
@@ -636,8 +640,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 16,
   },
-  formDisabled: {
-    opacity: 0.6,
+  screenScrim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(17, 24, 39, 0.08)',
   },
   loader: {
     flex: 1,

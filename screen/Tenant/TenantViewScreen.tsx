@@ -130,6 +130,31 @@ export default function TenantViewScreen() {
     return 'application/octet-stream';
   };
 
+  const safeFileToken = (input: string, fallback: string) => {
+    const raw = String(input || '').trim();
+    const token = (raw || fallback)
+      .replace(/[^a-zA-Z0-9]+/g, '-') // spaces + symbols → "-"
+      .replace(/-+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 40);
+    return token.length ? token : fallback;
+  };
+
+  const docKeyForLabel = (label: string) => {
+    const s = String(label || '').trim().toLowerCase();
+    if (s === 'aadhaar' || s === 'adhar' || s === 'aadhar') return 'adhar';
+    if (s === 'pan') return 'pan';
+    if (s === 'agreement') return 'agreement';
+    return s.replace(/[^a-z0-9]+/g, '-').slice(0, 20) || 'document';
+  };
+
+  const buildDocFileName = (label: string, originalUrl?: string | null) => {
+    const nameToken = safeFileToken(String(tenant?.name || ''), 'tenant');
+    const docToken = docKeyForLabel(label);
+    const ext = (getExtFromUrl(String(originalUrl || '')) || 'bin').toLowerCase();
+    return { fileName: `${nameToken}-${docToken}.${ext}`, ext };
+  };
+
   const toFileUrl = (u: string) => {
     const s = String(u ?? '').trim();
     if (!s) return '';
@@ -214,7 +239,7 @@ export default function TenantViewScreen() {
       )
         ? rawExt.toLowerCase()
         : 'jpg';
-      const fileName = `${safeBase || 'tenant'}_profile_${tenantId}.${imgExt}`;
+      const fileName = `${safeBase || 'tenant'}_profile_photo.${imgExt}`;
       const mime = getMimeFromExt(imgExt);
 
       if (Platform.OS === 'android') {
@@ -427,9 +452,7 @@ export default function TenantViewScreen() {
       // Download to local temp file so native share sheet can offer:
       // - Save Image (for images)
       // - Save to Files (for PDFs)
-      const safeBase = label.toLowerCase().replace(/\s+/g, '_');
-      const ext = getExtFromUrl(url) || 'pdf';
-      const fileName = `${safeBase}_${tenantId}.${ext}`;
+      const { fileName, ext } = buildDocFileName(label, url);
       const destPath = `${RNBlobUtil.fs.dirs.CacheDir}/${fileName}`;
       const mime = getMimeFromExt(ext);
 
@@ -477,9 +500,7 @@ export default function TenantViewScreen() {
         return;
       }
 
-      const safeBase = label.toLowerCase().replace(/\s+/g, '_');
-      const ext = (getExtFromUrl(url) || 'bin').toLowerCase();
-      const fileName = `${safeBase}_${tenantId}.${ext}`;
+      const { fileName, ext } = buildDocFileName(label, url);
       const mime = getMimeFromExt(ext);
       const treatAsImage = isImageMime(mime);
 

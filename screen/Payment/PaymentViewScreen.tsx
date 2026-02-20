@@ -16,6 +16,7 @@ import {
   View,
 } from 'react-native';
 import Share from 'react-native-share';
+import RNBlobUtil from 'react-native-blob-util';
 import {
   ActivityIndicator,
   Avatar,
@@ -120,6 +121,39 @@ function toFileUrl(u: string) {
   // If it already has a scheme (file://, content://, http://, etc) keep it.
   if (/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(s)) return s;
   return `file://${s}`;
+}
+
+function stripFileScheme(u: string) {
+  const s = String(u ?? '').trim();
+  return s.startsWith('file://') ? s.slice('file://'.length) : s;
+}
+
+function getExtFromPath(p: string) {
+  const cleaned = String(p || '').split('?')[0].split('#')[0];
+  const dot = cleaned.lastIndexOf('.');
+  if (dot === -1) return '';
+  const ext = cleaned.substring(dot + 1).toLowerCase();
+  return ext.length <= 8 ? ext : '';
+}
+
+function getMimeFromExt(ext: string) {
+  const e = (ext || '').toLowerCase();
+  if (e === 'pdf') return 'application/pdf';
+  if (e === 'png') return 'image/png';
+  if (e === 'jpg' || e === 'jpeg') return 'image/jpeg';
+  if (e === 'webp') return 'image/webp';
+  if (e === 'heic' || e === 'heif') return 'image/heic';
+  return 'application/octet-stream';
+}
+
+function safeFileToken(input: string, fallback: string) {
+  const raw = String(input || '').trim();
+  const token = (raw || fallback)
+    .replace(/[^a-zA-Z0-9]+/g, '-') // spaces + symbols → "-"
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40);
+  return token.length ? token : fallback;
 }
 
 export default function PaymentViewScreen() {
@@ -729,46 +763,83 @@ export default function PaymentViewScreen() {
     `;
   };
 
+  const buildReceiptBaseName = () => {
+    const dt = bill?.billing_month ?? bill?.created_at ?? undefined;
+    const d = dt ? new Date(dt) : new Date();
+    const month = d.toLocaleString('en-GB', { month: 'short' }); // e.g. "Jan"
+    const year = String(d.getFullYear());
+    const nameToken = safeFileToken(tenantName, 'receipt');
+    const monthToken = safeFileToken(month, 'month');
+    return `${nameToken}-${monthToken}-${year}`;
+  };
+
   const sharePdf = async () => {
     if (!PDFModule?.convert) {
       throw new Error(
         'PDF module not available. Rebuild the app (pod install) and try again.',
       );
     }
+    const baseName = buildReceiptBaseName();
     // IMPORTANT (Android): react-native-share’s FileProvider only exposes cache + Download.
     // If we generate into externalFilesDir("Documents"), Android share will open but attach nothing.
     // So: use default cache path on Android, keep Documents on iOS.
     const pdfOptions: any = {
       html: buildShareHtml(),
-      fileName: `bill_${bill.id}`,
+      fileName: baseName,
     };
     if (Platform.OS === 'ios') pdfOptions.directory = 'Documents';
 
     const file = await PDFModule.convert(pdfOptions);
     const raw = file?.filePath;
     if (!raw) throw new Error('Could not generate PDF file to share.');
-    const filePath = toFileUrl(String(raw));
+    const rawPath = stripFileScheme(String(raw));
+    const ext = getExtFromPath(rawPath) || 'pdf';
+    const dir =
+      rawPath.lastIndexOf('/') >= 0 ? rawPath.slice(0, rawPath.lastIndexOf('/')) : '';
+    const desiredPath = dir ? `${dir}/${baseName}.${ext}` : rawPath;
+    if (desiredPath && rawPath !== desiredPath) {
+      try {
+        await RNBlobUtil.fs.cp(rawPath, desiredPath);
+      } catch {
+        // If rename/copy fails, fall back to the generated file.
+      }
+    }
+    const finalPath =
+      desiredPath && (await RNBlobUtil.fs.exists(desiredPath))
+        ? desiredPath
+        : rawPath;
+    const filePath = toFileUrl(finalPath);
     if (!filePath) throw new Error('Could not generate PDF file to share.');
     await Share.open({
       title: 'Payment Bill',
       message: `Payment bill for ${tenantName}`,
       urls: [filePath],
-      type: 'application/pdf',
+      type: getMimeFromExt(ext),
       failOnCancel: false,
     });
   };
 
   const shareImage = async () => {
+    const baseName = buildReceiptBaseName();
     const uri = await shareShotRef.current?.capture?.();
     if (!uri) throw new Error('Could not generate image');
-    // view-shot sometimes returns a raw path on Android; ensure file://
-    const fileUrl = toFileUrl(uri);
+    const srcPath = stripFileScheme(uri);
+    const ext = getExtFromPath(srcPath) || 'png';
+    const destPath = `${RNBlobUtil.fs.dirs.CacheDir}/${baseName}.${ext}`;
+    try {
+      await RNBlobUtil.fs.cp(srcPath, destPath);
+    } catch {
+      // If copy fails, share original.
+    }
+    const finalPath =
+      (await RNBlobUtil.fs.exists(destPath)) ? destPath : srcPath;
+    const fileUrl = toFileUrl(finalPath);
     if (!fileUrl) throw new Error('Could not generate image');
     await Share.open({
       title: 'Payment Bill',
       message: `Payment bill for ${tenantName}`,
       urls: [fileUrl],
-      type: 'image/png',
+      type: getMimeFromExt(ext),
       failOnCancel: false,
     });
   };
