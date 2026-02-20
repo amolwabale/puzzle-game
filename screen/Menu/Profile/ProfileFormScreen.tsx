@@ -170,26 +170,24 @@ export default function ProfileFormScreen() {
   const fabBottom = keyboardHeight > 0 ? keyboardHeight + 15 : 24 + insets.bottom;
 
   return (
-    <KeyboardAvoidingView
-      style={styles.flex}
-      // Android needs an explicit behavior to avoid the keyboard covering the form.
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
-    >
-      <ScrollView
-        style={styles.screen}
-        contentContainerStyle={[
-          styles.content,
-          // Ensure last field (Address) can be scrolled above the keyboard.
-          { paddingBottom: 100 + keyboardLift },
-        ]}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
+    <View style={styles.screenRoot}>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        // Android needs an explicit behavior to avoid the keyboard covering the form.
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
       >
-        <View
-          pointerEvents={saving ? 'none' : 'auto'}
-          style={saving ? styles.formDisabled : undefined}
+        <ScrollView
+          style={styles.screen}
+          contentContainerStyle={[
+            styles.content,
+            // Ensure last field (Address) can be scrolled above the keyboard.
+            { paddingBottom: 100 + keyboardLift },
+          ]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
+          <View pointerEvents={saving ? 'none' : 'auto'}>
           <Surface style={styles.heroCard} elevation={2}>
             <View style={styles.heroRow}>
               <View
@@ -282,11 +280,17 @@ export default function ProfileFormScreen() {
         onPress={handleSave}
         disabled={saving}
       />
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+      {saving ? <View pointerEvents="none" style={styles.screenScrim} /> : null}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screenRoot: {
+    flex: 1,
+    position: 'relative',
+  },
   flex: { flex: 1 },
   screen: { flex: 1, backgroundColor: '#F4F6FA' },
   content: { padding: 16, paddingBottom: 100 },
@@ -338,7 +342,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 16,
   },
-  formDisabled: {
-    opacity: 0.6,
+  screenScrim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(17, 24, 39, 0.08)',
   },
 });

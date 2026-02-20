@@ -389,7 +389,7 @@ export default function PaymentFormScreen() {
   }
 
   return (
-    <>
+    <View style={styles.screenRoot}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -399,10 +399,7 @@ export default function PaymentFormScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <View
-            pointerEvents={saving ? 'none' : 'auto'}
-            style={saving ? styles.formDisabled : undefined}
-          >
+          <View pointerEvents={saving ? 'none' : 'auto'}>
             {/* HERO (RoomForm-style) */}
             <Surface style={styles.hero} elevation={2}>
               <View style={styles.sectionTitleRow}>
@@ -883,7 +880,8 @@ export default function PaymentFormScreen() {
           setBillingMonthOpen(false);
         }}
       />
-    </>
+      {saving ? <View pointerEvents="none" style={styles.screenScrim} /> : null}
+    </View>
   );
 }
 
@@ -1030,6 +1028,10 @@ const RentSummaryRow = ({
 };
 
 const styles = StyleSheet.create({
+  screenRoot: {
+    flex: 1,
+    position: 'relative',
+  },
   container: { padding: 16, paddingBottom: 120, backgroundColor: '#F4F6FA' },
   loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
@@ -1377,5 +1379,8 @@ const styles = StyleSheet.create({
   metaPillText: { fontWeight: '800', color: '#1A73E8', fontSize: 14, flex: 1 },
 
   fab: { position: 'absolute', right: 16 },
-  formDisabled: { opacity: 0.6 },
+  screenScrim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(17, 24, 39, 0.08)',
+  },
 });

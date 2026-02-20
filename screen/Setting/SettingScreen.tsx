@@ -264,16 +264,13 @@ export default function SettingScreen() {
   const fabBottom = 50 + Math.max(0, keyboardHeight - insets.bottom);
 
   return (
-    <>
+    <View style={styles.screenRoot}>
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <View
-          pointerEvents={saving ? 'none' : 'auto'}
-          style={saving ? styles.formDisabled : undefined}
-        >
+        <View pointerEvents={saving ? 'none' : 'auto'}>
           {/* HERO (Support/Room style) */}
           <Surface style={styles.hero} elevation={2}>
             <View style={styles.heroTop}>
@@ -448,7 +445,8 @@ export default function SettingScreen() {
           </Dialog.Actions>
         </Dialog>
       </Portal>
-    </>
+      {saving ? <View pointerEvents="none" style={styles.screenScrim} /> : null}
+    </View>
   );
 }
 
@@ -536,6 +534,10 @@ const DaySelectRow = ({
 /* ---------------- STYLES ---------------- */
 
 const styles = StyleSheet.create({
+  screenRoot: {
+    flex: 1,
+    position: 'relative',
+  },
   scroll: {
     flex: 1,
     backgroundColor: '#F4F6FA',
@@ -637,8 +639,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 16,
   },
-  formDisabled: {
-    opacity: 0.6,
+  screenScrim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(17, 24, 39, 0.08)',
   },
 
   loader: {
