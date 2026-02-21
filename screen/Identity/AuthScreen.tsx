@@ -168,6 +168,7 @@ export default function AuthScreen() {
   };
 
   const handleGoogleLogin = async () => {
+    trackEvent('Auth_Google_Login_Clicked', { source: 'Auth' });
     const webClientId = Config.GOOGLE_WEB_CLIENT_ID?.trim?.();
     if (!webClientId) {
       Alert.alert(

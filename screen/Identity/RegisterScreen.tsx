@@ -116,6 +116,7 @@ export default function RegisterScreen() {
   const handleRegister = async () => {
     if (!validate()) return;
 
+    trackEvent('Auth_Register_Clicked', { source: 'Auth' });
     setLoading(true);
 
     try {

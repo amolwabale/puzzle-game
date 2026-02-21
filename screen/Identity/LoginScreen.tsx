@@ -67,6 +67,7 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     if (!validate()) return;
 
+    trackEvent('Auth_Login_Clicked', { source: 'Auth' });
     try {
       setLoading(true);
       const result = await Login(email, password);

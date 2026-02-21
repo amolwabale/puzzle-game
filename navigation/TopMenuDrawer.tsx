@@ -10,6 +10,8 @@ import {
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import supabase from '../service/SupabaseClient';
+import { traceAsync } from '../service/perfTrace';
+import { trackEvent } from '../service/analyticsTracker';
 
 type NavRef = { navigate: (name: string, params?: any) => void } | null;
 
@@ -68,8 +70,12 @@ export function TopMenuProvider({
   );
 
   const doLogout = React.useCallback(async () => {
+    trackEvent('Auth_Logout_Clicked', { source: 'Menu' });
     try {
-      await supabase.auth.signOut();
+      await traceAsync('action_logout', async () => {
+        const { error } = await supabase.auth.signOut();
+        if (error) throw error;
+      });
       // AppNavigator listens to session changes and will redirect to AuthStack.
     } catch (e: any) {
       // no-op: keep UI stable
