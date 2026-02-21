@@ -30,6 +30,7 @@ import analytics from '@react-native-firebase/analytics';
 import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
 import { trackEvent } from '../../service/analyticsTracker';
 import { getCurrentUserId } from '../../service/authSession';
+import { traceAsync } from '../../service/perfTrace';
 type Errors = Partial<
   Record<
     | 'propertyName'
@@ -225,55 +226,61 @@ export default function SettingScreen() {
   const handleSave = async () => {
     if (!validate()) return;
 
+    setSaving(true);
     try {
-      setSaving(true);
-      const userId = await getCurrentUserId();
+      await traceAsync(
+        'action_setting_save',
+        async () => {
+          const userId = await getCurrentUserId();
 
-      const payload = {
-        property_name: propertyName.trim(),
-        property_address: propertyAddress.trim() || null,
-        water: water ? Number(water) : null,
-        electricity_unit: electricity ? Number(electricity) : null,
-        rent_date: rentDate ? Number(rentDate) : null,
-        rent_due_date: rentDueDate ? Number(rentDueDate) : null,
-        user_id: userId,
-        modified_at: new Date().toISOString(),
-      };
+          const payload = {
+            property_name: propertyName.trim(),
+            property_address: propertyAddress.trim() || null,
+            water: water ? Number(water) : null,
+            electricity_unit: electricity ? Number(electricity) : null,
+            rent_date: rentDate ? Number(rentDate) : null,
+            rent_due_date: rentDueDate ? Number(rentDueDate) : null,
+            user_id: userId,
+            modified_at: new Date().toISOString(),
+          };
 
-      let result;
+          let result;
 
-      if (recordId) {
-        result = await supabase
-          .from('setting')
-          .update(payload)
-          .eq('id', recordId)
-          .eq('user_id', userId)
-          .select()
-          .maybeSingle();
-      } else {
-        result = await supabase
-          .from('setting')
-          .insert(payload)
-          .select()
-          .maybeSingle();
-      }
+          if (recordId) {
+            result = await supabase
+              .from('setting')
+              .update(payload)
+              .eq('id', recordId)
+              .eq('user_id', userId)
+              .select()
+              .maybeSingle();
+          } else {
+            result = await supabase
+              .from('setting')
+              .insert(payload)
+              .select()
+              .maybeSingle();
+          }
 
-      if (result.error) {
-        throw new Error(result.error.message);
-      }
+          if (result.error) {
+            throw new Error(result.error.message);
+          }
 
-      trackEvent('Setting_Saved', {
-        source: 'Setting',
-        setting_id: result.data?.id,
-      });
+          trackEvent('Setting_Saved', {
+            source: 'Setting',
+            setting_id: result.data?.id,
+          });
 
-      queryClient.invalidateQueries({ queryKey: ['latestSetting'] });
+          queryClient.invalidateQueries({ queryKey: ['latestSetting'] });
 
-      Alert.alert('Saved', 'Settings have been saved successfully.');
+          Alert.alert('Saved', 'Settings have been saved successfully.');
 
-      if (result.data?.id) {
-        setRecordId(result.data.id);
-      }
+          if (result.data?.id) {
+            setRecordId(result.data.id);
+          }
+        },
+        { mode: recordId ? 'edit' : 'add' },
+      );
     } catch (err: any) {
       Alert.alert('Save Failed', err.message || 'Something went wrong');
     } finally {

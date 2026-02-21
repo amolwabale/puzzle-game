@@ -1,6 +1,7 @@
 import supabase from './SupabaseClient';
 import { readUriAsArrayBuffer } from './readUriAsArrayBuffer';
 import { getCurrentUserId } from './authSession';
+import { traceAsync } from './perfTrace';
 
 /* ===================== TYPES ===================== */
 
@@ -122,185 +123,199 @@ const deleteFileByUrl = async (url?: string | null) => {
 /* ===================== SAVE ===================== */
 
 const saveTenant = async (payload: SavePayload) => {
-  const userId = await getCurrentUserId();
+  return await traceAsync(
+    'action_tenant_save',
+    async () => {
+      const userId = await getCurrentUserId();
 
-  /* ---------- ADD (SAFE BY DESIGN) ---------- */
-  if (!payload.id) {
-    const { data: inserted, error } = await supabase
-      .from('tenant')
-      .insert({
-        name: payload.name.trim(),
-        mobile: payload.mobile.trim(),
-        alternate_mobile: payload.alternate_mobile?.trim() || null,
-        total_family_members: payload.total_family_members?.trim() || null,
-        address: payload.address?.trim() || null,
-        company_name: payload.company_name?.trim() || null,
-        user_id: userId,
-      })
-      .select()
-      .maybeSingle();
+      /* ---------- ADD (SAFE BY DESIGN) ---------- */
+      if (!payload.id) {
+        const { data: inserted, error } = await supabase
+          .from('tenant')
+          .insert({
+            name: payload.name.trim(),
+            mobile: payload.mobile.trim(),
+            alternate_mobile: payload.alternate_mobile?.trim() || null,
+            total_family_members: payload.total_family_members?.trim() || null,
+            address: payload.address?.trim() || null,
+            company_name: payload.company_name?.trim() || null,
+            user_id: userId,
+          })
+          .select()
+          .maybeSingle();
 
-    if (error || !inserted) throw error;
+        if (error || !inserted) throw error;
 
-    const tenantId = inserted.id;
-    const updates: Partial<TenantRecord> = {};
+        const tenantId = inserted.id;
+        const updates: Partial<TenantRecord> = {};
 
-    if (payload.files.profile?.file)
-      updates.profile_photo_url = (
-        await uploadFile(
-          userId,
-          tenantId,
-          'profile_photo',
-          payload.files.profile.file,
-        )
-      ).publicUrl;
+        if (payload.files.profile?.file)
+          updates.profile_photo_url = (
+            await uploadFile(
+              userId,
+              tenantId,
+              'profile_photo',
+              payload.files.profile.file,
+            )
+          ).publicUrl;
 
-    if (payload.files.pan?.file)
-      updates.pan_card_url = (
-        await uploadFile(userId, tenantId, 'pan_card', payload.files.pan.file)
-      ).publicUrl;
+        if (payload.files.pan?.file)
+          updates.pan_card_url = (
+            await uploadFile(userId, tenantId, 'pan_card', payload.files.pan.file)
+          ).publicUrl;
 
-    if (payload.files.adhar?.file)
-      updates.adhar_card_url = (
-        await uploadFile(
-          userId,
-          tenantId,
-          'adhar_card',
-          payload.files.adhar.file,
-        )
-      ).publicUrl;
+        if (payload.files.adhar?.file)
+          updates.adhar_card_url = (
+            await uploadFile(
+              userId,
+              tenantId,
+              'adhar_card',
+              payload.files.adhar.file,
+            )
+          ).publicUrl;
 
-    if (payload.files.agreement?.file)
-      updates.agreement_url = (
-        await uploadFile(
-          userId,
-          tenantId,
-          'agreement',
-          payload.files.agreement.file,
-        )
-      ).publicUrl;
+        if (payload.files.agreement?.file)
+          updates.agreement_url = (
+            await uploadFile(
+              userId,
+              tenantId,
+              'agreement',
+              payload.files.agreement.file,
+            )
+          ).publicUrl;
 
-    if (Object.keys(updates).length) {
-      const { data, error: updErr } = await supabase
-        .from('tenant')
-        .update(updates)
-        .eq('id', tenantId)
-        .select()
-        .maybeSingle();
-      if (updErr) throw updErr;
-      return data as TenantRecord;
-    }
+        if (Object.keys(updates).length) {
+          const { data, error: updErr } = await supabase
+            .from('tenant')
+            .update(updates)
+            .eq('id', tenantId)
+            .select()
+            .maybeSingle();
+          if (updErr) throw updErr;
+          return data as TenantRecord;
+        }
 
-    return inserted as TenantRecord;
-  }
+        return inserted as TenantRecord;
+      }
 
-  /* ---------- EDIT (WITH ROLLBACK) ---------- */
-  const tenantId = payload.id;
-  const uploadedPaths: string[] = [];
+      /* ---------- EDIT (WITH ROLLBACK) ---------- */
+      const tenantId = payload.id;
+      const uploadedPaths: string[] = [];
 
-  try {
-    let profileUrl = payload.files.profile?.url ?? null;
-    let panUrl = payload.files.pan?.url ?? null;
-    let adharUrl = payload.files.adhar?.url ?? null;
-    let agreementUrl = payload.files.agreement?.url ?? null;
+      try {
+        let profileUrl = payload.files.profile?.url ?? null;
+        let panUrl = payload.files.pan?.url ?? null;
+        let adharUrl = payload.files.adhar?.url ?? null;
+        let agreementUrl = payload.files.agreement?.url ?? null;
 
-    if (payload.files.profile?.file) {
-      const u = await uploadFile(
-        userId,
-        tenantId,
-        'profile_photo',
-        payload.files.profile.file,
-      );
-      uploadedPaths.push(u.path);
-      profileUrl = u.publicUrl;
-    }
+        if (payload.files.profile?.file) {
+          const u = await uploadFile(
+            userId,
+            tenantId,
+            'profile_photo',
+            payload.files.profile.file,
+          );
+          uploadedPaths.push(u.path);
+          profileUrl = u.publicUrl;
+        }
 
-    if (payload.files.pan?.file) {
-      const u = await uploadFile(
-        userId,
-        tenantId,
-        'pan_card',
-        payload.files.pan.file,
-      );
-      uploadedPaths.push(u.path);
-      panUrl = u.publicUrl;
-    }
+        if (payload.files.pan?.file) {
+          const u = await uploadFile(
+            userId,
+            tenantId,
+            'pan_card',
+            payload.files.pan.file,
+          );
+          uploadedPaths.push(u.path);
+          panUrl = u.publicUrl;
+        }
 
-    if (payload.files.adhar?.file) {
-      const u = await uploadFile(
-        userId,
-        tenantId,
-        'adhar_card',
-        payload.files.adhar.file,
-      );
-      uploadedPaths.push(u.path);
-      adharUrl = u.publicUrl;
-    }
+        if (payload.files.adhar?.file) {
+          const u = await uploadFile(
+            userId,
+            tenantId,
+            'adhar_card',
+            payload.files.adhar.file,
+          );
+          uploadedPaths.push(u.path);
+          adharUrl = u.publicUrl;
+        }
 
-    if (payload.files.agreement?.file) {
-      const u = await uploadFile(
-        userId,
-        tenantId,
-        'agreement',
-        payload.files.agreement.file,
-      );
-      uploadedPaths.push(u.path);
-      agreementUrl = u.publicUrl;
-    }
+        if (payload.files.agreement?.file) {
+          const u = await uploadFile(
+            userId,
+            tenantId,
+            'agreement',
+            payload.files.agreement.file,
+          );
+          uploadedPaths.push(u.path);
+          agreementUrl = u.publicUrl;
+        }
 
-    const { data, error } = await supabase
-      .from('tenant')
-      .update({
-        name: payload.name.trim(),
-        mobile: payload.mobile.trim(),
-        alternate_mobile: payload.alternate_mobile?.trim() || null,
-        total_family_members: payload.total_family_members?.trim() || null,
-        address: payload.address?.trim() || null,
-        company_name: payload.company_name?.trim() || null,
-        profile_photo_url: profileUrl,
-        pan_card_url: panUrl,
-        adhar_card_url: adharUrl,
-        agreement_url: agreementUrl,
-        modified_at: new Date().toISOString(),
-      })
-      .eq('id', tenantId)
-      .eq('user_id', userId)
-      .select()
-      .maybeSingle();
+        const { data, error } = await supabase
+          .from('tenant')
+          .update({
+            name: payload.name.trim(),
+            mobile: payload.mobile.trim(),
+            alternate_mobile: payload.alternate_mobile?.trim() || null,
+            total_family_members: payload.total_family_members?.trim() || null,
+            address: payload.address?.trim() || null,
+            company_name: payload.company_name?.trim() || null,
+            profile_photo_url: profileUrl,
+            pan_card_url: panUrl,
+            adhar_card_url: adharUrl,
+            agreement_url: agreementUrl,
+            modified_at: new Date().toISOString(),
+          })
+          .eq('id', tenantId)
+          .eq('user_id', userId)
+          .select()
+          .maybeSingle();
 
-    if (error) throw error;
-    return data as TenantRecord;
-  } catch (err) {
-    // 🔥 ROLLBACK uploaded files
-    if (uploadedPaths.length) {
-      await supabase.storage.from(BUCKET).remove(uploadedPaths);
-    }
-    throw err;
-  }
+        if (error) throw error;
+        return data as TenantRecord;
+      } catch (err) {
+        // 🔥 ROLLBACK uploaded files
+        if (uploadedPaths.length) {
+          await supabase.storage.from(BUCKET).remove(uploadedPaths);
+        }
+        throw err;
+      }
+    },
+    {
+      mode: payload.id ? 'edit' : 'add',
+      has_profile: !!payload.files.profile?.file,
+      has_pan: !!payload.files.pan?.file,
+      has_adhar: !!payload.files.adhar?.file,
+      has_agreement: !!payload.files.agreement?.file,
+    },
+  );
 };
 
 /* ===================== DELETE ===================== */
 
 const deleteTenant = async (tenantId: number) => {
-  const userId = await getCurrentUserId();
-  const existing = await fetchTenantById(tenantId);
+  return await traceAsync('action_tenant_delete', async () => {
+    const userId = await getCurrentUserId();
+    const existing = await fetchTenantById(tenantId);
 
-  const { error } = await supabase
-    .from('tenant')
-    .delete()
-    .eq('id', tenantId)
-    .eq('user_id', userId);
+    const { error } = await supabase
+      .from('tenant')
+      .delete()
+      .eq('id', tenantId)
+      .eq('user_id', userId);
 
-  if (error) throw error;
+    if (error) throw error;
 
-  if (existing) {
-    await Promise.all([
-      deleteFileByUrl(existing.profile_photo_url),
-      deleteFileByUrl(existing.pan_card_url),
-      deleteFileByUrl(existing.adhar_card_url),
-      deleteFileByUrl(existing.agreement_url),
-    ]);
-  }
+    if (existing) {
+      await Promise.all([
+        deleteFileByUrl(existing.profile_photo_url),
+        deleteFileByUrl(existing.pan_card_url),
+        deleteFileByUrl(existing.adhar_card_url),
+        deleteFileByUrl(existing.agreement_url),
+      ]);
+    }
+  });
 };
 
 /* ===================== EXPORTS ===================== */

@@ -1,5 +1,6 @@
 import supabase from './SupabaseClient';
 import { getCurrentSessionUser } from './authSession';
+import { traceAsync } from './perfTrace';
 
 export type MeterReadingInsert = {
   roomId: number;
@@ -51,12 +52,18 @@ export async function fetchLatestMeterReadingForRoom(params: {
 export async function updateMeterReading(params: { id: number; unit: number }) {
   // Some DBs have meter_reading.user_id as uuid, others as numeric.
   // Updating only unit is safe and avoids user_id mismatch.
-  const { error } = await supabase
-    .from('meter_reading')
-    .update({ unit: params.unit })
-    .eq('id', params.id);
+  return await traceAsync(
+    'action_meter_reading_save',
+    async () => {
+      const { error } = await supabase
+        .from('meter_reading')
+        .update({ unit: params.unit })
+        .eq('id', params.id);
 
-  if (error) throw error;
+      if (error) throw error;
+    },
+    { id: params.id },
+  );
 }
 
 /**
@@ -70,49 +77,57 @@ export async function updateMeterReading(params: { id: number; unit: number }) {
 export async function createMeterReading(
   payload: MeterReadingInsert,
 ): Promise<MeterReadingRow> {
-  const user = await getCurrentSessionUser();
+  return await traceAsync(
+    'action_meter_reading_create',
+    async () => {
+      const user = await getCurrentSessionUser();
 
-  const insertWithUser = await supabase
-    .from('meter_reading')
-    .insert({
-      room_id: payload.roomId,
-      unit: payload.unit,
-      tenant_id: payload.tenantId,
-      user_id: (user?.id as any) ?? null,
-    })
-    .select('id')
-    .maybeSingle();
+      const insertWithUser = await supabase
+        .from('meter_reading')
+        .insert({
+          room_id: payload.roomId,
+          unit: payload.unit,
+          tenant_id: payload.tenantId,
+          user_id: (user?.id as any) ?? null,
+        })
+        .select('id')
+        .maybeSingle();
 
-  if (insertWithUser.error) {
-    const msg = insertWithUser.error.message || '';
-    const shouldRetryWithoutUser =
-      msg.includes('type numeric') || msg.includes('invalid input syntax');
+      if (insertWithUser.error) {
+        const msg = insertWithUser.error.message || '';
+        const shouldRetryWithoutUser =
+          msg.includes('type numeric') || msg.includes('invalid input syntax');
 
-    if (!shouldRetryWithoutUser) {
-      throw insertWithUser.error;
-    }
+        if (!shouldRetryWithoutUser) {
+          throw insertWithUser.error;
+        }
 
-    const insertWithoutUser = await supabase
-      .from('meter_reading')
-      .insert({
-        room_id: payload.roomId,
-        unit: payload.unit,
-        tenant_id: payload.tenantId,
-      })
-      .select('id')
-      .maybeSingle();
+        const insertWithoutUser = await supabase
+          .from('meter_reading')
+          .insert({
+            room_id: payload.roomId,
+            unit: payload.unit,
+            tenant_id: payload.tenantId,
+          })
+          .select('id')
+          .maybeSingle();
 
-    if (insertWithoutUser.error) throw insertWithoutUser.error;
-    if (!insertWithoutUser.data?.id)
-      throw new Error('Meter reading save failed');
-    return insertWithoutUser.data as any;
-  }
+        if (insertWithoutUser.error) throw insertWithoutUser.error;
+        if (!insertWithoutUser.data?.id)
+          throw new Error('Meter reading save failed');
+        return insertWithoutUser.data as any;
+      }
 
-  if (!insertWithUser.data?.id) throw new Error('Meter reading save failed');
-  return insertWithUser.data as any;
+      if (!insertWithUser.data?.id) throw new Error('Meter reading save failed');
+      return insertWithUser.data as any;
+    },
+    { room_id: payload.roomId, tenant_id: payload.tenantId },
+  );
 }
 
 export async function deleteMeterReading(id: number) {
-  const { error } = await supabase.from('meter_reading').delete().eq('id', id);
-  if (error) throw error;
+  return await traceAsync('action_meter_reading_delete', async () => {
+    const { error } = await supabase.from('meter_reading').delete().eq('id', id);
+    if (error) throw error;
+  });
 }

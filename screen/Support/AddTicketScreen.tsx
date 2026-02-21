@@ -1,5 +1,12 @@
 import React from 'react';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { pick, types as pickerTypes } from '@react-native-documents/picker';
 import { launchImageLibrary } from 'react-native-image-picker';
 import {
@@ -130,105 +137,112 @@ export default function AddTicketScreen() {
   }, [validate, title, description, file, navigation]);
 
   return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
+    <KeyboardAvoidingView
+      style={styles.flex}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <Surface style={styles.section} elevation={2}>
-        <View style={styles.sectionTitleRow}>
-          <View
-            style={[
-              styles.sectionIcon,
-              { backgroundColor: theme.colors.primaryContainer },
-            ]}
-          >
-            <Icon source="lifebuoy" size={18} color={theme.colors.primary} />
-          </View>
-          <View style={{ flex: 1, minWidth: 0 }}>
-            <Text style={styles.sectionTitle}>New support ticket</Text>
-            <Text style={styles.sectionSub} numberOfLines={1}>
-              Tell us what went wrong and we’ll help you.
-            </Text>
-          </View>
-        </View>
-
-        <View>
-          <FormInput
-            label="Title *"
-            value={title}
-            error={errors.title}
-            disabled={saving}
-            onChange={(t: any) => {
-              setTitle(t);
-            }}
-            maxLength={255}
-          />
-        </View>
-
-        <View>
-          <FormInput
-            label="Description *"
-            value={description}
-            error={errors.description}
-            disabled={saving}
-            onChange={(t: any) => {
-              setDescription(t);
-            }}
-            multiline={true}
-            maxLength={500}
-          />
-        </View>
-
-        <View style={styles.attachRow}>
-          <Button
-            mode="outlined"
-            onPress={pickAttachmentWithChoice}
-            icon="paperclip"
-            disabled={saving}
-          >
-            Attach file
-          </Button>
-          {file ? (
-            <View style={styles.filePill}>
-              <Icon
-                source="file-outline"
-                size={16}
-                color={theme.colors.primary}
-              />
-              <Text
-                style={[styles.fileName, { color: theme.colors.primary }]}
-                numberOfLines={1}
-              >
-                {file.name}
-              </Text>
-              <IconButton
-                icon="close"
-                size={16}
-                onPress={() => setFile(null)}
-                disabled={saving}
-              />
+      <ScrollView
+        style={styles.screen}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Surface style={styles.section} elevation={2}>
+          <View style={styles.sectionTitleRow}>
+            <View
+              style={[
+                styles.sectionIcon,
+                { backgroundColor: theme.colors.primaryContainer },
+              ]}
+            >
+              <Icon source="lifebuoy" size={18} color={theme.colors.primary} />
             </View>
-          ) : null}
-        </View>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={styles.sectionTitle}>New support ticket</Text>
+              <Text style={styles.sectionSub} numberOfLines={1}>
+                Tell us what went wrong and we’ll help you.
+              </Text>
+            </View>
+          </View>
 
-        <Button
-          mode="contained"
-          onPress={() => void onSubmit()}
-          loading={saving}
-          disabled={saving}
-          style={styles.primaryBtn}
-        >
-          Create ticket
-        </Button>
-      </Surface>
-    </ScrollView>
+          <View>
+            <FormInput
+              label="Title *"
+              value={title}
+              error={errors.title}
+              disabled={saving}
+              onChange={(t: any) => {
+                setTitle(t);
+              }}
+              maxLength={255}
+            />
+          </View>
+
+          <View>
+            <FormInput
+              label="Description *"
+              value={description}
+              error={errors.description}
+              disabled={saving}
+              onChange={(t: any) => {
+                setDescription(t);
+              }}
+              multiline={true}
+              maxLength={500}
+            />
+          </View>
+
+          <View style={styles.attachRow}>
+            <Button
+              mode="outlined"
+              onPress={pickAttachmentWithChoice}
+              icon="paperclip"
+              disabled={saving}
+            >
+              Attach file
+            </Button>
+            {file ? (
+              <View style={styles.filePill}>
+                <Icon
+                  source="file-outline"
+                  size={16}
+                  color={theme.colors.primary}
+                />
+                <Text
+                  style={[styles.fileName, { color: theme.colors.primary }]}
+                  numberOfLines={1}
+                >
+                  {file.name}
+                </Text>
+                <IconButton
+                  icon="close"
+                  size={16}
+                  onPress={() => setFile(null)}
+                  disabled={saving}
+                />
+              </View>
+            ) : null}
+          </View>
+
+          <Button
+            mode="contained"
+            onPress={() => void onSubmit()}
+            loading={saving}
+            disabled={saving}
+            style={styles.primaryBtn}
+          >
+            Create ticket
+          </Button>
+        </Surface>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  flex: { flex: 1 },
   screen: { flex: 1, backgroundColor: '#F4F6FA' },
-  content: { padding: 16, paddingBottom: 24 },
+  content: { flexGrow: 1, padding: 16, paddingBottom: 120 },
 
   section: { borderRadius: 16, padding: 14, backgroundColor: '#FFFFFF' },
   sectionTitleRow: {

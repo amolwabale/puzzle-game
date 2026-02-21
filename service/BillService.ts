@@ -1,5 +1,6 @@
 import supabase from './SupabaseClient';
 import { getCurrentUserId } from './authSession';
+import { traceAsync } from './perfTrace';
 
 export type BillRecord = {
   id: number;
@@ -107,64 +108,76 @@ export async function fetchLatestBillForRoom(
 export async function createBill(
   payload: CreateBillPayload,
 ): Promise<BillRecord> {
-  const userId = await getCurrentUserId();
+  return await traceAsync(
+    'action_bill_create',
+    async () => {
+      const userId = await getCurrentUserId();
 
-  const { data, error } = await supabase
-    .from('bill')
-    .insert({
-      user_id: userId,
-      tenant_id: payload.tenantId,
-      room_id: payload.roomId,
-      billing_month: payload.billingMonth,
-      rent: payload.rent,
-      water: payload.water,
-      previous_month_meter_reading: payload.previousMeter,
-      current_month_meter_reading: payload.currentMeter,
-      electricity: payload.electricity,
-      total_amount: payload.totalAmount,
-      ad_hoc_amount: payload.adHocAmount,
-      ad_hoc_comment: payload.adHocComment || null,
-      paid_amount: payload.paidAmount != null ? payload.paidAmount : 0,
-      status: payload.status || 'UNPAID',
-      modified_at: null,
-    })
-    .select()
-    .maybeSingle();
+      const { data, error } = await supabase
+        .from('bill')
+        .insert({
+          user_id: userId,
+          tenant_id: payload.tenantId,
+          room_id: payload.roomId,
+          billing_month: payload.billingMonth,
+          rent: payload.rent,
+          water: payload.water,
+          previous_month_meter_reading: payload.previousMeter,
+          current_month_meter_reading: payload.currentMeter,
+          electricity: payload.electricity,
+          total_amount: payload.totalAmount,
+          ad_hoc_amount: payload.adHocAmount,
+          ad_hoc_comment: payload.adHocComment || null,
+          paid_amount: payload.paidAmount != null ? payload.paidAmount : 0,
+          status: payload.status || 'UNPAID',
+          modified_at: null,
+        })
+        .select()
+        .maybeSingle();
 
-  if (error || !data) throw error;
-  return data as any;
+      if (error || !data) throw error;
+      return data as any;
+    },
+    { room_id: payload.roomId, tenant_id: payload.tenantId },
+  );
 }
 
 export async function updateBill(
   payload: UpdateBillPayload,
 ): Promise<BillRecord> {
-  const userId = await getCurrentUserId();
+  return await traceAsync(
+    'action_bill_update',
+    async () => {
+      const userId = await getCurrentUserId();
 
-  const { data, error } = await supabase
-    .from('bill')
-    .update({
-      tenant_id: payload.tenantId,
-      room_id: payload.roomId,
-      billing_month: payload.billingMonth,
-      rent: payload.rent,
-      water: payload.water,
-      previous_month_meter_reading: payload.previousMeter,
-      current_month_meter_reading: payload.currentMeter,
-      electricity: payload.electricity,
-      total_amount: payload.totalAmount,
-      ad_hoc_amount: payload.adHocAmount,
-      ad_hoc_comment: payload.adHocComment || null,
-      paid_amount: payload.paidAmount,
-      status: payload.status,
-      modified_at: new Date().toISOString(),
-    })
-    .eq('user_id', userId)
-    .eq('id', payload.billId)
-    .select()
-    .maybeSingle();
+      const { data, error } = await supabase
+        .from('bill')
+        .update({
+          tenant_id: payload.tenantId,
+          room_id: payload.roomId,
+          billing_month: payload.billingMonth,
+          rent: payload.rent,
+          water: payload.water,
+          previous_month_meter_reading: payload.previousMeter,
+          current_month_meter_reading: payload.currentMeter,
+          electricity: payload.electricity,
+          total_amount: payload.totalAmount,
+          ad_hoc_amount: payload.adHocAmount,
+          ad_hoc_comment: payload.adHocComment || null,
+          paid_amount: payload.paidAmount,
+          status: payload.status,
+          modified_at: new Date().toISOString(),
+        })
+        .eq('user_id', userId)
+        .eq('id', payload.billId)
+        .select()
+        .maybeSingle();
 
-  if (error || !data) throw error;
-  return data as any;
+      if (error || !data) throw error;
+      return data as any;
+    },
+    { bill_id: payload.billId, room_id: payload.roomId, tenant_id: payload.tenantId },
+  );
 }
 
 export async function updateBillPayment(params: {
@@ -173,33 +186,41 @@ export async function updateBillPayment(params: {
   status: 'UNPAID' | 'PARTIAL' | 'PAID';
   paidAmountComment?: string | null;
 }): Promise<BillRecord> {
-  const userId = await getCurrentUserId();
+  return await traceAsync(
+    'action_bill_payment_save',
+    async () => {
+      const userId = await getCurrentUserId();
 
-  const { data, error } = await supabase
-    .from('bill')
-    .update({
-      paid_amount: params.paidAmount,
-      status: params.status,
-      paid_amount_comment: params.paidAmountComment ?? undefined,
-      modified_at: new Date().toISOString(),
-    })
-    .eq('user_id', userId)
-    .eq('id', params.billId)
-    .select()
-    .maybeSingle();
+      const { data, error } = await supabase
+        .from('bill')
+        .update({
+          paid_amount: params.paidAmount,
+          status: params.status,
+          paid_amount_comment: params.paidAmountComment ?? undefined,
+          modified_at: new Date().toISOString(),
+        })
+        .eq('user_id', userId)
+        .eq('id', params.billId)
+        .select()
+        .maybeSingle();
 
-  if (error || !data) throw error;
-  return data as any;
+      if (error || !data) throw error;
+      return data as any;
+    },
+    { bill_id: params.billId, status: params.status },
+  );
 }
 
 export async function deleteBill(billId: number): Promise<void> {
-  const userId = await getCurrentUserId();
-  const { error } = await supabase
-    .from('bill')
-    .delete()
-    .eq('user_id', userId)
-    .eq('id', billId);
-  if (error) throw error;
+  return await traceAsync('action_bill_delete', async () => {
+    const userId = await getCurrentUserId();
+    const { error } = await supabase
+      .from('bill')
+      .delete()
+      .eq('user_id', userId)
+      .eq('id', billId);
+    if (error) throw error;
+  });
 }
 
 export async function fetchLatestSetting(): Promise<{

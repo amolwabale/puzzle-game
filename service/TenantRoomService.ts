@@ -1,6 +1,7 @@
 import supabase from './SupabaseClient';
 import { TenantRecord } from './tenantService';
 import { getCurrentUserId } from './authSession';
+import { traceAsync } from './perfTrace';
 
 /* ===================== TYPES ===================== */
 
@@ -318,50 +319,68 @@ const addTenantToRoom = async ({
   room_id: number;
   joining_date: string;
 }) => {
-  const userId = await getCurrentUserId();
+  return await traceAsync(
+    'action_room_occupancy_save',
+    async () => {
+      const userId = await getCurrentUserId();
 
-  // safety: ensure no active tenant
-  const existing = await fetchActiveTenantForRoom(room_id);
-  if (existing) throw new Error('Room already occupied');
+      // safety: ensure no active tenant
+      const existing = await fetchActiveTenantForRoom(room_id);
+      if (existing) throw new Error('Room already occupied');
 
-  const { error } = await supabase.from('tenant_room_mapping').insert({
-    tenant_id,
-    room_id,
-    joining_date,
-    user_id: userId,
-  });
+      const { error } = await supabase.from('tenant_room_mapping').insert({
+        tenant_id,
+        room_id,
+        joining_date,
+        user_id: userId,
+      });
 
-  if (error) throw error;
+      if (error) throw error;
+    },
+    { room_id, tenant_id },
+  );
 };
 
 /* ===================== VACATE ===================== */
 
 const vacateRoom = async (mappingId: number) => {
-  const userId = await getCurrentUserId();
+  return await traceAsync(
+    'action_room_vacate',
+    async () => {
+      const userId = await getCurrentUserId();
 
-  const { error } = await supabase
-    .from('tenant_room_mapping')
-    .update({
-      leaving_date: new Date().toISOString(),
-    })
-    .eq('id', mappingId)
-    .eq('user_id', userId);
+      const { error } = await supabase
+        .from('tenant_room_mapping')
+        .update({
+          leaving_date: new Date().toISOString(),
+        })
+        .eq('id', mappingId)
+        .eq('user_id', userId);
 
-  if (error) throw error;
+      if (error) throw error;
+    },
+    { mapping_id: mappingId },
+  );
 };
 
 const updateJoiningDate = async (mappingId: number, joining_date: string) => {
-  const userId = await getCurrentUserId();
+  return await traceAsync(
+    'action_room_joining_date_update',
+    async () => {
+      const userId = await getCurrentUserId();
 
-  const { error } = await supabase
-    .from('tenant_room_mapping')
-    .update({
-      joining_date,
-    })
-    .eq('id', mappingId)
-    .eq('user_id', userId);
+      const { error } = await supabase
+        .from('tenant_room_mapping')
+        .update({
+          joining_date,
+        })
+        .eq('id', mappingId)
+        .eq('user_id', userId);
 
-  if (error) throw error;
+      if (error) throw error;
+    },
+    { mapping_id: mappingId },
+  );
 };
 
 /* ===================== EXPORTS ===================== */

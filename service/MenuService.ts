@@ -1,6 +1,7 @@
 import supabase from './SupabaseClient';
 import { readUriAsArrayBuffer } from './readUriAsArrayBuffer';
 import { getCurrentSessionUser, getCurrentUserId } from './authSession';
+import { traceAsync } from './perfTrace';
 import type {
   FileInput,
   Ticket,
@@ -101,33 +102,46 @@ export type UpdateProfilePayload = {
 export async function updateUserProfile(
   payload: UpdateProfilePayload,
 ): Promise<UserProfile | null> {
-  const user = await getCurrentAuthUser();
-  const userId = user.id;
+  return await traceAsync(
+    'action_profile_save',
+    async () => {
+      const user = await getCurrentAuthUser();
+      const userId = user.id;
 
-  const { data, error } = await supabase
-    .from('User')
-    .update(payload)
-    .eq('user_id', userId)
-    .select('created_at, first_name, last_name, mobile, email, address')
-    .maybeSingle();
+      const { data, error } = await supabase
+        .from('User')
+        .update(payload)
+        .eq('user_id', userId)
+        .select('created_at, first_name, last_name, mobile, email, address')
+        .maybeSingle();
 
-  if (error) throw error;
-  return data;
+      if (error) throw error;
+      return data;
+    },
+    {
+      has_first_name: payload.first_name != null,
+      has_last_name: payload.last_name != null,
+      has_mobile: payload.mobile != null,
+      has_address: payload.address != null,
+    },
+  );
 }
 
 export async function changePasswordAndLogout(newPassword: string) {
-  const pwd = String(newPassword || '');
-  if (pwd.length < 6)
-    throw new Error('Password must be at least 6 characters.');
+  return await traceAsync('action_password_change', async () => {
+    const pwd = String(newPassword || '');
+    if (pwd.length < 6)
+      throw new Error('Password must be at least 6 characters.');
 
-  const { error: updateErr } = await supabase.auth.updateUser({
-    password: pwd,
+    const { error: updateErr } = await supabase.auth.updateUser({
+      password: pwd,
+    });
+    if (updateErr) throw updateErr;
+
+    // After changing password, force re-login for security.
+    const { error: signOutErr } = await supabase.auth.signOut();
+    if (signOutErr) throw signOutErr;
   });
-  if (updateErr) throw updateErr;
-
-  // After changing password, force re-login for security.
-  const { error: signOutErr } = await supabase.auth.signOut();
-  if (signOutErr) throw signOutErr;
 }
 
 /* ===================== SUPPORT / TICKETS ===================== */
@@ -219,43 +233,51 @@ export async function createSupportTicket(input: {
   description: string;
   file?: FileInput | null;
 }): Promise<Ticket> {
-  const userId = await getCurrentUserId();
-  const title = input.title.trim();
-  const description = input.description.trim();
-  if (!title) throw new Error('Title is required.');
-  if (!description) throw new Error('Description is required.');
+  return await traceAsync(
+    'action_ticket_create',
+    async () => {
+      const userId = await getCurrentUserId();
+      const title = input.title.trim();
+      const description = input.description.trim();
+      if (!title) throw new Error('Title is required.');
+      if (!description) throw new Error('Description is required.');
 
-  const initialStatus: TicketStatus = 'OPEN';
+      const initialStatus: TicketStatus = 'OPEN';
 
-  // Create ticket first to get ticket id for upload path.
-  const { data: created, error: createErr } = await supabase
-    .from('ticket')
-    .insert({
-      user_id: userId,
-      title,
-      description,
-      status: initialStatus,
-      upload_url: null,
-    })
-    .select('id, created_at, user_id, title, description, status, upload_url')
-    .maybeSingle();
-  if (createErr || !created) throw createErr;
+      // Create ticket first to get ticket id for upload path.
+      const { data: created, error: createErr } = await supabase
+        .from('ticket')
+        .insert({
+          user_id: userId,
+          title,
+          description,
+          status: initialStatus,
+          upload_url: null,
+        })
+        .select('id, created_at, user_id, title, description, status, upload_url')
+        .maybeSingle();
+      if (createErr || !created) throw createErr;
 
-  // Optional attachment upload + update ticket.upload_url
-  if (input.file) {
-    const u = await uploadSupportFile(userId, created.id, input.file);
-    const { data: updated, error: updErr } = await supabase
-      .from('ticket')
-      .update({ upload_url: u.publicUrl })
-      .eq('id', created.id)
-      .eq('user_id', userId)
-      .select('id, created_at, user_id, title, description, status, upload_url')
-      .maybeSingle();
-    if (updErr || !updated) throw updErr;
-    return updated as any;
-  }
+      // Optional attachment upload + update ticket.upload_url
+      if (input.file) {
+        const u = await uploadSupportFile(userId, created.id, input.file);
+        const { data: updated, error: updErr } = await supabase
+          .from('ticket')
+          .update({ upload_url: u.publicUrl })
+          .eq('id', created.id)
+          .eq('user_id', userId)
+          .select(
+            'id, created_at, user_id, title, description, status, upload_url',
+          )
+          .maybeSingle();
+        if (updErr || !updated) throw updErr;
+        return updated as any;
+      }
 
-  return created as any;
+      return created as any;
+    },
+    { has_attachment: !!input.file },
+  );
 }
 
 export async function fetchSupportTicketChat(
@@ -281,26 +303,32 @@ export async function sendSupportTicketMessage(input: {
   ticketId: string;
   chat: string;
 }): Promise<TicketChat> {
-  const userId = await getCurrentUserId();
-  const chat = input.chat.trim();
-  if (!chat) throw new Error('Message cannot be empty.');
+  return await traceAsync(
+    'action_ticket_chat_send',
+    async () => {
+      const userId = await getCurrentUserId();
+      const chat = input.chat.trim();
+      if (!chat) throw new Error('Message cannot be empty.');
 
-  const ticket = await fetchSupportTicketById(input.ticketId);
-  if (!ticket) throw new Error('Ticket not found.');
-  if (ticket.status === 'CLOSED') throw new Error('Ticket is closed.');
+      const ticket = await fetchSupportTicketById(input.ticketId);
+      if (!ticket) throw new Error('Ticket not found.');
+      if (ticket.status === 'CLOSED') throw new Error('Ticket is closed.');
 
-  const { data, error } = await supabase
-    .from('ticket_chat')
-    .insert({
-      ticket_id: input.ticketId,
-      user_id: userId,
-      user_role: 'USER',
-      chat,
-    })
-    .select('id, ticket_id, user_id, user_role, created_at, chat')
-    .maybeSingle();
-  if (error || !data) throw error;
-  return data as any;
+      const { data, error } = await supabase
+        .from('ticket_chat')
+        .insert({
+          ticket_id: input.ticketId,
+          user_id: userId,
+          user_role: 'USER',
+          chat,
+        })
+        .select('id, ticket_id, user_id, user_role, created_at, chat')
+        .maybeSingle();
+      if (error || !data) throw error;
+      return data as any;
+    },
+    { ticket_id: input.ticketId },
+  );
 }
 
 export async function closeSupportTicket(ticketId: string): Promise<Ticket> {

@@ -8,6 +8,7 @@ import {
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ActivityIndicator, useTheme } from 'react-native-paper';
 import BootSplash from 'react-native-bootsplash';
+import perf from '@react-native-firebase/perf';
 
 import MainTabs from '../navigation/MainTabs';
 import MenuTabs from '../navigation/MenuTabs';
@@ -23,12 +24,53 @@ import { trackEvent } from '../service/analyticsTracker';
 import { NativeModules } from 'react-native';
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 
+function getDeepActiveRouteName(state: any): string | undefined {
+  if (!state?.routes?.length) return undefined;
+  const route = state.routes[state.index ?? 0];
+  if (!route) return undefined;
+  if (route.state) return getDeepActiveRouteName(route.state);
+  return route.name;
+}
+
 export default function AppNavigator() {
   const theme = useTheme();
   const navRef = useNavigationContainerRef();
   const [loading, setLoading] = React.useState(true);
   const [session, setSession] = React.useState<any>(null);
   const analyticsInstance = getAnalytics();
+
+  const lastRouteNameRef = React.useRef<string | undefined>(undefined);
+  const screenTraceRef = React.useRef<any>(null);
+  const screenTraceIdRef = React.useRef(0);
+
+  const startScreenTrace = React.useCallback(async (routeName?: string) => {
+    if (!routeName) return;
+    try {
+      // Stop any previous in-flight trace (safety).
+      try {
+        screenTraceRef.current?.stop?.();
+      } catch {}
+
+      const traceName = `screen_${routeName}_load`;
+      const trace = await perf().startTrace(traceName);
+      const myId = ++screenTraceIdRef.current;
+      screenTraceRef.current = trace;
+
+      // Stop after the screen has had a chance to commit & paint.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (screenTraceIdRef.current !== myId) return;
+          try {
+            trace.stop?.();
+          } finally {
+            if (screenTraceRef.current === trace) screenTraceRef.current = null;
+          }
+        });
+      });
+    } catch {
+      // Perf must never break app flow.
+    }
+  }, []);
 
 
   React.useEffect(() => {
@@ -83,6 +125,17 @@ export default function AppNavigator() {
         onReady={() => {
           // Hide native splash once navigation is mounted.
           void BootSplash.hide({ fade: true });
+          const initial = getDeepActiveRouteName(navRef.getRootState?.());
+          lastRouteNameRef.current = initial;
+          void startScreenTrace(initial);
+        }}
+        onStateChange={state => {
+          const current = getDeepActiveRouteName(state);
+          const prev = lastRouteNameRef.current;
+          if (current && current !== prev) {
+            lastRouteNameRef.current = current;
+            void startScreenTrace(current);
+          }
         }}
       >
         <RootStack.Navigator screenOptions={{ headerShown: false }}>

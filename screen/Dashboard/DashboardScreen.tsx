@@ -29,7 +29,6 @@ import {
 } from '../../service/tenantService';
 import { supabase } from '../../service/SupabaseClient';
 import { useQueryClient } from '@tanstack/react-query';
-import perf from '@react-native-firebase/perf';
 
 type MonthRange = { start: Date; end: Date };
 
@@ -218,7 +217,6 @@ export default function DashboardScreen() {
   );
 
   const load = React.useCallback(async (isRefresh = false) => {
-    const trace = await perf().startTrace('dashboard_load');
     const roomsKey = ['rooms'];
     const tenantsKey = ['tenants'];
     const billsKey = ['bills'];
@@ -300,7 +298,6 @@ export default function DashboardScreen() {
       console.warn('Dashboard load failed', e?.message || e);
     } finally {
       isRefresh ? setRefreshing(false) : setLoading(false);
-      trace.stop();
     }
   }, [queryClient]);
 
