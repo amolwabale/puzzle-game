@@ -87,6 +87,31 @@ export default function AboutUsScreen() {
           </Text>
         </Surface>
 
+        {/* Cloud storage highlight */}
+        <Surface
+          style={[
+            styles.card,
+            styles.highlightCard,
+            {
+              borderColor: theme.colors.primary,
+              backgroundColor: theme.colors.primaryContainer,
+            },
+          ]}
+          elevation={3}
+        >
+          <View style={styles.cardHeader}>
+            <View style={[styles.cardIcon, { backgroundColor: theme.colors.surface }]}>
+              <Icon source="cloud-check-outline" size={18} color={theme.colors.primary} />
+            </View>
+            <Text style={styles.cardTitle}>Saved in the cloud</Text>
+          </View>
+          <Text style={styles.cardBody}>
+            Your information is saved safely on cloud. If you change phones, log in on another
+            device, or remove and reinstall the app, you can still see your tenants, rooms, and
+            payment records after you sign in.
+          </Text>
+        </Surface>
+
         {/* Features */}
         <Surface style={styles.card} elevation={2}>
           <View style={styles.cardHeader}>
@@ -268,6 +293,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E5E7EB',
+  },
+  highlightCard: {
+    borderWidth: 1.5,
   },
   cardHeader: {
     flexDirection: 'row',

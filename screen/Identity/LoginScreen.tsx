@@ -132,34 +132,76 @@ export default function LoginScreen() {
               ]}
               elevation={2}
             >
-              <View
-                style={[
-                  styles.heroIconWrap,
-                  { backgroundColor: theme.colors.primaryContainer },
-                ]}
-              >
-                <Icon
-                  source="lock-outline"
-                  size={18}
-                  color={theme.colors.primary}
-                />
-              </View>
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <Text
-                  style={[styles.heroTitle, { color: theme.colors.onSurface }]}
-                  numberOfLines={1}
-                >
-                  Welcome back
-                </Text>
-                <Text
+              <View style={styles.heroRow}>
+                <View
                   style={[
-                    styles.heroSub,
-                    { color: theme.colors.onSurfaceVariant },
+                    styles.heroIconWrap,
+                    { backgroundColor: theme.colors.primaryContainer },
                   ]}
-                  numberOfLines={2}
                 >
-                  Sign in to manage tenants, rooms, and payments.
-                </Text>
+                  <Icon
+                    source="lock-outline"
+                    size={18}
+                    color={theme.colors.primary}
+                  />
+                </View>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text
+                    style={[styles.heroTitle, { color: theme.colors.onSurface }]}
+                    numberOfLines={1}
+                  >
+                    Welcome back
+                  </Text>
+                  <Text
+                    style={[
+                      styles.heroSub,
+                      { color: theme.colors.onSurfaceVariant },
+                    ]}
+                    numberOfLines={2}
+                  >
+                    Sign in to manage tenants, rooms, and payments.
+                  </Text>
+                </View>
+              </View>
+            </Surface>
+
+            <Surface
+              style={[
+                styles.cloudNoteCard,
+                {
+                  borderColor: outlineColor(theme),
+                  backgroundColor: theme.colors.primaryContainer,
+                },
+              ]}
+              elevation={1}
+            >
+              <View style={styles.cloudNoteRow}>
+                <View
+                  style={[
+                    styles.cloudNoteIconWrap,
+                    { backgroundColor: theme.colors.surface },
+                  ]}
+                >
+                  <Icon
+                    source="cloud-check-outline"
+                    size={18}
+                    color={theme.colors.primary}
+                  />
+                </View>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={[styles.cloudNoteTitle, { color: theme.colors.onSurface }]}>
+                    Your data is saved safely online
+                  </Text>
+                  <Text
+                    style={[
+                      styles.cloudNoteText,
+                      { color: theme.colors.onSurfaceVariant },
+                    ]}
+                  >
+                    If you change phones, log in on another device, or reinstall the app,
+                    your information will still be available after you sign in.
+                  </Text>
+                </View>
               </View>
             </Surface>
 
@@ -319,13 +361,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
   },
+  heroRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   heroIconWrap: {
     width: 36,
     height: 36,
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
   },
   heroTitle: { fontWeight: '900', fontSize: 16, color: '#111827' },
   heroSub: { marginTop: 2, color: '#6B7280', fontWeight: '800', fontSize: 13 },
@@ -337,6 +379,24 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
   },
+  cloudNoteCard: {
+    marginTop: 12,
+    borderRadius: 16,
+    padding: 12,
+    borderWidth: 1,
+  },
+  cloudNoteRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  cloudNoteIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(17, 24, 39, 0.12)',
+  },
+  cloudNoteTitle: { fontWeight: '900', fontSize: 13 },
+  cloudNoteText: { marginTop: 4, fontWeight: '800', fontSize: 12, lineHeight: 16 },
   sectionTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
