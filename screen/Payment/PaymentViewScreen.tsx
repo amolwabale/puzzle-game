@@ -826,13 +826,22 @@ export default function PaymentViewScreen() {
     const srcPath = stripFileScheme(uri);
     const ext = getExtFromPath(srcPath) || 'png';
     const destPath = `${RNBlobUtil.fs.dirs.CacheDir}/${baseName}.${ext}`;
+    let finalPath = srcPath;
     try {
+      // If the file already exists (previous share), remove it first.
+      // Otherwise `cp` may fail and we'd end up re-sharing the old image.
+      if (await RNBlobUtil.fs.exists(destPath)) {
+        try {
+          await RNBlobUtil.fs.unlink(destPath);
+        } catch {
+          // best-effort cleanup; fall back to sharing srcPath if needed
+        }
+      }
       await RNBlobUtil.fs.cp(srcPath, destPath);
+      if (await RNBlobUtil.fs.exists(destPath)) finalPath = destPath;
     } catch {
       // If copy fails, share original.
     }
-    const finalPath =
-      (await RNBlobUtil.fs.exists(destPath)) ? destPath : srcPath;
     const fileUrl = toFileUrl(finalPath);
     if (!fileUrl) throw new Error('Could not generate image');
     await Share.open({
