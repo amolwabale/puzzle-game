@@ -115,6 +115,16 @@ function appendPaymentComment(
   return base.length ? `${base}\n${line}` : line;
 }
 
+function splitLeadingBracketDate(line: string): { date: string; rest: string } {
+  const s = String(line ?? '');
+  if (!s.startsWith('[')) return { date: '', rest: s };
+  const idx = s.indexOf(']');
+  if (idx === -1) return { date: '', rest: s };
+  const date = s.slice(0, idx + 1);
+  const rest = s.slice(idx + 1).trimStart();
+  return { date, rest };
+}
+
 function toFileUrl(u: string) {
   const s = String(u ?? '').trim();
   if (!s) return '';
@@ -188,6 +198,75 @@ export default function PaymentViewScreen() {
   const [paymentNote, setPaymentNote] = React.useState('');
   const [billDeleting, setBillDeleting] = React.useState(false);
   const shareShotRef = React.useRef<ViewShot>(null);
+  // Share-image pagination rules:
+  // - Page 1: show 5 note lines (avoid making the main receipt too tall)
+  // - Page 2+: show 10 note lines per page (notes-only continuation pages)
+  const FIRST_PAGE_NOTES_LINES = 3;
+  const CONTINUATION_PAGE_NOTES_LINES = 10;
+  const [shareNotesPageIndex, setShareNotesPageIndex] = React.useState(0);
+
+  const allPaymentNoteLines = React.useMemo(() => {
+    const raw = bill?.paid_amount_comment?.trim();
+    if (!raw) return [] as string[];
+    return raw
+      .split('\n')
+      .map(l => l.trim())
+      .filter(l => l.length > 0);
+  }, [bill?.paid_amount_comment]);
+
+  const shareNotesPageCount = React.useMemo(() => {
+    const n = allPaymentNoteLines.length;
+    if (n === 0) return 1;
+    if (n <= FIRST_PAGE_NOTES_LINES) return 1;
+    return 1 + Math.ceil((n - FIRST_PAGE_NOTES_LINES) / CONTINUATION_PAGE_NOTES_LINES);
+  }, [allPaymentNoteLines.length, FIRST_PAGE_NOTES_LINES, CONTINUATION_PAGE_NOTES_LINES]);
+
+  const visiblePaymentNoteLinesForShare = React.useMemo(() => {
+    if (allPaymentNoteLines.length === 0) return [] as string[];
+    if (shareNotesPageCount <= 1) {
+      return allPaymentNoteLines.slice(0, FIRST_PAGE_NOTES_LINES);
+    }
+    if (shareNotesPageIndex === 0) {
+      return allPaymentNoteLines.slice(0, FIRST_PAGE_NOTES_LINES);
+    }
+    const start =
+      FIRST_PAGE_NOTES_LINES +
+      (shareNotesPageIndex - 1) * CONTINUATION_PAGE_NOTES_LINES;
+    return allPaymentNoteLines.slice(start, start + CONTINUATION_PAGE_NOTES_LINES);
+  }, [
+    allPaymentNoteLines,
+    shareNotesPageCount,
+    shareNotesPageIndex,
+    FIRST_PAGE_NOTES_LINES,
+    CONTINUATION_PAGE_NOTES_LINES,
+  ]);
+
+  // Pad to a fixed number of lines so each captured page has identical height.
+  const paddedPaymentNoteLinesForShare = React.useMemo(() => {
+    const lines = visiblePaymentNoteLinesForShare.slice();
+    // IMPORTANT:
+    // - Page 1 should be compact (no extra white space below notes).
+    // - Page 2+ can be padded to a fixed height for consistent sharing.
+    const isContinuation = shareNotesPageCount > 1 && shareNotesPageIndex > 0;
+    if (!isContinuation) return lines;
+    while (lines.length < CONTINUATION_PAGE_NOTES_LINES) lines.push('');
+    return lines;
+  }, [
+    visiblePaymentNoteLinesForShare,
+    shareNotesPageCount,
+    shareNotesPageIndex,
+    CONTINUATION_PAGE_NOTES_LINES,
+  ]);
+
+  const isShareNotesContinuationPage = shareNotesPageCount > 1 && shareNotesPageIndex > 0;
+
+  const waitForNextPaint = React.useCallback(
+    () =>
+      new Promise<void>(resolve => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+      }),
+    [],
+  );
   const [dialogKeyboardHeight, setDialogKeyboardHeight] = React.useState(0);
 
   const dialogMaxHeight = React.useMemo(
@@ -821,33 +900,61 @@ export default function PaymentViewScreen() {
 
   const shareImage = async () => {
     const baseName = buildReceiptBaseName();
-    const uri = await shareShotRef.current?.capture?.();
-    if (!uri) throw new Error('Could not generate image');
-    const srcPath = stripFileScheme(uri);
-    const ext = getExtFromPath(srcPath) || 'png';
-    const destPath = `${RNBlobUtil.fs.dirs.CacheDir}/${baseName}.${ext}`;
-    let finalPath = srcPath;
-    try {
-      // If the file already exists (previous share), remove it first.
-      // Otherwise `cp` may fail and we'd end up re-sharing the old image.
-      if (await RNBlobUtil.fs.exists(destPath)) {
-        try {
-          await RNBlobUtil.fs.unlink(destPath);
-        } catch {
-          // best-effort cleanup; fall back to sharing srcPath if needed
-        }
+    const totalNotes = allPaymentNoteLines.length;
+    const pages =
+      totalNotes === 0
+        ? 1
+        : totalNotes <= FIRST_PAGE_NOTES_LINES
+          ? 1
+          : 1 + Math.ceil((totalNotes - FIRST_PAGE_NOTES_LINES) / CONTINUATION_PAGE_NOTES_LINES);
+
+    const urls: string[] = [];
+    const ext = 'png';
+
+    for (let p = 0; p < pages; p += 1) {
+      if (pages > 1) {
+        setShareNotesPageIndex(p);
+        await waitForNextPaint();
+        // Give layout a beat to apply before capture (prevents blank captures).
+        await new Promise<void>(r => setTimeout(r, 30));
       }
-      await RNBlobUtil.fs.cp(srcPath, destPath);
-      if (await RNBlobUtil.fs.exists(destPath)) finalPath = destPath;
-    } catch {
-      // If copy fails, share original.
+
+      const uri = await shareShotRef.current?.capture?.();
+      if (!uri) throw new Error('Could not generate image');
+      const srcPath = stripFileScheme(uri);
+
+      const destPath =
+        pages > 1
+          ? `${RNBlobUtil.fs.dirs.CacheDir}/${baseName}-p${p + 1}.${ext}`
+          : `${RNBlobUtil.fs.dirs.CacheDir}/${baseName}.${ext}`;
+
+      let finalPath = srcPath;
+      try {
+        if (await RNBlobUtil.fs.exists(destPath)) {
+          try {
+            await RNBlobUtil.fs.unlink(destPath);
+          } catch {}
+        }
+        await RNBlobUtil.fs.cp(srcPath, destPath);
+        if (await RNBlobUtil.fs.exists(destPath)) finalPath = destPath;
+      } catch {
+        // If copy fails, share original capture file.
+      }
+
+      const fileUrl = toFileUrl(finalPath);
+      if (!fileUrl) throw new Error('Could not generate image');
+      urls.push(fileUrl);
     }
-    const fileUrl = toFileUrl(finalPath);
-    if (!fileUrl) throw new Error('Could not generate image');
+
+    // Reset back to first page so future captures are deterministic.
+    if (pages > 1) {
+      setShareNotesPageIndex(0);
+    }
+
     await Share.open({
       title: 'Payment Bill',
       message: `Payment bill for ${tenantName}`,
-      urls: [fileUrl],
+      urls,
       type: getMimeFromExt(ext),
       failOnCancel: false,
     });
@@ -1030,9 +1137,15 @@ export default function PaymentViewScreen() {
         <View style={styles.shareShotWrap}>
           <ViewShot
             ref={shareShotRef}
-            options={{ format: 'png', quality: 0.9 }}
+            options={{
+              format: 'png',
+              quality: 1,
+              result: 'tmpfile',
+                // NOTE: keeping this false avoids blank renders on some devices.
+                // We rely on `collapsable={false}` below to keep the view in the native tree.
+            }}
           >
-            <View style={styles.shareCanvas}>
+            <View style={styles.shareCanvas} collapsable={false}>
               <View style={styles.shareCardFrame}>
                 <View style={styles.shareCard}>
                   <View style={styles.shareHeaderRow}>
@@ -1053,129 +1166,172 @@ export default function PaymentViewScreen() {
                     </View>
                   </View>
 
-                  <View style={styles.shareMetaGrid}>
-                    <View style={styles.shareMetaItem}>
-                      <Text style={styles.shareMetaLabel}>Billed to</Text>
-                      <Text style={styles.shareMetaValue}>{tenantName}</Text>
-                    </View>
-                    <View style={styles.shareMetaItem}>
-                      <Text style={styles.shareMetaLabel}>Property / Room</Text>
-                      <Text style={styles.shareMetaValue}>{roomName}</Text>
-                    </View>
-                    <View style={styles.shareMetaItem}>
-                      <Text style={styles.shareMetaLabel}>Payment status</Text>
-                      <Text style={styles.shareMetaValue}>
-                        {status || 'UNPAID'}
-                      </Text>
-                    </View>
-                    <View style={styles.shareMetaItem}>
-                      <Text style={styles.shareMetaLabel}>Issue date</Text>
-                      <Text style={styles.shareMetaValue}>
-                        {formatDate(bill.created_at)}
-                      </Text>
-                    </View>
-                    <View style={styles.shareMetaItem}>
-                      <Text style={styles.shareMetaLabel}>Prev reading</Text>
-                      <Text style={styles.shareMetaValue}>{String(prev)}</Text>
-                    </View>
-                    <View style={styles.shareMetaItem}>
-                      <Text style={styles.shareMetaLabel}>Curr reading</Text>
-                      <Text style={styles.shareMetaValue}>{String(curr)}</Text>
-                    </View>
-                  </View>
-                  <View style={styles.shareDivider} />
-                  <Text style={styles.shareSectionTitle}>Charges</Text>
-                  <View style={styles.shareTableHeader}>
-                    <Text
-                      style={[
-                        styles.shareDescCell,
-                        styles.shareTableHeaderText,
-                      ]}
-                    >
-                      Description
-                    </Text>
-                    <Text
-                      style={[
-                        styles.shareAmountCell,
-                        styles.shareTableHeaderText,
-                      ]}
-                    >
-                      Amount
-                    </Text>
-                  </View>
-                  <View style={[styles.shareTableRow, styles.shareAltRow]}>
-                    <Text style={styles.shareDescCell}>Rent</Text>
-                    <Text style={styles.shareAmountCell}>
-                      {formatMoney(bill.rent)}
-                    </Text>
-                  </View>
-                  <View style={styles.shareTableRow}>
-                    <Text style={styles.shareDescCell}>Water</Text>
-                    <Text style={styles.shareAmountCell}>
-                      {formatMoney(bill.water)}
-                    </Text>
-                  </View>
-                  <View style={[styles.shareTableRow, styles.shareAltRow]}>
-                    <Text style={styles.shareDescCell}>
-                      Electricity ({units} × {rate})
-                    </Text>
-                    <Text style={styles.shareAmountCell}>
-                      {formatMoney(bill.electricity)}
-                    </Text>
-                  </View>
-                  <View style={styles.shareTableRow}>
-                    <Text style={styles.shareDescCell}>Ad hoc</Text>
-                    <Text style={styles.shareAmountCell}>
-                      {formatMoney(bill.ad_hoc_amount)}
-                    </Text>
-                  </View>
-                  <View style={styles.shareTotalRow}>
-                    <View style={styles.shareTotalLeft}>
-                      {!!bill.ad_hoc_comment?.trim() && (
-                        <Text style={styles.shareNote}>
-                          Ad-hoc note: {bill.ad_hoc_comment.trim()}
+                  {!isShareNotesContinuationPage ? (
+                    <>
+                      <View style={styles.shareMetaGrid}>
+                        <View style={styles.shareMetaItem}>
+                          <Text style={styles.shareMetaLabel}>Billed to</Text>
+                          <Text style={styles.shareMetaValue}>{tenantName}</Text>
+                        </View>
+                        <View style={styles.shareMetaItem}>
+                          <Text style={styles.shareMetaLabel}>Property / Room</Text>
+                          <Text style={styles.shareMetaValue}>{roomName}</Text>
+                        </View>
+                        <View style={styles.shareMetaItem}>
+                          <Text style={styles.shareMetaLabel}>Payment status</Text>
+                          <Text style={styles.shareMetaValue}>
+                            {status || 'UNPAID'}
+                          </Text>
+                        </View>
+                        <View style={styles.shareMetaItem}>
+                          <Text style={styles.shareMetaLabel}>Issue date</Text>
+                          <Text style={styles.shareMetaValue}>
+                            {formatDate(bill.created_at)}
+                          </Text>
+                        </View>
+                        <View style={styles.shareMetaItem}>
+                          <Text style={styles.shareMetaLabel}>Prev reading</Text>
+                          <Text style={styles.shareMetaValue}>{String(prev)}</Text>
+                        </View>
+                        <View style={styles.shareMetaItem}>
+                          <Text style={styles.shareMetaLabel}>Curr reading</Text>
+                          <Text style={styles.shareMetaValue}>{String(curr)}</Text>
+                        </View>
+                      </View>
+                      <View style={styles.shareDivider} />
+                      <Text style={styles.shareSectionTitle}>Charges</Text>
+                      <View style={styles.shareTableHeader}>
+                        <Text
+                          style={[
+                            styles.shareDescCell,
+                            styles.shareTableHeaderText,
+                          ]}
+                        >
+                          Description
                         </Text>
-                      )}
-                    </View>
-                    <View>
-                      <Text style={styles.shareTotalLabel}>Total payable</Text>
-                      <Text style={styles.shareTotalValue}>
-                        {formatMoney(total)}
-                      </Text>
-                    </View>
-                  </View>
+                        <Text
+                          style={[
+                            styles.shareAmountCell,
+                            styles.shareTableHeaderText,
+                          ]}
+                        >
+                          Amount
+                        </Text>
+                      </View>
+                      <View style={[styles.shareTableRow, styles.shareAltRow]}>
+                        <Text style={styles.shareDescCell}>Rent</Text>
+                        <Text style={styles.shareAmountCell}>
+                          {formatMoney(bill.rent)}
+                        </Text>
+                      </View>
+                      <View style={styles.shareTableRow}>
+                        <Text style={styles.shareDescCell}>Water</Text>
+                        <Text style={styles.shareAmountCell}>
+                          {formatMoney(bill.water)}
+                        </Text>
+                      </View>
+                      <View style={[styles.shareTableRow, styles.shareAltRow]}>
+                        <Text style={styles.shareDescCell}>
+                          Electricity ({units} × {rate})
+                        </Text>
+                        <Text style={styles.shareAmountCell}>
+                          {formatMoney(bill.electricity)}
+                        </Text>
+                      </View>
+                      <View style={styles.shareTableRow}>
+                        <Text style={styles.shareDescCell}>Ad hoc</Text>
+                        <Text style={styles.shareAmountCell}>
+                          {formatMoney(bill.ad_hoc_amount)}
+                        </Text>
+                      </View>
+                      <View style={styles.shareTotalRow}>
+                        <View style={styles.shareTotalLeft}>
+                          {!!bill.ad_hoc_comment?.trim() && (
+                            <Text style={styles.shareNote}>
+                              Ad-hoc note: {bill.ad_hoc_comment.trim()}
+                            </Text>
+                          )}
+                        </View>
+                        <View>
+                          <Text style={styles.shareTotalLabel}>Total payable</Text>
+                          <Text style={styles.shareTotalValue}>
+                            {formatMoney(total)}
+                          </Text>
+                        </View>
+                      </View>
 
-                  <View style={styles.shareDivider} />
+                      <View style={styles.shareDivider} />
 
-                  <View style={styles.shareMetaGrid}>
-                    <View style={styles.shareMetaItem}>
-                      <Text style={styles.shareMetaLabel}>Paid</Text>
-                      <Text style={styles.shareMetaValue}>
-                        {formatMoney(paid)}
+                      <View style={styles.shareMetaGrid}>
+                        <View style={styles.shareMetaItem}>
+                          <Text style={styles.shareMetaLabel}>Paid</Text>
+                          <Text style={styles.shareMetaValue}>
+                            {formatMoney(paid)}
+                          </Text>
+                        </View>
+                        <View style={styles.shareMetaItem}>
+                          <Text style={styles.shareMetaLabel}>Pending</Text>
+                          <Text style={styles.shareMetaValue}>
+                            {formatMoney(pending)}
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={styles.shareDivider} />
+                    </>
+                  ) : (
+                    <View style={styles.shareContinuedIntro}>
+                      <Text style={styles.shareContinuedKicker}>
+                        PAYMENT NOTES — CONTINUED
                       </Text>
-                    </View>
-                    <View style={styles.shareMetaItem}>
-                      <Text style={styles.shareMetaLabel}>Pending</Text>
-                      <Text style={styles.shareMetaValue}>
-                        {formatMoney(pending)}
+                      <Text style={styles.shareContinuedTitle} numberOfLines={1}>
+                        {tenantName}
                       </Text>
+                      <Text style={styles.shareContinuedSub} numberOfLines={1}>
+                        {roomName} • {billMonthShort}
+                      </Text>
+                      <View style={styles.shareDivider} />
                     </View>
-                  </View>
-                  <View style={styles.shareDivider} />
+                  )}
                   {!!bill.paid_amount_comment?.trim() && (
                     <View style={styles.shareNotesBlock}>
-                      <Text style={styles.shareSectionTitle}>
-                        Payment notes
-                      </Text>
-                      {bill.paid_amount_comment
-                        .trim()
-                        .split('\n')
-                        .filter(line => line.trim().length > 0)
-                        .map((line, idx) => (
-                          <Text key={String(idx)} style={styles.shareNoteLine}>
-                            {line}
+                      <View style={styles.shareNotesHeaderRow}>
+                        <Text style={styles.shareSectionTitle}>
+                          {isShareNotesContinuationPage
+                            ? 'Notes continued'
+                            : 'Payment notes'}
+                        </Text>
+                        {shareNotesPageCount > 1 ? (
+                          <Text style={styles.shareNotesPageText}>
+                            Page {shareNotesPageIndex + 1}/{shareNotesPageCount}
                           </Text>
-                        ))}
+                        ) : null}
+                      </View>
+                      {paddedPaymentNoteLinesForShare.map((line, idx) => (
+                        <Text
+                          key={`${shareNotesPageIndex}-${idx}`}
+                          style={[
+                            styles.shareNoteLine,
+                            idx === 0 ? styles.shareNoteLineFirst : null,
+                            isShareNotesContinuationPage
+                              ? styles.shareNoteLineContinued
+                              : null,
+                            !line ? styles.shareNoteLinePlaceholder : null,
+                          ]}
+                        >
+                          {(() => {
+                            const raw = line || '';
+                            if (!raw.trim()) return ' ';
+                            const { date, rest } = splitLeadingBracketDate(raw);
+                            if (!date) return raw;
+                            return (
+                              <>
+                                <Text style={styles.shareNoteDate}>{date}</Text>
+                                <Text>{rest ? ` ${rest}` : ''}</Text>
+                              </>
+                            );
+                          })()}
+                        </Text>
+                      ))}
                       <View style={styles.shareDivider} />
                     </View>
                   )}
@@ -1444,9 +1600,33 @@ export default function PaymentViewScreen() {
                     />
                     <Text style={styles.commentHeaderText}>Payment notes</Text>
                   </View>
-                  <Text style={styles.commentText}>
-                    {bill.paid_amount_comment.trim()}
-                  </Text>
+                  <View>
+                    {bill.paid_amount_comment
+                      .trim()
+                      .split('\n')
+                      .map(l => l.trim())
+                      .filter(l => l.length > 0)
+                      .map((line, idx) => (
+                        <Text
+                          key={String(idx)}
+                          style={[
+                            styles.commentText,
+                            idx === 0 ? styles.commentTextFirst : styles.commentTextGap,
+                          ]}
+                        >
+                          {(() => {
+                            const { date, rest } = splitLeadingBracketDate(line);
+                            if (!date) return line;
+                            return (
+                              <>
+                                <Text style={styles.commentDate}>{date}</Text>
+                                <Text>{rest ? ` ${rest}` : ''}</Text>
+                              </>
+                            );
+                          })()}
+                        </Text>
+                      ))}
+                  </View>
                 </View>
               )}
             </View>
@@ -2511,6 +2691,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 21,
   },
+  commentDate: {
+    fontWeight: '700',
+    color: '#111827',
+  },
+  commentTextFirst: {
+    marginTop: 0,
+  },
+  commentTextGap: {
+    marginTop: 10,
+  },
   metaPill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -2524,9 +2714,14 @@ const styles = StyleSheet.create({
   metaPillText: { fontWeight: '800', fontSize: 14, flex: 1 },
 
   shareShotWrap: {
+    // Keep it in layout (not off-screen) so it reliably renders for capture.
+    // Opacity 0 keeps it invisible to the user.
     position: 'absolute',
-    left: -9999,
-    top: -9999,
+    left: 0,
+    top: 0,
+    opacity: 0,
+    // Ensure it never steals touches / accessibility focus.
+    pointerEvents: 'none',
   },
   shareCard: {
     backgroundColor: '#FFFFFF',
@@ -2700,11 +2895,58 @@ const styles = StyleSheet.create({
     paddingTop: 0,
     borderTopWidth: 0,
   },
+  shareNotesHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  shareNotesPageText: {
+    color: '#6B7280',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  shareContinuedIntro: {
+    paddingTop: 2,
+    paddingBottom: 6,
+  },
+  shareContinuedKicker: {
+    color: '#6B7280',
+    fontSize: 11,
+    fontWeight: '900',
+    letterSpacing: 1.0,
+  },
+  shareContinuedTitle: {
+    marginTop: 6,
+    color: '#111827',
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  shareContinuedSub: {
+    marginTop: 2,
+    color: '#6B7280',
+    fontSize: 12,
+    fontWeight: '700',
+  },
   shareNoteLine: {
-    marginTop: 4,
+    marginTop: 10, // ~10px spacing between note lines
     color: '#374151',
     fontSize: 12,
     fontWeight: '600',
+  },
+  shareNoteDate: {
+    fontWeight: '700',
+    color: '#111827',
+  },
+  shareNoteLineFirst: {
+    marginTop: 0,
+  },
+  shareNoteLineContinued: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  shareNoteLinePlaceholder: {
+    color: 'transparent',
   },
   shareFooter: {
     marginTop: 12,
