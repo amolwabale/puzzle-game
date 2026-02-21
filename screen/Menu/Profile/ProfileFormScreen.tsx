@@ -194,9 +194,8 @@ export default function ProfileFormScreen() {
     <View style={styles.screenRoot}>
       <KeyboardAvoidingView
         style={styles.flex}
-        // Android needs an explicit behavior to avoid the keyboard covering the form.
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
+        // Match TenantForm behavior: only adjust on iOS.
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
           style={styles.screen}
@@ -293,6 +292,7 @@ export default function ProfileFormScreen() {
         </View>
 
       </ScrollView>
+      </KeyboardAvoidingView>
 
       <FAB
         icon="content-save"
@@ -301,7 +301,6 @@ export default function ProfileFormScreen() {
         onPress={handleSave}
         disabled={saving}
       />
-      </KeyboardAvoidingView>
       {saving ? <View pointerEvents="none" style={styles.screenScrim} /> : null}
     </View>
   );
