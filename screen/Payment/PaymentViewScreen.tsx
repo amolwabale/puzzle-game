@@ -194,7 +194,7 @@ export default function PaymentViewScreen() {
   const [paymentAmount, setPaymentAmount] = React.useState('');
   const [paymentMethod, setPaymentMethod] = React.useState<
     'CASH' | 'UPI' | 'BANK'
-  >('UPI');
+  >('CASH');
   const [paymentNote, setPaymentNote] = React.useState('');
   const [billDeleting, setBillDeleting] = React.useState(false);
   const shareShotRef = React.useRef<ViewShot>(null);
@@ -387,7 +387,7 @@ export default function PaymentViewScreen() {
   const openPaymentDialog = React.useCallback(() => {
     Keyboard.dismiss();
     setPaymentAmount('');
-    setPaymentMethod('UPI');
+    setPaymentMethod('CASH');
     setPaymentNote('');
     setPaymentDialogOpen(true);
     trackEvent('Payment_RecordPayment_Opened', {
