@@ -74,7 +74,17 @@ export function TopMenuProvider({
     try {
       await traceAsync('action_logout', async () => {
         const { error } = await supabase.auth.signOut();
-        if (error) throw error;
+        if (error) {
+          const msg = String((error as any)?.message ?? error);
+          // Supabase throws "Auth session missing!" if local session storage is empty.
+          // In that case, we still want to clear any in-memory state and emit SIGNED_OUT
+          // so the app reliably returns to AuthStack.
+          if (/auth session missing/i.test(msg)) {
+            await (supabase.auth as any)?._removeSession?.();
+            return;
+          }
+          throw error;
+        }
       });
       // AppNavigator listens to session changes and will redirect to AuthStack.
     } catch (e: any) {
