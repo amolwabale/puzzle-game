@@ -23,6 +23,8 @@ type Props = {
   autoCorrect?: boolean;
   textContentType?: any;
   autoComplete?: any;
+  onFocus?: () => void;
+  onBlur?: () => void;
   /** Optional: pass a style used for the TextInput wrapper */
   style?: StyleProp<ViewStyle>;
   /** Optional: pass a style used for the TextInput content */
@@ -52,6 +54,8 @@ export function FormInput({
   autoCorrect,
   textContentType,
   autoComplete,
+  onFocus,
+  onBlur,
   style,
   contentStyle,
   placeholder,
@@ -119,6 +123,8 @@ export function FormInput({
           autoCorrect={autoCorrect}
           textContentType={textContentType}
           autoComplete={autoComplete}
+          onFocus={() => onFocus?.()}
+          onBlur={() => onBlur?.()}
           importantForAutofill={importantForAutofill as any}
           {...(multiline
             ? {

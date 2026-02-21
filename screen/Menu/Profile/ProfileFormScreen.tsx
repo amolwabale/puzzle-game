@@ -149,9 +149,12 @@ export default function ProfileFormScreen() {
     } else if (!EMAIL_RE.test(fields.email.trim())) {
       e.email = 'Enter a valid email address';
     }
-    if (fields.mobile.trim() && fields.mobile.trim().length !== 10) {
+    if (!fields.mobile.trim()) {
+      e.mobile = 'Mobile is required';
+    } else if (fields.mobile.trim().length !== 10) {
       e.mobile = 'Mobile must be exactly 10 digits';
     }
+    if (!fields.address.trim()) e.address = 'Address is required';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -163,9 +166,9 @@ export default function ProfileFormScreen() {
       await updateUserProfile({
         first_name: fields.first_name.trim(),
         last_name: fields.last_name.trim(),
-        mobile: fields.mobile.trim() || undefined,
+        mobile: fields.mobile.trim(),
         email: fields.email.trim(),
-        address: fields.address.trim() || undefined,
+        address: fields.address.trim(),
       });
       navigation.goBack();
     } catch (e: any) {
@@ -254,7 +257,7 @@ export default function ProfileFormScreen() {
               Contact
             </Text>
             <FormInput
-              label="Mobile"
+              label="Mobile *"
               value={fields.mobile}
               onChange={v => setField('mobile', v)}
               error={errors.mobile}
@@ -279,7 +282,7 @@ export default function ProfileFormScreen() {
               Address
             </Text>
             <FormInput
-              label="Address"
+              label="Address *"
               value={fields.address}
               onChange={v => setField('address', v)}
               error={errors.address}
