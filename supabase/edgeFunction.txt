@@ -37,6 +37,7 @@ app.post("/tenant-manager/register", async (c) => {
     lastName,
     mobile,
     address,
+    application = "TenantManager",
   } = body;
 
   if (!email || !password || !firstName || !lastName) {
@@ -60,14 +61,16 @@ app.post("/tenant-manager/register", async (c) => {
   // 2️⃣ Insert into custom User table
   const { error: dbError } = await supabase
     .from("User")
-    .insert({
+    .upsert({
       user_id: authUserId,
       email,
       first_name: firstName,
       last_name: lastName,
       mobile,
       address,
-    });
+      application,
+    },
+    { onConflict: "user_id" });
 
   if (dbError) {
     return c.json({ error: dbError.message }, 500);

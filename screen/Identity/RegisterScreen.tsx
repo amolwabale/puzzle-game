@@ -127,6 +127,7 @@ export default function RegisterScreen() {
         password,
         mobile,
         address,
+        application: 'TenantManager',
       });
 
       trackEvent('Auth_Register_Success', {

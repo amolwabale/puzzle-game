@@ -75,7 +75,7 @@ export async function fetchUserProfile(): Promise<UserProfile | null> {
   try {
     const { data: created, error: errCreate } = await supabase
       .from('User')
-      .insert({ user_id: userId, email })
+      .insert({ user_id: userId, email, application: 'TenantManager' })
       .select('created_at, first_name, last_name, mobile, email, address')
       .maybeSingle();
     if (errCreate) throw errCreate;
@@ -261,6 +261,7 @@ export async function createSupportTicket(input: {
           description,
           status: initialStatus,
           upload_url: null,
+          application: 'TenantManager',
         })
         .select('id, created_at, user_id, title, description, status, upload_url')
         .maybeSingle();

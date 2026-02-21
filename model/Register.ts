@@ -5,6 +5,7 @@ export interface RegisterPayload {
   lastName: string;
   mobile?: string;
   address?: string;
+  application?: string;
 }
 
 export interface RegisterResponse {

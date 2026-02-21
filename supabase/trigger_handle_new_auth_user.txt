@@ -1,9 +1,3 @@
-create or replace function public.handle_new_auth_user()
-returns trigger
-language plpgsql
-security definer
-set search_path = public
-as $$
 declare
   full_name text;
   given_name text;
@@ -36,22 +30,15 @@ begin
     null
   );
 
-  insert into public."User" (user_id, email, first_name, last_name, mobile, created_at)
-  values (new.id, new.email, given_name, family_name, mobile_text, now())
+    insert into public."User" (user_id, email, first_name, last_name, mobile, application, created_at)
+  values (new.id, new.email, given_name, family_name, mobile_text, 'TenantManager', now())
   on conflict (user_id)
   do update set
     email = excluded.email,
     first_name = coalesce(nullif(public."User".first_name, ''), excluded.first_name),
     last_name  = coalesce(nullif(public."User".last_name, ''),  excluded.last_name),
-    mobile     = coalesce(nullif(public."User".mobile, ''),     excluded.mobile);
+    mobile     = coalesce(nullif(public."User".mobile, ''),     excluded.mobile),
+    application = coalesce(nullif(public."User".application, ''), excluded.application);
 
   return new;
 end;
-$$;
-
-drop trigger if exists on_auth_user_created on auth.users;
-
-create trigger on_auth_user_created
-after insert on auth.users
-for each row
-execute function public.handle_new_auth_user();
