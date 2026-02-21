@@ -1,8 +1,7 @@
 import * as React from 'react';
-import { View, StyleSheet, Alert, Platform, Linking } from 'react-native';
+import { View, StyleSheet, Alert, Platform } from 'react-native';
 import Config from 'react-native-config';
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin';
-import InAppBrowser from 'react-native-inappbrowser-reborn';
 import {
   ActivityIndicator,
   Button,
@@ -28,130 +27,18 @@ export default function AuthScreen() {
   const theme = useTheme();
   const navigation = useNavigation<NavigationProp>();
   const [googleLoading, setGoogleLoading] = React.useState(false);
-  const oauthTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(
-    null,
-  );
-  const oauthInFlightRef = React.useRef(false);
-  const handledRedirectUrlRef = React.useRef<string>('');
-  const handledAuthCodeRef = React.useRef<string>('');
-
-  const clearOauthTimer = React.useCallback(() => {
-    oauthInFlightRef.current = false;
-    if (oauthTimeoutRef.current) clearTimeout(oauthTimeoutRef.current);
-    oauthTimeoutRef.current = null;
-  }, []);
-
-  const getUrlParam = React.useCallback((url: string, key: string) => {
-    // Supports query params and hash fragments.
-    const re = new RegExp(`[?#&]${key}=([^&]+)`, 'i');
-    const m = url.match(re);
-    try {
-      return m?.[1] ? decodeURIComponent(m[1]) : '';
-    } catch {
-      // If decoding fails (rare), fall back to raw value.
-      return m?.[1] ?? '';
-    }
-  }, []);
-
-  const handleSupabaseOAuthRedirect = React.useCallback(
-    async (url: string) => {
-      // Only handle our OAuth callback route.
-      if (!url.startsWith('tenantmanager://auth')) return;
-
-      // Avoid double-handling the same redirect (Linking event + openAuth result).
-      if (handledRedirectUrlRef.current === url) return;
-      handledRedirectUrlRef.current = url;
-
-      // Supabase may return either:
-      // - PKCE: tenantmanager://auth?code=...
-      // - Implicit: tenantmanager://auth#access_token=...&refresh_token=...
-      const errorDesc =
-        getUrlParam(url, 'error_description') || getUrlParam(url, 'error');
-      if (errorDesc) {
-        clearOauthTimer();
-        setGoogleLoading(false);
-        Alert.alert('Google login failed', errorDesc);
-        return;
-      }
-
-      const code = getUrlParam(url, 'code');
-      const accessToken = getUrlParam(url, 'access_token');
-      const refreshToken = getUrlParam(url, 'refresh_token');
-
-      try {
-        if (code) {
-          // Exchange should happen only once per code.
-          if (handledAuthCodeRef.current === code) return;
-          handledAuthCodeRef.current = code;
-          const { error } = await supabase.auth.exchangeCodeForSession(code);
-          if (error) throw error;
-        } else if (accessToken && refreshToken) {
-          const { error } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken,
-          });
-          if (error) throw error;
-        } else {
-          // Not a supabase auth callback we understand.
-          return;
-        }
-
-        const { data } = await supabase.auth.getSession();
-        if (!data.session) {
-          throw new Error('Session was not created after OAuth redirect.');
-        }
-
-        trackEvent('Auth_Google_Login_Success', {
-          source: 'Auth',
-          email: data.session.user?.email ?? '',
-        });
-      } catch (e: any) {
-        Alert.alert('Google login failed', e?.message ?? 'Please try again.');
-      } finally {
-        clearOauthTimer();
-        setGoogleLoading(false);
-      }
-    },
-    [clearOauthTimer, getUrlParam],
-  );
 
   React.useEffect(() => {
     // Configure once per app launch. (Requires rebuild after changing `.env`.)
     const webClientId = Config.GOOGLE_WEB_CLIENT_ID?.trim?.();
+    const iosClientId = Config.GOOGLE_IOS_CLIENT_ID?.trim?.();
     GoogleSignin.configure({
       webClientId: webClientId || undefined,
+      iosClientId: iosClientId || undefined,
       offlineAccess: false,
       forceCodeForRefreshToken: false,
     });
   }, []);
-
-  React.useEffect(() => {
-    const onUrl = async (evt: { url: string }) => {
-      const url = evt.url ?? '';
-      if (!url) return;
-
-      try {
-        await handleSupabaseOAuthRedirect(url);
-      } catch (e: any) {
-        // Never let deep-link handling crash the app.
-        Alert.alert('Google login failed', e?.message ?? 'Please try again.');
-        clearOauthTimer();
-        setGoogleLoading(false);
-      }
-    };
-
-    const sub = Linking.addEventListener('url', onUrl);
-
-    // Handle cold start deep link (rare but important).
-    Linking.getInitialURL().then(initial => {
-      if (initial) onUrl({ url: initial });
-    });
-
-    return () => {
-      sub.remove();
-      if (oauthTimeoutRef.current) clearTimeout(oauthTimeoutRef.current);
-    };
-  }, [handleSupabaseOAuthRedirect]);
 
   const handleLogin = () => {
     navigation.navigate('LoginScreen');
@@ -170,10 +57,18 @@ export default function AuthScreen() {
   const handleGoogleLogin = async () => {
     trackEvent('Auth_Google_Login_Clicked', { source: 'Auth' });
     const webClientId = Config.GOOGLE_WEB_CLIENT_ID?.trim?.();
-    if (!webClientId) {
+    const iosClientId = Config.GOOGLE_IOS_CLIENT_ID?.trim?.();
+
+    // iOS physical devices are most reliable with iosClientId configured.
+    const hasConfig =
+      Platform.OS === 'android' ? !!webClientId : !!iosClientId;
+
+    if (!hasConfig) {
       Alert.alert(
         'Google login not configured',
-        'Please set GOOGLE_WEB_CLIENT_ID in your .env file and rebuild the app.',
+        Platform.OS === 'android'
+          ? 'Please set GOOGLE_WEB_CLIENT_ID in your .env file and rebuild the app.'
+          : 'Please set GOOGLE_IOS_CLIENT_ID in your .env file and rebuild the app.',
       );
       return;
     }
@@ -181,80 +76,9 @@ export default function AuthScreen() {
     try {
       setGoogleLoading(true);
 
-      // iOS: Use Supabase OAuth PKCE flow to avoid native ID-token nonce issues.
-      if (Platform.OS === 'ios') {
-        oauthInFlightRef.current = true;
-        if (oauthTimeoutRef.current) clearTimeout(oauthTimeoutRef.current);
-        oauthTimeoutRef.current = setTimeout(() => {
-          oauthInFlightRef.current = false;
-          setGoogleLoading(false);
-        }, 25000);
+      // Start from a clean slate (prevents stale-account glitches on iOS devices).
+      await GoogleSignin.signOut().catch(() => undefined);
 
-        const redirectTo = 'tenantmanager://auth';
-        const { data, error } = await supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: {
-            redirectTo,
-            skipBrowserRedirect: true,
-          },
-        });
-
-        if (error) {
-          Alert.alert('Google login failed', error.message);
-          return;
-        }
-
-        if (!data?.url) {
-          Alert.alert('Google login failed', 'Missing authorization URL.');
-          return;
-        }
-
-        // Force the auth URL to always use our native deep link redirect.
-        // (Some RN URLSearchParams polyfills/types are inconsistent, so we avoid relying on `.set()`.)
-        const forceRedirectTo = (url: string, to: string) => {
-          const enc = encodeURIComponent(to);
-          if (/[?&]redirect_to=/.test(url)) {
-            return url.replace(/([?&]redirect_to=)[^&]*/i, `$1${enc}`);
-          }
-          return url + (url.includes('?') ? '&' : '?') + `redirect_to=${enc}`;
-        };
-
-        const authUrl = forceRedirectTo(data.url, redirectTo);
-
-        // If the URL is still sending us to localhost, this is a Supabase Auth config issue.
-        if (authUrl.includes('localhost') || authUrl.includes('127.0.0.1')) {
-          Alert.alert(
-            'Google login not configured',
-            'Supabase is redirecting to localhost. In Supabase Dashboard → Auth → URL Configuration, add `tenantmanager://auth` to Redirect URLs and remove localhost from Site URL. Then rebuild and try again.',
-          );
-          return;
-        }
-
-        // Prefer in-app auth sheet on iOS (premium, in-app experience).
-        if (await InAppBrowser.isAvailable()) {
-          const res = await InAppBrowser.openAuth(authUrl, redirectTo, {
-            // iOS
-            ephemeralWebSession: false,
-            // Android (not used here but keeps types happy)
-            showTitle: false,
-            enableUrlBarHiding: true,
-            enableDefaultShare: false,
-          });
-
-          if (res.type === 'success' && res.url) {
-            // Handle immediately (listener will also catch it on some devices).
-            await handleSupabaseOAuthRedirect(res.url);
-          } else if (res.type === 'cancel') {
-            clearOauthTimer();
-            setGoogleLoading(false);
-          }
-        } else {
-          await Linking.openURL(authUrl);
-        }
-        return;
-      }
-
-      // Android: Native Google Sign-In → Supabase signInWithIdToken
       if (Platform.OS === 'android') {
         await GoogleSignin.hasPlayServices({
           showPlayServicesUpdateDialog: true,
@@ -270,9 +94,32 @@ export default function AuthScreen() {
         return;
       }
 
-      const result = await LoginWithGoogleIdToken(idToken);
+      const tokens = await GoogleSignin.getTokens().catch(() => null as any);
+      const accessToken =
+        tokens?.accessToken && typeof tokens.accessToken === 'string'
+          ? tokens.accessToken
+          : undefined;
+
+      const result = await LoginWithGoogleIdToken(idToken, accessToken);
+      if (!result) {
+        Alert.alert('Google login failed', 'Could not complete login. Please try again.');
+        return;
+      }
       if (result.error) {
-        Alert.alert('Google login failed', result.error.message);
+        const msg =
+          (result.error as any)?.message ||
+          String(result.error ?? '') ||
+          'Please try again.';
+        Alert.alert('Google login failed', msg);
+        return;
+      }
+
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        Alert.alert(
+          'Google login failed',
+          'Login completed, but a session was not created. Please check Supabase Google provider configuration and try again.',
+        );
         return;
       }
 
@@ -286,12 +133,13 @@ export default function AuthScreen() {
       if (code === statusCodes.SIGN_IN_CANCELLED) return;
       if (code === statusCodes.IN_PROGRESS) return;
 
-      Alert.alert('Google login failed', e?.message ?? 'Please try again.');
+      const msg =
+        e?.message ||
+        (typeof e === 'string' ? e : '') ||
+        'Please try again.';
+      Alert.alert('Google login failed', msg);
     } finally {
-      // For iOS OAuth we stop loading when callback arrives (or timeout triggers).
-      if (Platform.OS !== 'ios' && !oauthInFlightRef.current) {
-        setGoogleLoading(false);
-      }
+      setGoogleLoading(false);
     }
   };
 
@@ -520,7 +368,6 @@ export default function AuthScreen() {
                     'Google login failed',
                     e?.message ?? 'Please try again.',
                   );
-                  clearOauthTimer();
                   setGoogleLoading(false);
                 });
               }}

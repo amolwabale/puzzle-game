@@ -40,12 +40,16 @@ export async function Login(email: string, password: string) {
   });
 }
 
-export async function LoginWithGoogleIdToken(idToken: string) {
+export async function LoginWithGoogleIdToken(
+  idToken: string,
+  accessToken?: string,
+): Promise<{ data: any; error: any }> {
   try {
     return await traceAsync('action_google_login', async () => {
       const { data, error } = await supabase.auth.signInWithIdToken({
         provider: 'google',
         token: idToken,
+        access_token: accessToken,
       });
       return { data, error };
     });
