@@ -19,7 +19,6 @@ import {
   TouchableRipple,
   useTheme,
 } from 'react-native-paper';
-import { useQueryClient } from '@tanstack/react-query';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { TenantStackParamList } from '../../navigation/StackParam';
 import {
@@ -29,7 +28,7 @@ import {
 } from '../../service/tenantService';
 import { fetchActiveRoomAssignmentsForTenants } from '../../service/TenantRoomService';
 import { trackEvent } from '../../service/analyticsTracker';
-import { getSignedUrlCached } from '../../service/signedUrlCache';
+import { getSignedUrl } from '../../service/signedUrlCache';
 
 type Nav = NativeStackNavigationProp<TenantStackParamList, 'TenantList'>;
 
@@ -47,7 +46,6 @@ const formatDate = (d?: string | null) =>
 
 export default function TenantScreen() {
   const navigation = useNavigation<Nav>();
-  const queryClient = useQueryClient();
 
   const [initialLoading, setInitialLoading] = React.useState(true);
   const [refreshing, setRefreshing] = React.useState(false);
@@ -62,30 +60,11 @@ export default function TenantScreen() {
   >({});
 
   const loadTenants = React.useCallback(async (isRefresh = false) => {
-    const tenantsKey = ['tenants'];
-
-    // Fast path: show cached data immediately (stale-while-revalidate)
-    if (!isRefresh) {
-      const cachedTenants = queryClient.getQueryData<TenantRecord[]>(tenantsKey);
-      if (cachedTenants && cachedTenants.length > 0) {
-        setTenants(cachedTenants);
-        setInitialLoading(false);
-      }
-    }
-
     try {
       if (isRefresh) setRefreshing(true);
-      else {
-        // If cache was empty, keep current behavior (spinner).
-        const hasCache = !!queryClient.getQueryData(tenantsKey);
-        if (!hasCache) setInitialLoading(true);
-      }
+      else setInitialLoading(true);
 
-      const data = await queryClient.fetchQuery({
-        queryKey: tenantsKey,
-        queryFn: fetchTenants,
-        staleTime: isRefresh ? 0 : undefined,
-      });
+      const data = await fetchTenants();
       setTenants(data || []);
 
       // room assignment for each tenant (active mapping = leaving_date is null)
@@ -116,7 +95,7 @@ export default function TenantScreen() {
         setInitialLoading(false);
       }
     }
-  }, [queryClient]);
+  }, []);
 
   const ensureSignedUrlsForTenantIds = React.useCallback(
     async (tenantIds: number[]) => {
@@ -134,20 +113,28 @@ export default function TenantScreen() {
             | undefined;
           if (!fullUrl) return;
 
-          // If source URL unchanged and we already have a signed URL, skip.
-          if (photoSourceByTenantRef.current[id] === fullUrl && signedUrls[id])
+          // IMPORTANT:
+          // This app overwrites profile photos at a stable storage path, so the
+          // public `profile_photo_url` often does NOT change after an edit.
+          // Use `modified_at` as a version so we re-fetch a signed URL after edits.
+          const version =
+            (t as any)?.modified_at ?? (t as any)?.created_at ?? '';
+          const sourceKey = `${fullUrl}|${version}`;
+
+          // If source key unchanged and we already have a signed URL, skip.
+          if (photoSourceByTenantRef.current[id] === sourceKey && signedUrls[id])
             return;
 
-          const signed = await getSignedUrlCached(queryClient, fullUrl).catch(
+          const signed = await getSignedUrl(fullUrl).catch(
             () => undefined,
           );
           if (!signed) return;
-          photoSourceByTenantRef.current[id] = fullUrl;
+          photoSourceByTenantRef.current[id] = sourceKey;
           setSignedUrls(prev => (prev[id] === signed ? prev : { ...prev, [id]: signed }));
         }),
       );
     },
-    [queryClient, tenants, signedUrls],
+    [tenants, signedUrls],
   );
 
   const ensureSignedUrlsRef = React.useRef(ensureSignedUrlsForTenantIds);

@@ -29,8 +29,7 @@ import {
   TenantRoomRecord,
 } from '../../service/TenantRoomService';
 import { trackEvent } from '../../service/analyticsTracker';
-import { useQueryClient } from '@tanstack/react-query';
-import { getSignedUrlCached } from '../../service/signedUrlCache';
+import { getSignedUrl } from '../../service/signedUrlCache';
 
 type Nav = NativeStackNavigationProp<RoomStackParamList, 'RoomList'>;
 
@@ -76,7 +75,6 @@ const getInitials = (name?: string | null) => {
 export default function RoomScreen() {
   const navigation = useNavigation<Nav>();
   const theme = useTheme();
-  const queryClient = useQueryClient();
 
   const [initialLoading, setInitialLoading] = React.useState(true);
   const [refreshing, setRefreshing] = React.useState(false);
@@ -93,33 +91,18 @@ export default function RoomScreen() {
   >({});
 
   const loadRooms = React.useCallback(async (isRefresh = false) => {
-    const roomsKey = ['rooms'];
-
-    if (!isRefresh) {
-      const cachedRooms = queryClient.getQueryData<RoomRecord[]>(roomsKey);
-      if (cachedRooms && cachedRooms.length > 0) {
-        setRooms(cachedRooms);
-        setInitialLoading(false);
-      }
-    }
-
     try {
       if (isRefresh) setRefreshing(true);
-      else {
-        const hasCache = !!queryClient.getQueryData(roomsKey);
-        if (!hasCache) setInitialLoading(true);
-      }
+      else setInitialLoading(true);
 
-      const data = await queryClient.fetchQuery({
-        queryKey: roomsKey,
-        queryFn: fetchRooms,
-        staleTime: isRefresh ? 0 : undefined,
-      });
+      const data = await fetchRooms();
       setRooms(data || []);
 
       // Load occupant (active tenant) for each room in one call
       const map = await fetchActiveTenantsForRooms((data || []).map(r => r.id));
       setActiveByRoom(map);
+      // Clear occupant signed URLs so fresh ones are generated on visibility.
+      setOccupantPhotoByRoom({});
       // Photo signed URLs are now generated lazily per visible row.
     } catch (err: any) {
       Alert.alert('Load Failed', err.message || 'Could not load rooms');
@@ -129,7 +112,7 @@ export default function RoomScreen() {
         setInitialLoading(false);
       }
     }
-  }, [queryClient]);
+  }, []);
 
   const viewabilityConfig = React.useRef({
     itemVisiblePercentThreshold: 60,
@@ -147,7 +130,7 @@ export default function RoomScreen() {
             | null
             | undefined;
           if (!fullUrl) return;
-          const signed = await getSignedUrlCached(queryClient, fullUrl).catch(
+          const signed = await getSignedUrl(fullUrl).catch(
             () => undefined,
           );
           if (!signed) return;
@@ -157,7 +140,7 @@ export default function RoomScreen() {
         }),
       );
     },
-    [activeByRoom, occupantPhotoByRoom, queryClient],
+    [activeByRoom, occupantPhotoByRoom],
   );
 
   const ensureVisibleOccupantPhotosRef = React.useRef(ensureVisibleOccupantPhotos);

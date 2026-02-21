@@ -4,7 +4,6 @@ import {
   useRoute,
 } from '@react-navigation/native';
 import React from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import {
   Alert,
   Dimensions,
@@ -78,7 +77,6 @@ export default function PaymentFormScreen() {
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const insets = useSafeAreaInsets();
-  const queryClient = useQueryClient();
   const billId: number | undefined = route.params?.billId;
   const isEdit = !!billId;
 
@@ -352,8 +350,6 @@ export default function PaymentFormScreen() {
           bill_id: billId,
         });
 
-        queryClient.invalidateQueries({ queryKey: ['bills'] });
-
         Alert.alert('Updated', 'Payment updated successfully', [
           { text: 'OK', onPress: () => navigation.goBack() },
         ]);
@@ -386,8 +382,6 @@ export default function PaymentFormScreen() {
         source: 'Payment',
         bill_id: billId,
       });
-
-      queryClient.invalidateQueries({ queryKey: ['bills'] });
 
       Alert.alert('Saved', 'Payment captured successfully', [
         { text: 'OK', onPress: () => navigation.goBack() },

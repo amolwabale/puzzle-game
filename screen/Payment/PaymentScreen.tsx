@@ -29,8 +29,7 @@ import { fetchRooms } from '../../service/RoomService';
 import { fetchTenants, TenantRecord } from '../../service/tenantService';
 import { fetchUserProfile, type UserProfile } from '../../service/MenuService';
 import { trackEvent } from '../../service/analyticsTracker';
-import { useQueryClient } from '@tanstack/react-query';
-import { getSignedUrlCached } from '../../service/signedUrlCache';
+import { getSignedUrl } from '../../service/signedUrlCache';
 
 type MissingBasicGroup = 'property' | 'profile';
 type MissingBasic = {
@@ -115,7 +114,6 @@ const AVATAR_SIZE = 58;
 export default function PaymentScreen() {
   const navigation = useNavigation<any>();
   const theme = useTheme();
-  const queryClient = useQueryClient();
 
   const [initialLoading, setInitialLoading] = React.useState(true);
   const [refreshing, setRefreshing] = React.useState(false);
@@ -135,6 +133,7 @@ export default function PaymentScreen() {
     Record<number, string>
   >({});
   const tenantPhotoSourceByIdRef = React.useRef<Record<number, string>>({});
+  const tenantByIdRef = React.useRef<Record<number, TenantRecord>>({});
 
   const ensureTenantPhotosForBills = React.useCallback(
     async (billRows: BillRecord[]) => {
@@ -147,40 +146,35 @@ export default function PaymentScreen() {
       );
       if (usedTenantIds.length === 0) return;
 
-      const cachedTenants = queryClient.getQueryData<TenantRecord[]>(['tenants']) || [];
-      const tenantById: Record<number, TenantRecord> = {};
-      (cachedTenants || []).forEach(t => {
-        if (t?.id != null) tenantById[t.id] = t;
-      });
-
       await Promise.all(
         usedTenantIds.map(async tenantId => {
-          const t = tenantById[tenantId];
+          const t = tenantByIdRef.current[tenantId];
           const fullUrl = (t as any)?.profile_photo_url as
             | string
             | null
             | undefined;
           if (!fullUrl) return;
 
-          if (
-            tenantPhotoSourceByIdRef.current[tenantId] === fullUrl &&
-            tenantPhotoById[tenantId]
-          )
+          const version =
+            (t as any)?.modified_at ?? (t as any)?.created_at ?? '';
+          const sourceKey = `${fullUrl}|${version}`;
+
+          if (tenantPhotoSourceByIdRef.current[tenantId] === sourceKey && tenantPhotoById[tenantId])
             return;
 
-          const signed = await getSignedUrlCached(queryClient, fullUrl).catch(
+          const signed = await getSignedUrl(fullUrl).catch(
             () => undefined,
           );
           if (!signed) return;
 
-          tenantPhotoSourceByIdRef.current[tenantId] = fullUrl;
+          tenantPhotoSourceByIdRef.current[tenantId] = sourceKey;
           setTenantPhotoById(prev =>
             prev[tenantId] === signed ? prev : { ...prev, [tenantId]: signed },
           );
         }),
       );
     },
-    [queryClient, tenantPhotoById],
+    [tenantPhotoById],
   );
 
   const ensureTenantPhotosForBillsRef = React.useRef(ensureTenantPhotosForBills);
@@ -189,83 +183,16 @@ export default function PaymentScreen() {
   }, [ensureTenantPhotosForBills]);
 
   const load = React.useCallback(async (isRefresh = false) => {
-    const billsKey = ['bills'];
-    const roomsKey = ['rooms'];
-    const tenantsKey = ['tenants'];
-    const settingKey = ['latestSetting'];
-    const profileKey = ['userProfile'];
-
-    if (!isRefresh) {
-      const cachedBills = queryClient.getQueryData<BillRecord[]>(billsKey);
-      const cachedRooms = queryClient.getQueryData<any[]>(roomsKey);
-      const cachedTenants = queryClient.getQueryData<TenantRecord[]>(tenantsKey);
-      const cachedSetting = queryClient.getQueryData<any>(settingKey);
-      const cachedProfile = queryClient.getQueryData<any>(profileKey);
-
-      if (cachedBills) setBills(cachedBills);
-      if (cachedRooms) {
-        const roomMap: Record<number, string> = {};
-        (cachedRooms || []).forEach((r: any) => {
-          if (r?.id != null) roomMap[r.id] = r.name || '-';
-        });
-        setRoomNameById(roomMap);
-      }
-      if (cachedTenants) {
-        const tenantMap: Record<number, string> = {};
-        (cachedTenants || []).forEach((t: any) => {
-          if (t?.id != null) tenantMap[t.id] = t.name || '-';
-        });
-        setTenantNameById(tenantMap);
-      }
-      if (cachedSetting || cachedProfile) {
-        setMissingBasics(
-          computeMissingBasics({ setting: cachedSetting, profile: cachedProfile }),
-        );
-      }
-
-      const hasAnyCache =
-        !!cachedBills || !!cachedRooms || !!cachedTenants || !!cachedSetting || !!cachedProfile;
-      if (hasAnyCache) {
-        setInitialLoading(false);
-      }
-    }
-
     try {
       if (isRefresh) setRefreshing(true);
-      else {
-        const hasCache =
-          !!queryClient.getQueryData(['bills']) ||
-          !!queryClient.getQueryData(['rooms']) ||
-          !!queryClient.getQueryData(['tenants']);
-        if (!hasCache) setInitialLoading(true);
-      }
+      else setInitialLoading(true);
 
       const [billRows, rooms, tenants, setting, profile] = await Promise.all([
-        queryClient.fetchQuery({
-          queryKey: billsKey,
-          queryFn: fetchBills,
-          staleTime: isRefresh ? 0 : undefined,
-        }),
-        queryClient.fetchQuery({
-          queryKey: roomsKey,
-          queryFn: fetchRooms,
-          staleTime: isRefresh ? 0 : undefined,
-        }),
-        queryClient.fetchQuery({
-          queryKey: tenantsKey,
-          queryFn: fetchTenants,
-          staleTime: isRefresh ? 0 : undefined,
-        }),
-        queryClient.fetchQuery({
-          queryKey: settingKey,
-          queryFn: () => fetchLatestSetting().catch(() => null as any),
-          staleTime: 2 * 60 * 1000,
-        }),
-        queryClient.fetchQuery({
-          queryKey: profileKey,
-          queryFn: () => fetchUserProfile().catch(() => null),
-          staleTime: 2 * 60 * 1000,
-        }),
+        fetchBills(),
+        fetchRooms(),
+        fetchTenants(),
+        fetchLatestSetting().catch(() => null as any),
+        fetchUserProfile().catch(() => null),
       ]);
 
       const roomMap: Record<number, string> = {};
@@ -273,9 +200,14 @@ export default function PaymentScreen() {
         if (r?.id != null) roomMap[r.id] = r.name || '-';
       });
       const tenantMap: Record<number, string> = {};
+      const tenantById: Record<number, TenantRecord> = {};
       (tenants || []).forEach((t: any) => {
-        if (t?.id != null) tenantMap[t.id] = t.name || '-';
+        if (t?.id != null) {
+          tenantMap[t.id] = t.name || '-';
+          tenantById[t.id] = t as TenantRecord;
+        }
       });
+      tenantByIdRef.current = tenantById;
 
       setRoomNameById(roomMap);
       setTenantNameById(tenantMap);
@@ -290,7 +222,7 @@ export default function PaymentScreen() {
         setInitialLoading(false);
       }
     }
-  }, [queryClient]);
+  }, []);
 
   const viewabilityConfig = React.useRef({
     itemVisiblePercentThreshold: 60,

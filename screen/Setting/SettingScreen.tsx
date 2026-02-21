@@ -1,5 +1,4 @@
 import React from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import {
   Alert,
   Dimensions,
@@ -44,7 +43,6 @@ type Errors = Partial<
 export default function SettingScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const queryClient = useQueryClient();
 
   /* ---------------- FORM STATE ---------------- */
 
@@ -268,8 +266,6 @@ export default function SettingScreen() {
             source: 'Setting',
             setting_id: result.data?.id,
           });
-
-          queryClient.invalidateQueries({ queryKey: ['latestSetting'] });
 
           Alert.alert('Saved', 'Settings have been saved successfully.');
 

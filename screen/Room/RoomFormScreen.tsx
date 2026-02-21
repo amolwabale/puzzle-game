@@ -5,7 +5,6 @@ import {
 } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import {
   Alert,
   Dimensions,
@@ -84,7 +83,6 @@ export default function RoomFormScreen() {
   const route = useRoute<Props['route']>();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const queryClient = useQueryClient();
 
   const mode = route.params?.mode ?? 'add';
   const roomId = mode === 'edit' ? route.params?.roomId : undefined;
@@ -426,13 +424,6 @@ export default function RoomFormScreen() {
           }
         }
       }
-
-      queryClient.invalidateQueries({ queryKey: ['rooms'] });
-      queryClient.invalidateQueries({
-        queryKey: ['tenantRoomMappings'],
-        exact: false,
-      });
-      queryClient.invalidateQueries({ queryKey: ['bills'] });
 
       Alert.alert('Saved', 'Room saved successfully', [
         { text: 'OK', onPress: navigation.goBack },
