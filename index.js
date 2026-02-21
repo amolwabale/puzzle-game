@@ -3,8 +3,29 @@
  */
 
 import { AppRegistry } from 'react-native';
+import crashlytics from '@react-native-firebase/crashlytics';
 import App from './App';
 import { name as appName } from './app.json';
+
+// Record uncaught JS errors to Crashlytics (native crashes are captured automatically).
+try {
+  const defaultHandler =
+    global?.ErrorUtils?.getGlobalHandler?.() ??
+    ((err, _isFatal) => {
+      console.error(err);
+    });
+  if (global?.ErrorUtils?.setGlobalHandler) {
+    global.ErrorUtils.setGlobalHandler((err, isFatal) => {
+      try {
+        crashlytics().recordError(err);
+        crashlytics().setAttribute('js_fatal', isFatal ? 'true' : 'false');
+      } catch {}
+      defaultHandler(err, isFatal);
+    });
+  }
+} catch {
+  // If ErrorUtils changes, skip hooking.
+}
 
 // Android dev: prevent AuthSessionMissingError from surfacing as an unhandled-promise redbox.
 // We still keep the default RN behavior for all other unhandled rejections.

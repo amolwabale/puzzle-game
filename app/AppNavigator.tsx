@@ -9,6 +9,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ActivityIndicator, useTheme } from 'react-native-paper';
 import BootSplash from 'react-native-bootsplash';
 import perf from '@react-native-firebase/perf';
+import crashlytics from '@react-native-firebase/crashlytics';
 
 import MainTabs from '../navigation/MainTabs';
 import MenuTabs from '../navigation/MenuTabs';
@@ -82,7 +83,14 @@ export default function AppNavigator() {
         });
         if (data.session.user.id) {
           setUserId(analyticsInstance, data.session.user.id);
+          try {
+            crashlytics().setUserId(String(data.session.user.id));
+          } catch {}
         }
+        // Enable Crashlytics collection at runtime (RNFB Core config may disable by default).
+        try {
+          crashlytics().setCrashlyticsCollectionEnabled(true);
+        } catch {}
       }
       if (!error) {
         setSession(data.session);
