@@ -4,6 +4,7 @@ import {
   Alert,
   FlatList,
   RefreshControl,
+  ScrollView,
   StyleSheet,
   View,
 } from 'react-native';
@@ -832,7 +833,11 @@ const EmptyState = ({
   onGoSettings: () => void;
   onGoProfile: () => void;
 }) => (
-  <View style={styles.emptyState}>
+  <ScrollView
+    style={{ flex: 1 }}
+    contentContainerStyle={styles.emptyState}
+    showsVerticalScrollIndicator={false}
+  >
     <Avatar.Icon size={72} icon="receipt" style={styles.emptyIcon} />
     <Text variant="titleMedium" style={styles.emptyTitle}>
       Payments Paused
@@ -860,7 +865,7 @@ const EmptyState = ({
         </Button>
       </>
     )}
-  </View>
+  </ScrollView>
 );
 
 const styles = StyleSheet.create({
@@ -1046,7 +1051,7 @@ const styles = StyleSheet.create({
   setupSectionBtnContent: { paddingVertical: 6 },
 
   emptyState: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
