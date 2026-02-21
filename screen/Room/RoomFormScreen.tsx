@@ -20,6 +20,8 @@ import {
   ActivityIndicator,
   Avatar,
   FAB,
+  Portal,
+  TouchableRipple,
   Surface,
   Text,
   Button,
@@ -57,6 +59,8 @@ type Props = NativeStackScreenProps<RoomStackParamList, 'RoomForm'>;
 
 /* ---------------- HELPERS ---------------- */
 
+const TENANT_DROPDOWN_MAX_H = 320;
+
 const formatDate = (d?: string | null) =>
   d
     ? new Date(d).toLocaleDateString('en-GB', {
@@ -65,6 +69,25 @@ const formatDate = (d?: string | null) =>
         year: 'numeric',
       })
     : '-';
+
+const renderHighlightedText = (label: string, query: string) => {
+  if (!query) return <Text style={styles.dropdownItemTitle}>{label}</Text>;
+  const low = label.toLowerCase();
+  const q = query.toLowerCase();
+  const idx = low.indexOf(q);
+  if (idx < 0) return <Text style={styles.dropdownItemTitle}>{label}</Text>;
+
+  const before = label.slice(0, idx);
+  const match = label.slice(idx, idx + query.length);
+  const after = label.slice(idx + query.length);
+  return (
+    <Text style={styles.dropdownItemTitle} numberOfLines={1}>
+      {before}
+      <Text style={styles.dropdownItemMatch}>{match}</Text>
+      {after}
+    </Text>
+  );
+};
 
 const getInitials = (name?: string | null) => {
   const parts = (name || '').trim().split(/\s+/).slice(0, 2);
@@ -83,6 +106,7 @@ export default function RoomFormScreen() {
   const route = useRoute<Props['route']>();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const winH = Dimensions.get('window').height;
 
   const mode = route.params?.mode ?? 'add';
   const roomId = mode === 'edit' ? route.params?.roomId : undefined;
@@ -154,6 +178,14 @@ export default function RoomFormScreen() {
   const [selectedTenant, setSelectedTenant] =
     React.useState<TenantRecord | null>(null);
   const [editingOccupancy, setEditingOccupancy] = React.useState(false);
+  const tenantSearchAnchorRef =
+    React.useRef<React.ElementRef<typeof View> | null>(null);
+  const [tenantSearchAnchorRect, setTenantSearchAnchorRect] = React.useState<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  } | null>(null);
 
   /* DATE */
   const [joiningDate, setJoiningDate] = React.useState<Date | null>(null);
@@ -433,6 +465,40 @@ export default function RoomFormScreen() {
     }
   };
 
+  const filteredTenants = React.useMemo(() => {
+    if (tenantQuery.length === 0) return [];
+    const q = tenantQuery.toLowerCase();
+    return allTenants.filter(t => t.name?.toLowerCase().includes(q));
+  }, [tenantQuery, allTenants]);
+
+  const scrollPadBottom =
+    20 + Math.max(0, keyboardHeight);
+
+  const clamp = React.useCallback(
+    (v: number, min: number, max: number) => Math.min(max, Math.max(min, v)),
+    [],
+  );
+
+  const measureTenantAnchor = React.useCallback(() => {
+    const node = tenantSearchAnchorRef.current as any;
+    if (!node?.measureInWindow) return;
+    node.measureInWindow((x: number, y: number, width: number, height: number) =>
+      setTenantSearchAnchorRect({ x, y, width, height }),
+    );
+  }, []);
+
+  React.useEffect(() => {
+    if (filteredTenants.length === 0 || selectedTenant) return;
+    const id = requestAnimationFrame(measureTenantAnchor);
+    return () => cancelAnimationFrame(id);
+  }, [
+    filteredTenants.length,
+    selectedTenant,
+    keyboardHeight,
+    tenantQuery,
+    measureTenantAnchor,
+  ]);
+
   if (loading) {
     return (
       <View style={styles.loader}>
@@ -440,16 +506,6 @@ export default function RoomFormScreen() {
       </View>
     );
   }
-
-  const filteredTenants =
-    tenantQuery.length > 0
-      ? allTenants.filter(t =>
-          t.name?.toLowerCase().includes(tenantQuery.toLowerCase()),
-        )
-      : [];
-
-  const scrollPadBottom =
-    20 + (Platform.OS === 'android' ? Math.max(0, keyboardHeight) : 0);
 
   /* ---------------- UI ---------------- */
 
@@ -459,10 +515,12 @@ export default function RoomFormScreen() {
         style={{ flex: 1 }}
         // Android needs explicit behavior; 'height' is most reliable with ScrollView forms.
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 44 : 0}
       >
         <ScrollView
           contentContainerStyle={[styles.container, { paddingBottom: scrollPadBottom }]}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           showsVerticalScrollIndicator={false}
         >
           <View pointerEvents={saving ? 'none' : 'auto'}>
@@ -741,28 +799,19 @@ export default function RoomFormScreen() {
                       </View>
                     </Surface>
 
-                    <FormInput
-                      label="Search tenant"
-                      value={tenantQuery}
-                      onChange={setTenantQuery}
-                    />
-
-                    {filteredTenants.length > 0 && (
-                      <Surface style={styles.dropdown} elevation={0}>
-                        {filteredTenants.map(t => (
-                          <TouchableOpacity
-                            key={t.id}
-                            style={styles.dropdownItem}
-                            onPress={() => {
-                              setSelectedTenant(t);
-                              setTenantQuery('');
-                            }}
-                          >
-                            <Text>{t.name}</Text>
-                          </TouchableOpacity>
-                        ))}
-                      </Surface>
-                    )}
+                    <View
+                      ref={tenantSearchAnchorRef}
+                      collapsable={false}
+                      onLayout={measureTenantAnchor}
+                    >
+                      <FormInput
+                        label="Search tenant"
+                        value={tenantQuery}
+                        onChange={v => {
+                          setTenantQuery(v);
+                        }}
+                      />
+                    </View>
                   </>
                 )}
 
@@ -814,7 +863,10 @@ export default function RoomFormScreen() {
                   mode="contained-tonal"
                   icon="calendar"
                   style={{ marginTop: 12 }}
-                  onPress={() => setDateModalOpen(true)}
+                  onPress={() => {
+                    Keyboard.dismiss();
+                    setTimeout(() => setDateModalOpen(true), 0);
+                  }}
                 >
                   {joiningDate
                     ? `Joining Date: ${formatDate(joiningDate.toISOString())}`
@@ -897,6 +949,90 @@ export default function RoomFormScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {!selectedTenant &&
+      filteredTenants.length > 0 &&
+      tenantSearchAnchorRect != null ? (
+        <Portal>
+          <Surface
+            style={[
+              styles.dropdownPortal,
+              {
+                left: tenantSearchAnchorRect.x,
+                width: tenantSearchAnchorRect.width,
+                bottom: clamp(
+                  winH - tenantSearchAnchorRect.y + 8,
+                  insets.bottom + 8,
+                  Math.max(
+                    insets.bottom + 8,
+                    winH - (insets.top + 8) - TENANT_DROPDOWN_MAX_H,
+                  ),
+                ),
+              },
+            ]}
+            elevation={3}
+          >
+            <View style={styles.dropdownHeader}>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={styles.dropdownHeaderTitle} numberOfLines={1}>
+                  Select tenant
+                </Text>
+                <Text style={styles.dropdownHeaderSub} numberOfLines={1}>
+                  {filteredTenants.length} suggestion
+                  {filteredTenants.length === 1 ? '' : 's'}
+                </Text>
+              </View>
+              <IconButton
+                icon="close"
+                size={18}
+                style={{ margin: 0 }}
+                onPress={() => setTenantQuery('')}
+                accessibilityLabel="Close tenant suggestions"
+              />
+            </View>
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              style={{ maxHeight: TENANT_DROPDOWN_MAX_H }}
+            >
+              {filteredTenants.map((t, idx) => {
+                const isLast = idx === filteredTenants.length - 1;
+                return (
+                  <TouchableRipple
+                    key={t.id}
+                    borderless={false}
+                    rippleColor="rgba(17, 24, 39, 0.08)"
+                    style={[
+                      styles.dropdownItem,
+                      isLast ? styles.dropdownItemLast : null,
+                    ]}
+                    onPress={() => {
+                      Keyboard.dismiss();
+                      setSelectedTenant(t);
+                      setTenantQuery('');
+                    }}
+                  >
+                    <View style={styles.dropdownItemRow}>
+                      <Avatar.Text
+                        size={36}
+                        label={getInitials(t.name)}
+                        style={styles.dropdownAvatar}
+                        color={theme.colors.primary}
+                      />
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        {renderHighlightedText(t.name ?? '-', tenantQuery)}
+                        <Text style={styles.dropdownItemHint} numberOfLines={1}>
+                          Tap to assign this tenant
+                        </Text>
+                      </View>
+                      <Icon source="chevron-right" size={20} color="#9CA3AF" />
+                    </View>
+                  </TouchableRipple>
+                );
+              })}
+            </ScrollView>
+          </Surface>
+        </Portal>
+      ) : null}
 
       <FAB
         icon="content-save"
@@ -1051,6 +1187,39 @@ const styles = StyleSheet.create({
   hintTitle: { fontWeight: '900', fontSize: 14, color: '#111827' },
   hintSub: { color: '#6B7280', marginTop: 2, fontSize: 13, fontWeight: '800' },
 
+  dropdownPortal: {
+    position: 'absolute',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
+    maxHeight: TENANT_DROPDOWN_MAX_H,
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 8 },
+  },
+  dropdownHeader: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#E5E7EB',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  dropdownHeaderTitle: {
+    fontSize: 13,
+    fontWeight: '900',
+    color: '#111827',
+  },
+  dropdownHeaderSub: {
+    marginTop: 2,
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#6B7280',
+  },
   dropdown: {
     marginTop: 6,
     borderRadius: 14,
@@ -1059,9 +1228,34 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   dropdownItem: {
-    padding: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 14,
+    minHeight: 56,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: '#E5E7EB',
+  },
+  dropdownItemLast: { borderBottomWidth: 0 },
+  dropdownItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  dropdownAvatar: { backgroundColor: '#EEF2FF' },
+  dropdownItemTitle: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: '#111827',
+  },
+  dropdownItemMatch: {
+    color: '#111827',
+    backgroundColor: '#FEF3C7',
+    fontWeight: '900',
+  },
+  dropdownItemHint: {
+    marginTop: 2,
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#6B7280',
   },
   selectedTenant: {
     flexDirection: 'row',
