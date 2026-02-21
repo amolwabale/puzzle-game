@@ -330,6 +330,19 @@ export default function RegisterScreen() {
               autoComplete="email"
             />
 
+            <View style={styles.emailNoteRow}>
+              <Icon
+                source="information-outline"
+                size={16}
+                color={theme.colors.onSurfaceVariant}
+              />
+              <Text
+                style={[styles.emailNoteText, { color: theme.colors.onSurfaceVariant }]}
+              >
+                This email becomes your sign-in ID — you’ll use it to log in.
+              </Text>
+            </View>
+
             <FormInput
               label="Mobile number *"
               value={mobile}
@@ -502,6 +515,22 @@ const styles = StyleSheet.create({
   sectionTitle: { fontWeight: '900', fontSize: 16 },
 
   twoColRow: { flexDirection: 'row', gap: 12 },
+
+  emailNoteRow: {
+    marginTop: -6,
+    marginBottom: 10,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    paddingHorizontal: 2,
+  },
+  emailNoteText: {
+    flex: 1,
+    minWidth: 0,
+    fontSize: 12,
+    fontWeight: '800',
+    lineHeight: 16,
+  },
 
   buttonContent: {
     paddingVertical: 8,
