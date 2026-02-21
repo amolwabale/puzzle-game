@@ -2,6 +2,7 @@ import supabase from './SupabaseClient';
 import { TenantRecord } from './tenantService';
 import { getCurrentUserId } from './authSession';
 import { traceAsync } from './perfTrace';
+import { trackEvent } from './analyticsTracker';
 
 /* ===================== TYPES ===================== */
 
@@ -336,6 +337,11 @@ const addTenantToRoom = async ({
       });
 
       if (error) throw error;
+      trackEvent('Room_OccupancySaved', {
+        source: 'Room',
+        room_id,
+        tenant_id,
+      });
     },
     { room_id, tenant_id },
   );
@@ -358,6 +364,10 @@ const vacateRoom = async (mappingId: number) => {
         .eq('user_id', userId);
 
       if (error) throw error;
+      trackEvent('Room_Vacated', {
+        source: 'Room',
+        mapping_id: mappingId,
+      });
     },
     { mapping_id: mappingId },
   );
@@ -378,6 +388,10 @@ const updateJoiningDate = async (mappingId: number, joining_date: string) => {
         .eq('user_id', userId);
 
       if (error) throw error;
+      trackEvent('Room_JoiningDateUpdated', {
+        source: 'Room',
+        mapping_id: mappingId,
+      });
     },
     { mapping_id: mappingId },
   );

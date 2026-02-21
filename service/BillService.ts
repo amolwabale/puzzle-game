@@ -1,6 +1,7 @@
 import supabase from './SupabaseClient';
 import { getCurrentUserId } from './authSession';
 import { traceAsync } from './perfTrace';
+import { trackEvent } from './analyticsTracker';
 
 export type BillRecord = {
   id: number;
@@ -220,6 +221,10 @@ export async function deleteBill(billId: number): Promise<void> {
       .eq('user_id', userId)
       .eq('id', billId);
     if (error) throw error;
+    trackEvent('Payment_Deleted', {
+      source: 'Payment',
+      bill_id: billId,
+    });
   });
 }
 

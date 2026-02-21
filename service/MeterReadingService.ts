@@ -1,6 +1,7 @@
 import supabase from './SupabaseClient';
 import { getCurrentSessionUser } from './authSession';
 import { traceAsync } from './perfTrace';
+import { trackEvent } from './analyticsTracker';
 
 export type MeterReadingInsert = {
   roomId: number;
@@ -61,6 +62,10 @@ export async function updateMeterReading(params: { id: number; unit: number }) {
         .eq('id', params.id);
 
       if (error) throw error;
+      trackEvent('MeterReading_Updated', {
+        source: 'Room',
+        meter_reading_id: params.id,
+      });
     },
     { id: params.id },
   );
@@ -115,10 +120,22 @@ export async function createMeterReading(
         if (insertWithoutUser.error) throw insertWithoutUser.error;
         if (!insertWithoutUser.data?.id)
           throw new Error('Meter reading save failed');
+        trackEvent('MeterReading_Created', {
+          source: 'Room',
+          room_id: payload.roomId,
+          tenant_id: payload.tenantId,
+          meter_reading_id: insertWithoutUser.data.id,
+        });
         return insertWithoutUser.data as any;
       }
 
       if (!insertWithUser.data?.id) throw new Error('Meter reading save failed');
+      trackEvent('MeterReading_Created', {
+        source: 'Room',
+        room_id: payload.roomId,
+        tenant_id: payload.tenantId,
+        meter_reading_id: insertWithUser.data.id,
+      });
       return insertWithUser.data as any;
     },
     { room_id: payload.roomId, tenant_id: payload.tenantId },
@@ -129,5 +146,9 @@ export async function deleteMeterReading(id: number) {
   return await traceAsync('action_meter_reading_delete', async () => {
     const { error } = await supabase.from('meter_reading').delete().eq('id', id);
     if (error) throw error;
+    trackEvent('MeterReading_Deleted', {
+      source: 'Room',
+      meter_reading_id: id,
+    });
   });
 }

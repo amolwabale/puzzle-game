@@ -2,6 +2,7 @@ import supabase from './SupabaseClient';
 import { readUriAsArrayBuffer } from './readUriAsArrayBuffer';
 import { getCurrentSessionUser, getCurrentUserId } from './authSession';
 import { traceAsync } from './perfTrace';
+import { trackEvent } from './analyticsTracker';
 import type {
   FileInput,
   Ticket,
@@ -116,6 +117,9 @@ export async function updateUserProfile(
         .maybeSingle();
 
       if (error) throw error;
+      trackEvent('Profile_Updated', {
+        source: 'Menu',
+      });
       return data;
     },
     {
@@ -141,6 +145,10 @@ export async function changePasswordAndLogout(newPassword: string) {
     // After changing password, force re-login for security.
     const { error: signOutErr } = await supabase.auth.signOut();
     if (signOutErr) throw signOutErr;
+
+    trackEvent('Password_Changed', {
+      source: 'Menu',
+    });
   });
 }
 

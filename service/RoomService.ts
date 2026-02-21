@@ -1,6 +1,7 @@
 import supabase from './SupabaseClient';
 import { getCurrentUserId } from './authSession';
 import { traceAsync } from './perfTrace';
+import { trackEvent } from './analyticsTracker';
 
 /* ===================== TYPES ===================== */
 
@@ -82,6 +83,11 @@ const saveRoom = async (payload: SavePayload) => {
           .maybeSingle();
 
         if (error || !data) throw error;
+        trackEvent('Room_Saved', {
+          source: 'Room',
+          mode: 'add',
+          room_id: data.id,
+        });
         return data as RoomRecord;
       }
 
@@ -103,6 +109,11 @@ const saveRoom = async (payload: SavePayload) => {
         .maybeSingle();
 
       if (error) throw error;
+      trackEvent('Room_Saved', {
+        source: 'Room',
+        mode: 'edit',
+        room_id: payload.id,
+      });
       return data as RoomRecord;
     },
     { mode: payload.id ? 'edit' : 'add' },
