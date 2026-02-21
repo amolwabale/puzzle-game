@@ -107,6 +107,8 @@ export default function RoomFormScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const winH = Dimensions.get('window').height;
+  const scrollRef = React.useRef<ScrollView | null>(null);
+  const scrollYRef = React.useRef(0);
 
   const mode = route.params?.mode ?? 'add';
   const roomId = mode === 'edit' ? route.params?.roomId : undefined;
@@ -178,6 +180,7 @@ export default function RoomFormScreen() {
   const [selectedTenant, setSelectedTenant] =
     React.useState<TenantRecord | null>(null);
   const [editingOccupancy, setEditingOccupancy] = React.useState(false);
+  const [tenantSearchFocused, setTenantSearchFocused] = React.useState(false);
   const tenantSearchAnchorRef =
     React.useRef<React.ElementRef<typeof View> | null>(null);
   const [tenantSearchAnchorRect, setTenantSearchAnchorRect] = React.useState<{
@@ -471,13 +474,46 @@ export default function RoomFormScreen() {
     return allTenants.filter(t => t.name?.toLowerCase().includes(q));
   }, [tenantQuery, allTenants]);
 
-  const scrollPadBottom =
-    20 + Math.max(0, keyboardHeight);
+  // Add extra blank space so we can always scroll focused fields above keyboard.
+  const scrollPadBottom = 140 + Math.max(0, keyboardHeight);
 
   const clamp = React.useCallback(
     (v: number, min: number, max: number) => Math.min(max, Math.max(min, v)),
     [],
   );
+
+  const scrollNodeIntoView = React.useCallback(
+    (node: any) => {
+      if (!node?.measureInWindow) return;
+
+      node.measureInWindow(
+        (_x: number, y: number, _w: number, h: number) => {
+          const keyboardTop = winH - Math.max(0, keyboardHeight);
+          const desiredBottom = keyboardTop - 12;
+          const elemBottom = y + h;
+          if (elemBottom <= desiredBottom) return;
+
+          const delta = elemBottom - desiredBottom;
+          scrollRef.current?.scrollTo({
+            y: scrollYRef.current + delta,
+            animated: true,
+          });
+        },
+      );
+    },
+    [winH, keyboardHeight],
+  );
+
+  const scrollTenantSearchIntoView = React.useCallback(() => {
+    scrollNodeIntoView(tenantSearchAnchorRef.current as any);
+  }, [scrollNodeIntoView]);
+
+  const joiningDateAnchorRef =
+    React.useRef<React.ElementRef<typeof View> | null>(null);
+  const [meterReadingFocused, setMeterReadingFocused] = React.useState(false);
+  const scrollJoiningDateIntoView = React.useCallback(() => {
+    scrollNodeIntoView(joiningDateAnchorRef.current as any);
+  }, [scrollNodeIntoView]);
 
   const measureTenantAnchor = React.useCallback(() => {
     const node = tenantSearchAnchorRef.current as any;
@@ -499,6 +535,20 @@ export default function RoomFormScreen() {
     measureTenantAnchor,
   ]);
 
+  React.useEffect(() => {
+    if (!tenantSearchFocused) return;
+    if (keyboardHeight <= 0) return;
+    const id = requestAnimationFrame(scrollTenantSearchIntoView);
+    return () => cancelAnimationFrame(id);
+  }, [tenantSearchFocused, keyboardHeight, scrollTenantSearchIntoView]);
+
+  React.useEffect(() => {
+    if (!meterReadingFocused) return;
+    if (keyboardHeight <= 0) return;
+    const id = requestAnimationFrame(scrollJoiningDateIntoView);
+    return () => cancelAnimationFrame(id);
+  }, [meterReadingFocused, keyboardHeight, scrollJoiningDateIntoView]);
+
   if (loading) {
     return (
       <View style={styles.loader}>
@@ -518,9 +568,14 @@ export default function RoomFormScreen() {
         keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 44 : 0}
       >
         <ScrollView
+          ref={scrollRef}
           contentContainerStyle={[styles.container, { paddingBottom: scrollPadBottom }]}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
+          onScroll={e => {
+            scrollYRef.current = Number(e.nativeEvent.contentOffset?.y ?? 0);
+          }}
+          scrollEventThrottle={16}
           showsVerticalScrollIndicator={false}
         >
           <View pointerEvents={saving ? 'none' : 'auto'}>
@@ -810,6 +865,15 @@ export default function RoomFormScreen() {
                         onChange={v => {
                           setTenantQuery(v);
                         }}
+                        onFocus={() => {
+                          setTenantSearchFocused(true);
+                          measureTenantAnchor();
+                          setTimeout(
+                            () => scrollTenantSearchIntoView(),
+                            Platform.OS === 'android' ? 80 : 0,
+                          );
+                        }}
+                        onBlur={() => setTenantSearchFocused(false)}
                       />
                     </View>
                   </>
@@ -853,25 +917,38 @@ export default function RoomFormScreen() {
                         setMeterReading(next);
                         setErrors(prev => ({ ...prev, meterReading: '' }));
                       }}
+                      onFocus={() => {
+                        setMeterReadingFocused(true);
+                        setTimeout(
+                          () => scrollJoiningDateIntoView(),
+                          Platform.OS === 'android' ? 80 : 0,
+                        );
+                      }}
+                      onBlur={() => setMeterReadingFocused(false)}
                       error={errors.meterReading}
                       keyboard="number-pad"
                     />
                   </>
                 )}
 
-                <Button
-                  mode="contained-tonal"
-                  icon="calendar"
-                  style={{ marginTop: 12 }}
-                  onPress={() => {
-                    Keyboard.dismiss();
-                    setTimeout(() => setDateModalOpen(true), 0);
-                  }}
-                >
-                  {joiningDate
-                    ? `Joining Date: ${formatDate(joiningDate.toISOString())}`
-                    : 'Select Joining Date'}
-                </Button>
+                <View ref={joiningDateAnchorRef} collapsable={false}>
+                  <Button
+                    mode="contained-tonal"
+                    icon="calendar"
+                    style={{ marginTop: 12 }}
+                    onPress={() => {
+                      Keyboard.dismiss();
+                      setTimeout(
+                        () => setDateModalOpen(true),
+                        Platform.OS === 'android' ? 80 : 0,
+                      );
+                    }}
+                  >
+                    {joiningDate
+                      ? `Joining Date: ${formatDate(joiningDate.toISOString())}`
+                      : 'Select Joining Date'}
+                  </Button>
+                </View>
 
                 {!!errors.joiningDate ? (
                   <Text
