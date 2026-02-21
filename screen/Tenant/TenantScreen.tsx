@@ -28,8 +28,6 @@ import {
   TenantRecord,
 } from '../../service/tenantService';
 import { fetchActiveRoomAssignmentsForTenants } from '../../service/TenantRoomService';
-import analytics from '@react-native-firebase/analytics';
-import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
 import { trackEvent } from '../../service/analyticsTracker';
 import { getSignedUrlCached } from '../../service/signedUrlCache';
 

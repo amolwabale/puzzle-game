@@ -18,8 +18,6 @@ import {
 import { listTickets } from '../../service/ticketService';
 import type { Ticket } from '../../service/ticketTypes';
 import { TicketCard } from '../Support/components/TicketCard';
-import analytics from '@react-native-firebase/analytics';
-import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
 import { trackEvent } from '../../service/analyticsTracker';
 
 export default function SupportScreen() {

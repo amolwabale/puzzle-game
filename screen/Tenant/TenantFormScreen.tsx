@@ -40,8 +40,6 @@ import {
 } from '../../service/tenantService';
 import { supabase } from '../../service/SupabaseClient';
 import { FormInput } from '../../components/FormInput';
-import analytics from '@react-native-firebase/analytics';
-import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
 import { trackEvent } from '../../service/analyticsTracker';
 type FileState = { file?: FileInput | null; url?: string | null };
 type Props = NativeStackScreenProps<TenantStackParamList, 'TenantForm'>;

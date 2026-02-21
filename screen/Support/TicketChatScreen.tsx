@@ -36,8 +36,6 @@ import {
 import { createSignedUrlFromPublicUrl } from '../../service/MenuService';
 import { ChatBubble } from './components/ChatBubble';
 import { StatusChip } from './components/StatusChip';
-import analytics from '@react-native-firebase/analytics';
-import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
 import { trackEvent } from '../../service/analyticsTracker';
 
 type RouteParams = { ticketId: string };

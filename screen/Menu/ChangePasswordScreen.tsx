@@ -3,8 +3,6 @@ import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { Avatar, Button, Surface, Text, useTheme } from 'react-native-paper';
 import { changePasswordAndLogout } from '../../service/MenuService';
 import { FormInput } from '../../components/FormInput';
-import analytics from '@react-native-firebase/analytics';
-import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
 import { trackEvent } from '../../service/analyticsTracker';
 
 export default function ChangePasswordScreen() {

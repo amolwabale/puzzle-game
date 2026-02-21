@@ -29,8 +29,6 @@ import { FormInput } from '../../components/FormInput';
 
 type AuthNav = NativeStackNavigationProp<AuthStackParamList, 'LoginScreen'>;
 type RootNav = NativeStackNavigationProp<RootStackParamList>;
-import analytics from '@react-native-firebase/analytics';
-import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
 import { trackEvent } from '../../service/analyticsTracker';
 
 export default function LoginScreen() {

@@ -28,8 +28,6 @@ import {
   hasAnyTenantMappingForRoom,
   TenantRoomRecord,
 } from '../../service/TenantRoomService';
-import analytics from '@react-native-firebase/analytics';
-import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
 import { trackEvent } from '../../service/analyticsTracker';
 import { useQueryClient } from '@tanstack/react-query';
 import { getSignedUrlCached } from '../../service/signedUrlCache';

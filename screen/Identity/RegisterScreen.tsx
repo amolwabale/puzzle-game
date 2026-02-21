@@ -15,8 +15,6 @@ import { Button, Icon, Text, Surface, useTheme } from 'react-native-paper';
 import { AuthStackParamList } from '../../navigation/StackParam';
 import { RegisterUser } from '../../service/IdentityService';
 import { FormInput } from '../../components/FormInput';
-import analytics from '@react-native-firebase/analytics';
-import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
 import { trackEvent } from '../../service/analyticsTracker';
 
 export default function RegisterScreen() {

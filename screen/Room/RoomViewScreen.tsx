@@ -25,8 +25,6 @@ import {
   TenantRoomRecord,
 } from '../../service/TenantRoomService';
 import { fetchLatestMeterReading } from '../../service/MeterReadingService';
-import analytics from '@react-native-firebase/analytics';
-import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
 import { trackEvent } from '../../service/analyticsTracker';
 
 type Props = NativeStackScreenProps<RoomStackParamList, 'RoomView'>;

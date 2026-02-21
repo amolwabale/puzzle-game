@@ -1,5 +1,7 @@
+import { getApp } from '@react-native-firebase/app';
 import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
-const analyticsInstance = getAnalytics();
+
+const analyticsInstance = getAnalytics(getApp());
 
 export const trackScreen = async (name: string) => {
   try {

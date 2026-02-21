@@ -8,8 +8,14 @@ import {
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ActivityIndicator, useTheme } from 'react-native-paper';
 import BootSplash from 'react-native-bootsplash';
-import perf from '@react-native-firebase/perf';
-import crashlytics from '@react-native-firebase/crashlytics';
+import { getApp } from '@react-native-firebase/app';
+import { getPerformance, trace } from '@react-native-firebase/perf';
+import {
+  getCrashlytics,
+  setUserId as setCrashlyticsUserId,
+  setCrashlyticsCollectionEnabled,
+} from '@react-native-firebase/crashlytics';
+import { getAnalytics, setUserId } from '@react-native-firebase/analytics';
 
 import MainTabs from '../navigation/MainTabs';
 import MenuTabs from '../navigation/MenuTabs';
@@ -18,11 +24,7 @@ import { RootStackParamList } from '../navigation/StackParam';
 import supabase from '../service/SupabaseClient';
 import { TopMenuProvider } from '../navigation/TopMenuDrawer';
 import { TopMenuButton } from '../navigation/TopMenuButton.tsx';
-import '@react-native-firebase/app';
-import analytics from '@react-native-firebase/analytics';
-import { getAnalytics, setUserId } from '@react-native-firebase/analytics';
 import { trackEvent } from '../service/analyticsTracker';
-import { NativeModules } from 'react-native';
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 
 function getDeepActiveRouteName(state: any): string | undefined {
@@ -38,7 +40,7 @@ export default function AppNavigator() {
   const navRef = useNavigationContainerRef();
   const [loading, setLoading] = React.useState(true);
   const [session, setSession] = React.useState<any>(null);
-  const analyticsInstance = getAnalytics();
+  const analyticsInstance = getAnalytics(getApp());
 
   const lastRouteNameRef = React.useRef<string | undefined>(undefined);
   const screenTraceRef = React.useRef<any>(null);
@@ -53,18 +55,19 @@ export default function AppNavigator() {
       } catch {}
 
       const traceName = `screen_${routeName}_load`;
-      const trace = await perf().startTrace(traceName);
+      const perfTrace = trace(getPerformance(getApp()), traceName);
+      await perfTrace.start();
       const myId = ++screenTraceIdRef.current;
-      screenTraceRef.current = trace;
+      screenTraceRef.current = perfTrace;
 
       // Stop after the screen has had a chance to commit & paint.
       requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
+        requestAnimationFrame(async () => {
           if (screenTraceIdRef.current !== myId) return;
           try {
-            trace.stop?.();
+            await perfTrace.stop?.();
           } finally {
-            if (screenTraceRef.current === trace) screenTraceRef.current = null;
+            if (screenTraceRef.current === perfTrace) screenTraceRef.current = null;
           }
         });
       });
@@ -84,12 +87,12 @@ export default function AppNavigator() {
         if (data.session.user.id) {
           setUserId(analyticsInstance, data.session.user.id);
           try {
-            crashlytics().setUserId(String(data.session.user.id));
+            setCrashlyticsUserId(getCrashlytics(), String(data.session.user.id));
           } catch {}
         }
         // Enable Crashlytics collection at runtime (RNFB Core config may disable by default).
         try {
-          crashlytics().setCrashlyticsCollectionEnabled(true);
+          setCrashlyticsCollectionEnabled(getCrashlytics(), true);
         } catch {}
       }
       if (!error) {

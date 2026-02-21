@@ -1,4 +1,5 @@
-import perf from '@react-native-firebase/perf';
+import { getApp } from '@react-native-firebase/app';
+import { getPerformance, trace } from '@react-native-firebase/perf';
 
 type AttrValue = string | number | boolean | null | undefined;
 
@@ -15,28 +16,29 @@ export async function traceAsync<T>(
   fn: () => Promise<T>,
   attrs?: Record<string, AttrValue>,
 ): Promise<T> {
-  let trace: any = null;
+  let perfTrace: any = null;
   try {
-    trace = await perf().startTrace(name);
+    perfTrace = trace(getPerformance(getApp()), name);
+    await perfTrace.start();
     if (attrs) {
       for (const [k, v] of Object.entries(attrs)) {
         const s = toAttrString(v);
         if (s != null) {
           try {
-            trace.putAttribute?.(k, s);
+            perfTrace.putAttribute?.(k, s);
           } catch {}
         }
       }
     }
   } catch {
-    trace = null;
+    perfTrace = null;
   }
 
   try {
     return await fn();
   } finally {
     try {
-      trace?.stop?.();
+      await perfTrace?.stop?.();
     } catch {}
   }
 }

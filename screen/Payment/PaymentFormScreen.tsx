@@ -50,8 +50,6 @@ import {
   formatBillingMonthLabel,
   normalizeBillingMonthDate,
 } from '../../components/BillingMonthPicker';
-import analytics from '@react-native-firebase/analytics';
-import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
 import { trackEvent } from '../../service/analyticsTracker';
 const formatMoney = (n: number) => `₹${Math.round(n)}`;
 

@@ -26,8 +26,6 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import supabase from '../../service/SupabaseClient';
 import { FormInput } from '../../components/FormInput';
-import analytics from '@react-native-firebase/analytics';
-import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
 import { trackEvent } from '../../service/analyticsTracker';
 import { getCurrentUserId } from '../../service/authSession';
 import { traceAsync } from '../../service/perfTrace';

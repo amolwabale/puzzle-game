@@ -50,8 +50,6 @@ import {
   fetchLatestMeterReading,
   updateMeterReading,
 } from '../../service/MeterReadingService';
-import analytics from '@react-native-firebase/analytics';
-import { getAnalytics, logEvent } from '@react-native-firebase/analytics';
 import { trackEvent } from '../../service/analyticsTracker';
 
 /* ---------------- TYPES ---------------- */

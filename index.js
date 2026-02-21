@@ -3,7 +3,11 @@
  */
 
 import { AppRegistry } from 'react-native';
-import crashlytics from '@react-native-firebase/crashlytics';
+import {
+  getCrashlytics,
+  recordError,
+  setAttribute,
+} from '@react-native-firebase/crashlytics';
 import App from './App';
 import { name as appName } from './app.json';
 
@@ -17,8 +21,9 @@ try {
   if (global?.ErrorUtils?.setGlobalHandler) {
     global.ErrorUtils.setGlobalHandler((err, isFatal) => {
       try {
-        crashlytics().recordError(err);
-        crashlytics().setAttribute('js_fatal', isFatal ? 'true' : 'false');
+        const crash = getCrashlytics();
+        recordError(crash, err);
+        setAttribute(crash, 'js_fatal', isFatal ? 'true' : 'false');
       } catch {}
       defaultHandler(err, isFatal);
     });
