@@ -44,6 +44,7 @@ import { fetchRooms, RoomRecord } from '../../service/RoomService';
 import { fetchTenants, TenantRecord } from '../../service/tenantService';
 import { fetchActiveTenantsForRooms } from '../../service/TenantRoomService';
 import { FormInput } from '../../components/FormInput';
+import { RoomTenantSelectionSheet } from '../../components/RoomTenantSelectionSheet';
 import {
   BillingMonthPickerDialog,
   formatBillingMonthLabel,
@@ -137,6 +138,7 @@ export default function PaymentFormScreen() {
   });
 
   const [pairQuery, setPairQuery] = React.useState('');
+  const [roomTenantSheetOpen, setRoomTenantSheetOpen] = React.useState(false);
   const [selectedRoom, setSelectedRoom] = React.useState<RoomRecord | null>(
     null,
   );
@@ -464,7 +466,7 @@ export default function PaymentFormScreen() {
                   <Surface style={styles.occupancyHint} elevation={0}>
                     <Avatar.Icon
                       size={40}
-                      icon="swap-horizontal"
+                      icon="home-city-outline"
                       style={{
                         backgroundColor: theme.colors.primaryContainer,
                       }}
@@ -475,57 +477,19 @@ export default function PaymentFormScreen() {
                         Select an occupied room
                       </Text>
                       <Text style={{ color: '#666', marginTop: 2 }}>
-                        Search by room or tenant name (Room - Tenant).
+                        Search and select a room-tenant pair to record payment.
                       </Text>
                     </View>
                   </Surface>
 
-                  <FormInput
-                    label="Search room - tenant *"
-                    value={pairQuery}
-                    onChange={t => {
-                      setPairQuery(t);
-                      setErrors(p => ({ ...p, pair: '' }));
-                    }}
-                    error={errors.pair}
-                  />
-
-                  {filteredPairs.length > 0 && (
-                    <Surface style={styles.dropdown} elevation={0}>
-                      <View style={styles.dropdownClip}>
-                        {filteredPairs.slice(0, 8).map(({ room, tenant }) => (
-                          <TouchableOpacity
-                            key={`${room.id}-${tenant.id}`}
-                            style={styles.dropdownItem}
-                            onPress={() => selectPair({ room, tenant })}
-                          >
-                            <Text style={{ fontWeight: '800' }}>
-                              {(room.name || '-') +
-                                ' - ' +
-                                (tenant.name || '-')}
-                            </Text>
-                            <Text
-                              style={{
-                                color: '#666',
-                                fontSize: 14,
-                                marginTop: 2,
-                              }}
-                            >
-                              Rent:{' '}
-                              {room.rent ? formatMoney(Number(room.rent)) : '-'}
-                            </Text>
-                          </TouchableOpacity>
-                        ))}
-                      </View>
-                    </Surface>
-                  )}
-
-                  {pairQuery.trim().length > 0 &&
-                    filteredPairs.length === 0 && (
-                      <Text style={{ color: '#777', marginTop: 8 }}>
-                        No occupied rooms found.
-                      </Text>
-                    )}
+                  <Button
+                    mode="contained"
+                    icon="home-search-outline"
+                    style={{ marginTop: 12, marginBottom: 12 }}
+                    onPress={() => setRoomTenantSheetOpen(true)}
+                  >
+                    Search and Select Room & Tenant
+                  </Button>
                 </>
               ) : (
                 <Surface style={styles.selectedTile} elevation={1}>
@@ -882,6 +846,18 @@ export default function PaymentFormScreen() {
         loading={saving}
         onPress={save}
         disabled={saving}
+      />
+
+      <RoomTenantSelectionSheet
+        visible={roomTenantSheetOpen}
+        pairs={assignments}
+        query={pairQuery}
+        onQueryChange={setPairQuery}
+        onSelectPair={({ room, tenant }) => {
+          selectPair({ room, tenant });
+          setPairQuery('');
+        }}
+        onClose={() => setRoomTenantSheetOpen(false)}
       />
 
       <BillingMonthPickerDialog

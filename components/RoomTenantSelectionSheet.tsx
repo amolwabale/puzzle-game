@@ -22,14 +22,15 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { FormInput } from './FormInput';
+import { RoomRecord } from '../service/RoomService';
 import { TenantRecord } from '../service/tenantService';
 
-interface TenantSelectionSheetProps {
+interface RoomTenantSelectionSheetProps {
   visible: boolean;
-  tenants: TenantRecord[];
+  pairs: Array<{ room: RoomRecord; tenant: TenantRecord }>;
   query: string;
   onQueryChange: (query: string) => void;
-  onSelectTenant: (tenant: TenantRecord) => void;
+  onSelectPair: (pair: { room: RoomRecord; tenant: TenantRecord }) => void;
   onClose: () => void;
 }
 
@@ -40,7 +41,7 @@ const getInitials = (name?: string | null) => {
         .map(p => p[0])
         .join('')
         .toUpperCase()
-    : 'T';
+    : 'R';
 };
 
 const renderHighlightedText = (label: string, query: string) => {
@@ -62,14 +63,22 @@ const renderHighlightedText = (label: string, query: string) => {
   );
 };
 
-export function TenantSelectionSheet({
+const formatMoney = (amount: number) => {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    minimumFractionDigits: 0,
+  }).format(amount);
+};
+
+export function RoomTenantSelectionSheet({
   visible,
-  tenants,
+  pairs,
   query,
   onQueryChange,
-  onSelectTenant,
+  onSelectPair,
   onClose,
-}: TenantSelectionSheetProps) {
+}: RoomTenantSelectionSheetProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const inputRef = React.useRef<any>(null);
@@ -81,14 +90,18 @@ export function TenantSelectionSheet({
     }, 100);
   };
 
-  const filteredTenants = React.useMemo(() => {
-    if (query.length === 0) return tenants.slice(0, 5); // Show first 8 as suggestions
+  const filteredPairs = React.useMemo(() => {
+    if (query.length === 0) return pairs.slice(0, 5); // Show first 5 as suggestions
     const q = query.toLowerCase();
-    return tenants.filter(t => t.name?.toLowerCase().includes(q));
-  }, [query, tenants]);
+    return pairs.filter(
+      ({ room, tenant }) =>
+        (room.name?.toLowerCase().includes(q) ?? false) ||
+        (tenant.name?.toLowerCase().includes(q) ?? false),
+    );
+  }, [query, pairs]);
 
-  const handleSelectTenant = (tenant: TenantRecord) => {
-    onSelectTenant(tenant);
+  const handleSelectPair = (pair: { room: RoomRecord; tenant: TenantRecord }) => {
+    onSelectPair(pair);
     onQueryChange('');
     Keyboard.dismiss();
     setTimeout(() => {
@@ -102,12 +115,20 @@ export function TenantSelectionSheet({
     onClose();
   };
 
-  const renderItem = ({ item, index }: { item: TenantRecord; index: number }) => {
-    const isLast = index === filteredTenants.length - 1;
+  const renderItem = ({
+    item,
+    index,
+  }: {
+    item: { room: RoomRecord; tenant: TenantRecord };
+    index: number;
+  }) => {
+    const isLast = index === filteredPairs.length - 1;
+    const pairLabel = `${item.room.name || '-'} - ${item.tenant.name || '-'}`;
+
     return (
       <TouchableOpacity
         activeOpacity={0.6}
-        onPress={() => handleSelectTenant(item)}
+        onPress={() => handleSelectPair(item)}
         style={[
           styles.listItem,
           !isLast && styles.listItemDivider,
@@ -115,16 +136,16 @@ export function TenantSelectionSheet({
       >
         <Avatar.Text
           size={40}
-          label={getInitials(item.name)}
+          label={getInitials(item.room.name)}
           style={{
             backgroundColor: theme.colors.primaryContainer,
           }}
           color={theme.colors.primary}
         />
         <View style={styles.listItemContent}>
-          {renderHighlightedText(item.name ?? '-', query)}
+          {renderHighlightedText(pairLabel, query)}
           <Text style={styles.listItemHint} numberOfLines={1}>
-            Tap to select
+            Rent: {item.room.rent ? formatMoney(Number(item.room.rent)) : '-'}
           </Text>
         </View>
         <Icon source="chevron-right" size={20} color="#9CA3AF" />
@@ -145,8 +166,8 @@ export function TenantSelectionSheet({
         {/* Header */}
         <View style={[styles.header, { borderBottomColor: theme.colors.outlineVariant, paddingTop: (Platform.OS === 'android' ? 12 : 8) + insets.top }]}>
           <View style={styles.headerContent}>
-            <Text style={styles.headerTitle}>Select Tenant</Text>
-            <Text style={styles.headerSub}>Find and select a tenant to occupy this room</Text>
+            <Text style={styles.headerTitle}>Select Room & Tenant</Text>
+            <Text style={styles.headerSub}>Find and select a room-tenant pair</Text>
           </View>
           <IconButton
             icon="close"
@@ -160,7 +181,7 @@ export function TenantSelectionSheet({
         <View style={styles.searchContainer}>
           <TextInput
             ref={inputRef}
-            label="Search by tenant name"
+            label="Search by room or tenant name"
             value={query}
             onChangeText={onQueryChange}
             maxLength={50}
@@ -170,12 +191,12 @@ export function TenantSelectionSheet({
         </View>
 
         {/* Results */}
-        {filteredTenants.length > 0 ? (
+        {filteredPairs.length > 0 ? (
           <View style={styles.flatListContainer} key={`flatlist-${visible}`}>
             <FlatList
-              data={filteredTenants}
+              data={filteredPairs}
               renderItem={renderItem}
-              keyExtractor={(item) => String(item.id)}
+              keyExtractor={(item) => `${item.room.id}-${item.tenant.id}`}
               scrollEnabled={true}
               contentContainerStyle={[styles.listContent, { paddingBottom: Platform.OS === 'android' ? insets.bottom + 12 : 12 }]}
               showsVerticalScrollIndicator={true}
@@ -183,20 +204,20 @@ export function TenantSelectionSheet({
               removeClippedSubviews={false}
               maxToRenderPerBatch={10}
               updateCellsBatchingPeriod={50}
-              initialNumToRender={10}
-              extraData={filteredTenants}
+              initialNumToRender={5}
+              extraData={filteredPairs}
               nestedScrollEnabled={false}
             />
           </View>
         ) : query.length > 0 ? (
           <View style={[styles.emptyState, { paddingBottom: Platform.OS === 'android' ? insets.bottom + 12 : 12 }]}>
             <Icon
-              source="account-search-outline"
+              source="home-search-outline"
               size={56}
               color={theme.colors.outlineVariant}
             />
             <Text style={[styles.emptyTitle, { color: theme.colors.onSurfaceVariant }]}>
-              No tenants found
+              No occupied rooms found
             </Text>
             <Text style={[styles.emptySub, { color: theme.colors.onSurfaceVariant }]}>
               Try searching with a different name
@@ -205,7 +226,7 @@ export function TenantSelectionSheet({
         ) : (
           <View style={[styles.emptyState, { paddingBottom: Platform.OS === 'android' ? insets.bottom + 12 : 12 }]}>
             <Icon
-              source="account-multiple-outline"
+              source="home-multiple-outline"
               size={56}
               color={theme.colors.outlineVariant}
             />
@@ -213,16 +234,16 @@ export function TenantSelectionSheet({
               Start typing to search
             </Text>
             <Text style={[styles.emptySub, { color: theme.colors.onSurfaceVariant }]}>
-              Type a tenant name to see available options
+              Type a room or tenant name to see available options
             </Text>
           </View>
         )}
 
         {/* Result count */}
-        {query.length > 0 && filteredTenants.length > 0 && (
+        {query.length > 0 && filteredPairs.length > 0 && (
           <View style={[styles.footer, { borderTopColor: theme.colors.outlineVariant, paddingBottom: Platform.OS === 'android' ? insets.bottom + 12 : 12 }]}>
             <Text style={[styles.resultCount, { color: theme.colors.onSurfaceVariant }]}>
-              {filteredTenants.length} result{filteredTenants.length === 1 ? '' : 's'} found
+              {filteredPairs.length} result{filteredPairs.length === 1 ? '' : 's'} found
             </Text>
           </View>
         )}
