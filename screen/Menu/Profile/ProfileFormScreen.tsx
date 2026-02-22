@@ -188,7 +188,7 @@ export default function ProfileFormScreen() {
 
   const keyboardLift = Math.max(0, keyboardHeight - insets.bottom);
   // Keep a fixed gap between FAB and keyboard on open.
-  const fabBottom = keyboardHeight > 0 ? keyboardHeight + 75 : 24;
+  const fabBottom = keyboardHeight > 0 ? keyboardHeight + (Platform.OS === 'ios' ? 24 : 75) : 24;
 
   return (
     <View style={styles.screenRoot}>

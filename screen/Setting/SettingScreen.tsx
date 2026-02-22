@@ -290,7 +290,9 @@ export default function SettingScreen() {
     );
   }
 
-  const fabBottom = keyboardHeight > 0 ? keyboardHeight + 75 : 24;
+
+  const spacing = Platform.OS === 'ios' ? 24 : 75;
+  const fabBottom = keyboardHeight > 0 ? keyboardHeight + spacing : 24;
 
   return (
     <View style={styles.screenRoot}>

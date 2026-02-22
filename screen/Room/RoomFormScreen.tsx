@@ -953,11 +953,12 @@ export default function RoomFormScreen() {
         onClose={() => setTenantSheetOpen(false)}
       />
 
+
       <FAB
         icon="content-save"
         style={[
           styles.fab,
-          { bottom: keyboardHeight > 0 ? keyboardHeight + 75 : 24 },
+          { bottom: keyboardHeight > 0 ? keyboardHeight + (Platform.OS === 'ios' ? 24 : 75) : 24 },
         ]}
         loading={saving}
         onPress={save}

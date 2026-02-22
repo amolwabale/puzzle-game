@@ -375,7 +375,8 @@ export default function TenantFormScreen() {
   const avatarUri = profile.file ? profile.file.uri : profileSignedUrl;
   // Keep FAB at its original baseline when keyboard is closed,
   // and exactly 15px above the keyboard when it's open.
-  const fabBottom = keyboardHeight > 0 ? keyboardHeight + 75 : 24;
+  const spacing = Platform.OS === 'ios' ? 24 : 75;
+  const fabBottom = keyboardHeight > 0 ? keyboardHeight + spacing : 24;
 
   return (
     <View style={styles.screenRoot}>
