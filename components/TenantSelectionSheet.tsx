@@ -79,18 +79,18 @@ export function TenantSelectionSheet({
   }, [visible]);
 
   const filteredTenants = React.useMemo(() => {
-    if (query.length === 0) return tenants.slice(0, 8); // Show first 8 as suggestions
+    if (query.length === 0) return tenants.slice(0, 5); // Show first 8 as suggestions
     const q = query.toLowerCase();
     return tenants.filter(t => t.name?.toLowerCase().includes(q));
   }, [query, tenants]);
 
   const handleSelectTenant = (tenant: TenantRecord) => {
-    Keyboard.dismiss();
-    onQueryChange('');
     onSelectTenant(tenant);
+    onQueryChange('');
+    Keyboard.dismiss();
     setTimeout(() => {
       onClose();
-    }, 100);
+    }, 150);
   };
 
   const handleClose = () => {
@@ -164,16 +164,25 @@ export function TenantSelectionSheet({
 
         {/* Results */}
         {filteredTenants.length > 0 ? (
-          <FlatList
-            data={filteredTenants}
-            renderItem={renderItem}
-            keyExtractor={(item) => String(item.id)}
-            scrollEnabled={true}
-            contentContainerStyle={styles.listContent}
-            showsVerticalScrollIndicator={true}
-          />
+          <View style={styles.flatListContainer} key={`flatlist-${visible}`}>
+            <FlatList
+              data={filteredTenants}
+              renderItem={renderItem}
+              keyExtractor={(item) => String(item.id)}
+              scrollEnabled={true}
+              contentContainerStyle={[styles.listContent, { paddingBottom: Platform.OS === 'android' ? insets.bottom + 12 : 12 }]}
+              showsVerticalScrollIndicator={true}
+              keyboardShouldPersistTaps="handled"
+              removeClippedSubviews={false}
+              maxToRenderPerBatch={10}
+              updateCellsBatchingPeriod={50}
+              initialNumToRender={10}
+              extraData={filteredTenants}
+              nestedScrollEnabled={false}
+            />
+          </View>
         ) : query.length > 0 ? (
-          <View style={styles.emptyState}>
+          <View style={[styles.emptyState, { paddingBottom: Platform.OS === 'android' ? insets.bottom + 12 : 12 }]}>
             <Icon
               source="account-search-outline"
               size={56}
@@ -187,7 +196,7 @@ export function TenantSelectionSheet({
             </Text>
           </View>
         ) : (
-          <View style={styles.emptyState}>
+          <View style={[styles.emptyState, { paddingBottom: Platform.OS === 'android' ? insets.bottom + 12 : 12 }]}>
             <Icon
               source="account-multiple-outline"
               size={56}
@@ -204,7 +213,7 @@ export function TenantSelectionSheet({
 
         {/* Result count */}
         {query.length > 0 && filteredTenants.length > 0 && (
-          <View style={[styles.footer, { borderTopColor: theme.colors.outlineVariant }]}>
+          <View style={[styles.footer, { borderTopColor: theme.colors.outlineVariant, paddingBottom: Platform.OS === 'android' ? insets.bottom + 12 : 12 }]}>
             <Text style={[styles.resultCount, { color: theme.colors.onSurfaceVariant }]}>
               {filteredTenants.length} result{filteredTenants.length === 1 ? '' : 's'} found
             </Text>
@@ -252,9 +261,14 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     backgroundColor: '#FFFFFF',
   },
+  flatListContainer: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
   listContent: {
     paddingHorizontal: 0,
     paddingVertical: 0,
+    flexGrow: 1,
   },
   listItem: {
     flexDirection: 'row',
