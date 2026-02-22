@@ -489,7 +489,7 @@ export default function RoomFormScreen() {
       node.measureInWindow(
         (_x: number, y: number, _w: number, h: number) => {
           const keyboardTop = winH - Math.max(0, keyboardHeight);
-          const desiredBottom = keyboardTop - 12;
+          const desiredBottom = keyboardTop - 80;
           const elemBottom = y + h;
           if (elemBottom <= desiredBottom) return;
 
@@ -870,7 +870,7 @@ export default function RoomFormScreen() {
                           measureTenantAnchor();
                           setTimeout(
                             () => scrollTenantSearchIntoView(),
-                            Platform.OS === 'android' ? 80 : 0,
+                            Platform.OS === 'android' ? 300 : 0,
                           );
                         }}
                         onBlur={() => setTenantSearchFocused(false)}
