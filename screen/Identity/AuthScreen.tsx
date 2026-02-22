@@ -54,6 +54,13 @@ export default function AuthScreen() {
     });
   };
 
+  const handleForgotPassword = () => {
+    navigation.navigate('ForgotPasswordScreen');
+    trackEvent('Auth_ForgotPassword_Opened', {
+      source: 'Auth',
+    });
+  };
+
   const handleGoogleLogin = async () => {
     trackEvent('Auth_Google_Login_Clicked', { source: 'Auth' });
     const webClientId = Config.GOOGLE_WEB_CLIENT_ID?.trim?.();
@@ -381,6 +388,30 @@ export default function AuthScreen() {
               loading={googleLoading}
             >
               Continue with Google
+            </Button>
+          </View>
+        </View>
+
+        <View
+          style={[
+            styles.buttonWrap,
+            { backgroundColor: theme.colors.surface, shadowColor: shadowColor(theme) },
+          ]}
+        >
+          <View style={styles.buttonClip}>
+            <Button
+              mode="outlined"
+              icon="lock-reset"
+              onPress={handleForgotPassword}
+              style={styles.button}
+              contentStyle={styles.buttonContent}
+              labelStyle={styles.buttonLabel}
+              compact
+              buttonColor={theme.colors.surface}
+              textColor={theme.colors.onSurface}
+              disabled={googleLoading}
+            >
+              Forgot Password?
             </Button>
           </View>
         </View>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View } from 'react-native';
+import { View, Linking } from 'react-native';
 import {
   NavigationContainer,
   DefaultTheme as NavigationDefaultTheme,
@@ -76,6 +76,132 @@ export default function AppNavigator() {
     }
   }, []);
 
+  /**
+   * Parse deep link URL to extract tokens
+   * Link format: tenantmanager://reset-password?access_token=...&refresh_token=...
+   */
+  const parseResetPasswordDeepLink = React.useCallback(
+    (url: string): { accessToken?: string; refreshToken?: string; code?: string } => {
+      console.log('[DeepLink] Parsing URL:', url);
+
+      let accessToken: string | undefined;
+      let refreshToken: string | undefined;
+      let code: string | undefined;
+
+      try {
+        // Split by ? to get query string
+        const parts = url.split('?');
+        let paramsStr = '';
+
+        if (parts.length > 1) {
+          paramsStr = parts[1];
+        } else if (url.includes('#')) {
+          // Try hash fragment
+          const hashParts = url.split('#');
+          if (hashParts.length > 1) {
+            paramsStr = hashParts[1];
+          }
+        }
+
+        console.log('[DeepLink] Params string:', paramsStr);
+
+        // Parse parameters manually
+        if (paramsStr) {
+          const paramPairs = paramsStr.split('&');
+          for (const pair of paramPairs) {
+            const [key, value] = pair.split('=');
+            if (!key) continue;
+
+            const decodedValue = value ? decodeURIComponent(value) : '';
+            console.log('[DeepLink] Parsed param:', key, '=', decodedValue.substring(0, 20) + '...');
+
+            if (key === 'access_token') {
+              accessToken = decodedValue;
+            } else if (key === 'refresh_token') {
+              refreshToken = decodedValue;
+            } else if (key === 'code') {
+              code = decodedValue;
+            }
+          }
+        }
+
+        console.log('[DeepLink] Extracted:', {
+          hasAccessToken: !!accessToken,
+          hasRefreshToken: !!refreshToken,
+          hasCode: !!code,
+        });
+      } catch (err) {
+        console.error('[DeepLink] Error parsing:', err);
+      }
+
+      return { accessToken, refreshToken, code };
+    },
+    [],
+  );
+
+  /**
+   * Handle deep link for password reset
+   */
+  const handleResetPasswordDeepLink = React.useCallback(
+    async (url: string) => {
+      try {
+        console.log('[DeepLink] Handling:', url);
+
+        const { accessToken, refreshToken, code } = parseResetPasswordDeepLink(url);
+
+        // 🔐 IMPORTANT: Don't set session immediately!
+        // Instead, navigate to SetNewPasswordScreen which will handle it.
+        // This ensures the screen appears while user is still in AuthStack.
+
+        if (accessToken && refreshToken) {
+          console.log('[DeepLink] Navigating with tokens');
+          // Navigate to SetNewPasswordScreen with tokens
+          // Use a small delay to ensure navigation is ready
+          setTimeout(() => {
+            try {
+              (navRef.current?.navigate as any)('SetNewPasswordScreen', {
+                accessToken,
+                refreshToken,
+              });
+            } catch (err) {
+              console.error('[DeepLink] Navigation failed:', err);
+            }
+          }, 300);
+
+          trackEvent('Auth_ResetPasswordDeepLink_Detected', {
+            hasTokens: true,
+          });
+          return;
+        } else if (code) {
+          console.log('[DeepLink] Navigating with code');
+          // Alternative: Code-based flow
+          setTimeout(() => {
+            try {
+              (navRef.current?.navigate as any)('SetNewPasswordScreen', {
+                code,
+              });
+            } catch (err) {
+              console.error('[DeepLink] Navigation failed:', err);
+            }
+          }, 300);
+
+          trackEvent('Auth_ResetPasswordDeepLink_Detected', {
+            hasCode: true,
+          });
+          return;
+        }
+
+        console.warn('[DeepLink] No tokens/code found in URL');
+        trackEvent('Auth_ResetPasswordDeepLink_Invalid', {});
+      } catch (err: any) {
+        console.error('[DeepLink] Error handling:', err);
+        trackEvent('Auth_ResetPasswordDeepLink_Unexpected', {
+          error: err?.message,
+        });
+      }
+    },
+    [navRef, parseResetPasswordDeepLink],
+  );
 
   React.useEffect(() => {
     // 1️⃣ Restore session on app start
@@ -108,10 +234,21 @@ export default function AppNavigator() {
       },
     );
 
+    // 3️⃣ Handle runtime deep links (app already running)
+    const deepLinkSubscription = Linking.addEventListener('url', ({ url }) => {
+      console.log('[DeepLink] URL event:', url);
+      if (url.includes('reset-password') || url.includes('access_token')) {
+        handleResetPasswordDeepLink(url).catch((err) => {
+          console.error('[DeepLink] Failed to process:', err);
+        });
+      }
+    });
+
     return () => {
       authListener.subscription.unsubscribe();
+      deepLinkSubscription.remove();
     };
-  }, []);
+  }, [handleResetPasswordDeepLink]);
 
   // 3️⃣ Splash / loader while checking auth
   if (loading) {
@@ -133,17 +270,59 @@ export default function AppNavigator() {
       <NavigationContainer
         ref={navRef}
         theme={NavigationDefaultTheme}
+        linking={{
+          /**
+           * 🔐 Deep Link Configuration for Password Reset
+           *
+           * Supabase sends reset emails with links like:
+           * https://example.com/auth/callback?access_token=...&refresh_token=...
+           *
+           * We also support custom deep link scheme:
+           * tenantmanager://reset-password?access_token=...&refresh_token=...
+           *
+           * CRITICAL: React Navigation's built-in config only works for known patterns.
+           * For password reset, we use onDeepLink to handle arbitrary parameters.
+           */
+          prefixes: ['tenantmanager://', 'https://example.com/auth'],
+          config: {
+            screens: {
+              AuthStack: {
+                screens: {
+                  SetNewPasswordScreen: 'reset-password',
+                },
+              },
+            },
+          },
+          /**
+           * Called when the app is launched from a deep link and hasn't set up navigation yet.
+           * This handles password reset links that arrive before the app is ready.
+           * Returns the initial deep link URL if present.
+           */
+          async getInitialURL() {
+            // Check if the app was launched from a deep link
+            const url = await Linking.getInitialURL();
+
+            if (url != null) {
+              console.log('[DeepLink] Initial URL from Linking:', url);
+              return url;
+            }
+            // Otherwise, return undefined - app will go to normal start screen
+            return undefined;
+          },
+        }}
         onReady={() => {
+          console.log('[Navigation] onReady');
           // Hide native splash once navigation is mounted.
           void BootSplash.hide({ fade: true });
           const initial = getDeepActiveRouteName(navRef.getRootState?.());
           lastRouteNameRef.current = initial;
           void startScreenTrace(initial);
         }}
-        onStateChange={state => {
+        onStateChange={(state) => {
           const current = getDeepActiveRouteName(state);
           const prev = lastRouteNameRef.current;
           if (current && current !== prev) {
+            console.log('[Navigation] Screen changed:', prev, '->', current);
             lastRouteNameRef.current = current;
             void startScreenTrace(current);
           }

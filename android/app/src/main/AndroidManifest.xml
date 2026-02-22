@@ -25,13 +25,13 @@
         <action android:name="android.intent.action.MAIN" />
         <category android:name="android.intent.category.LAUNCHER" />
       </intent-filter>
-      <intent-filter android:autoVerify="true">
+      <!-- Deep link handler for password reset -->
+      <intent-filter android:autoVerify="false">
         <action android:name="android.intent.action.VIEW" />
         <category android:name="android.intent.category.DEFAULT" />
         <category android:name="android.intent.category.BROWSABLE" />
-        <data
-          android:scheme="tenantmanager"
-          android:host="auth" />
+        <!-- Custom scheme: tenantmanager://reset-password?access_token=...&refresh_token=... -->
+        <data android:scheme="tenantmanager" />
       </intent-filter>
     </activity>
   </application>

@@ -2,6 +2,16 @@ export type AuthStackParamList = {
   AuthScreen: undefined;
   LoginScreen: undefined;
   RegisterScreen: undefined;
+  ForgotPasswordScreen: undefined;
+  SetNewPasswordScreen:
+    | {
+        accessToken: string;
+        refreshToken: string;
+      }
+    | {
+        code: string;
+      }
+    | undefined;
 };
 
 export type RootStackParamList = {
