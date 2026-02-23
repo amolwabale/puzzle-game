@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Linking } from 'react-native';
+import { View, Linking, Platform } from 'react-native';
 import {
   NavigationContainer,
   DefaultTheme as NavigationDefaultTheme,
@@ -25,6 +25,8 @@ import supabase from '../service/SupabaseClient';
 import { TopMenuProvider } from '../navigation/TopMenuDrawer';
 import { TopMenuButton } from '../navigation/TopMenuButton.tsx';
 import { trackEvent } from '../service/analyticsTracker';
+import { checkForUpdate, getStoreUrl } from '../service/updateService';
+import { HardUpdateModal } from '../components/HardUpdateModal';
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 
 function getDeepActiveRouteName(state: any): string | undefined {
@@ -41,6 +43,19 @@ export default function AppNavigator() {
   const [loading, setLoading] = React.useState(true);
   const [session, setSession] = React.useState<any>(null);
   const analyticsInstance = getAnalytics(getApp());
+
+  // Hard Update State
+  const [hardUpdateState, setHardUpdateState] = React.useState<{
+    isVisible: boolean;
+    isForceUpdate: boolean;
+    message: string;
+    storeUrl: string;
+  }>({
+    isVisible: false,
+    isForceUpdate: false,
+    message: '',
+    storeUrl: '',
+  });
 
   const lastRouteNameRef = React.useRef<string | undefined>(undefined);
   const screenTraceRef = React.useRef<any>(null);
@@ -204,37 +219,81 @@ export default function AppNavigator() {
   );
 
   React.useEffect(() => {
-    // 1️⃣ Restore session on app start
-    supabase.auth.getSession().then(({ data, error }) => {
-      if (data.session) {
-        trackEvent('App_Started', {
-          source: 'App',
-        });
-        if (data.session.user.id) {
-          setUserId(analyticsInstance, data.session.user.id);
-          try {
-            setCrashlyticsUserId(getCrashlytics(), String(data.session.user.id));
-          } catch {}
-        }
-        // Enable Crashlytics collection at runtime (RNFB Core config may disable by default).
-        try {
-          setCrashlyticsCollectionEnabled(getCrashlytics(), true);
-        } catch {}
-      }
-      if (!error) {
-        setSession(data.session);
-      }
-      setLoading(false);
-    });
+    let isMounted = true;
 
-    // 2️⃣ Listen to auth state changes (login / logout)
+    const initializeApp = async () => {
+      try {
+        // 1️⃣ Restore session on app start
+        const { data, error } = await supabase.auth.getSession();
+        
+        if (isMounted) {
+          if (data.session) {
+            trackEvent('App_Started', {
+              source: 'App',
+            });
+            if (data.session.user.id) {
+              setUserId(analyticsInstance, data.session.user.id);
+              try {
+                setCrashlyticsUserId(getCrashlytics(), String(data.session.user.id));
+              } catch {}
+            }
+            // Enable Crashlytics collection at runtime (RNFB Core config may disable by default).
+            try {
+              setCrashlyticsCollectionEnabled(getCrashlytics(), true);
+            } catch {}
+          }
+          if (!error) {
+            setSession(data.session);
+          }
+
+          // 2️⃣ Check for hard update (runs after session is restored)
+          console.log('[AppNavigator] Checking for hard update...');
+          const updateResult = await checkForUpdate();
+
+          if (isMounted) {
+            if (updateResult.status === 'force' || updateResult.status === 'optional') {
+              console.log('[AppNavigator] Update available:', updateResult.status);
+              trackEvent('HardUpdate_Available', {
+                status: updateResult.status,
+                currentVersion: updateResult.currentVersion,
+                newVersion: updateResult.latestVersion,
+              });
+
+              setHardUpdateState({
+                isVisible: true,
+                isForceUpdate: updateResult.status === 'force',
+                message: updateResult.updateMessage,
+                storeUrl: getStoreUrl(Platform.OS as 'ios' | 'android'),
+              });
+            } else {
+              console.log('[AppNavigator] App is up to date');
+            }
+          }
+        }
+      } catch (err) {
+        console.error('[AppNavigator] Error initializing app:', err);
+        if (isMounted) {
+          setLoading(false);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    initializeApp();
+
+    // 3️⃣ Listen to auth state changes (login / logout)
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
-        setSession(session);
+        if (isMounted) {
+          setSession(session);
+        }
       },
     );
 
-    // 3️⃣ Handle runtime deep links (app already running)
+    // 4️⃣ Handle runtime deep links (app already running)
     const deepLinkSubscription = Linking.addEventListener('url', ({ url }) => {
       console.log('[DeepLink] URL event:', url);
       if (url.includes('reset-password') || url.includes('access_token')) {
@@ -245,6 +304,7 @@ export default function AppNavigator() {
     });
 
     return () => {
+      isMounted = false;
       authListener.subscription.unsubscribe();
       deepLinkSubscription.remove();
     };
@@ -343,6 +403,20 @@ export default function AppNavigator() {
           )}
         </RootStack.Navigator>
       </NavigationContainer>
+
+      {/* Hard Update Modal - shown when app needs update */}
+      <HardUpdateModal
+        visible={hardUpdateState.isVisible}
+        isForceUpdate={hardUpdateState.isForceUpdate}
+        message={hardUpdateState.message}
+        storeUrl={hardUpdateState.storeUrl}
+        onOptionalDismiss={() => {
+          setHardUpdateState((prev) => ({
+            ...prev,
+            isVisible: false,
+          }));
+        }}
+      />
     </TopMenuProvider>
   );
 }
