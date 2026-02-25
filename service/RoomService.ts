@@ -2,6 +2,7 @@ import supabase from './SupabaseClient';
 import { getCurrentUserId } from './authSession';
 import { traceAsync } from './perfTrace';
 import { trackEvent } from './analyticsTracker';
+import { invalidateCache, getCachedData, setCached } from './cacheService';
 
 /* ===================== TYPES ===================== */
 
@@ -30,7 +31,37 @@ type SavePayload = {
 
 /* ===================== FETCH ===================== */
 
+const getCachedRooms = (): RoomRecord[] | null => {
+  return getCachedData<RoomRecord[]>('rooms');
+};
+
+const hasCachedRooms = (): boolean => {
+  return !!getCachedRooms();
+};
+
 const fetchRooms = async () => {
+  // Return cache if valid
+  const cached = getCachedRooms();
+  if (cached) {
+    console.log('[cache] Returning cached rooms:', cached.length);
+    // Refresh in background
+    (async () => {
+      try {
+        const fresh = await fetchRoomsFromServer();
+        setCached('rooms', fresh);
+      } catch (err) {
+        console.warn('[cache] Background refresh failed:', err);
+      }
+    })();
+    return cached;
+  }
+
+  const data = await fetchRoomsFromServer();
+  setCached('rooms', data);
+  return data;
+};
+
+const fetchRoomsFromServer = async () => {
   const userId = await getCurrentUserId();
 
   const { data, error } = await supabase
@@ -42,20 +73,6 @@ const fetchRooms = async () => {
 
   if (error) throw error;
   return data as RoomRecord[];
-};
-
-const fetchRoomById = async (roomId: number) => {
-  const userId = await getCurrentUserId();
-
-  const { data, error } = await supabase
-    .from('room')
-    .select('*')
-    .eq('id', roomId)
-    .eq('user_id', userId)
-    .maybeSingle();
-
-  if (error) throw error;
-  return data as RoomRecord | null;
 };
 
 /* ===================== SAVE ===================== */
@@ -88,6 +105,7 @@ const saveRoom = async (payload: SavePayload) => {
           mode: 'add',
           room_id: data.id,
         });
+        invalidateCache(['rooms', 'activeTenantsByRooms', 'dashboard', 'tenantRoomAssignments']);
         return data as RoomRecord;
       }
 
@@ -114,6 +132,7 @@ const saveRoom = async (payload: SavePayload) => {
         mode: 'edit',
         room_id: payload.id,
       });
+      invalidateCache(['rooms', 'activeTenantsByRooms', 'dashboard', 'tenantRoomAssignments']);
       return data as RoomRecord;
     },
     { mode: payload.id ? 'edit' : 'add' },
@@ -133,9 +152,24 @@ const deleteRoom = async (roomId: number) => {
       .eq('user_id', userId);
 
     if (error) throw error;
+    invalidateCache(['rooms', 'activeTenantsByRooms', 'dashboard', 'tenantRoomAssignments']);
   });
+};
+
+const fetchRoomById = async (roomId: number) => {
+  const userId = await getCurrentUserId();
+  const { data, error } = await supabase
+    .from('room')
+    .select('*')
+    .eq('id', roomId)
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (error) throw error;
+  return data as RoomRecord | null;
 };
 
 /* ===================== EXPORTS ===================== */
 
-export { fetchRooms, fetchRoomById, saveRoom, deleteRoom };
+export { getCachedRooms, hasCachedRooms, fetchRooms, fetchRoomById, saveRoom, deleteRoom };
+
+

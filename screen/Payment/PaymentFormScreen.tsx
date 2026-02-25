@@ -173,11 +173,11 @@ export default function PaymentFormScreen() {
       setRooms(r || []);
       setSettings(s);
 
-      const roomIdList = (r || []).map(x => x.id);
+      const roomIdList = (r || []).map((x: RoomRecord) => x.id);
       const activeByRoom = await fetchActiveTenantsForRooms(roomIdList);
       const pairs: Array<{ room: RoomRecord; tenant: TenantRecord }> = [];
 
-      (r || []).forEach(room => {
+      (r || []).forEach((room: RoomRecord) => {
         const active = activeByRoom?.[room.id];
         if (active?.tenant) {
           pairs.push({ room, tenant: active.tenant });
@@ -201,8 +201,8 @@ export default function PaymentFormScreen() {
 
         setEditingBill(b);
 
-        const room = (r || []).find(x => x.id === b.room_id) || null;
-        const tenant = (t || []).find(x => x.id === b.tenant_id) || null;
+        const room = (r || []).find((x: RoomRecord) => x.id === b.room_id) || null;
+        const tenant = (t || []).find((x: TenantRecord) => x.id === b.tenant_id) || null;
 
         if (!room || !tenant) {
           throw new Error('Could not load room/tenant for this bill');

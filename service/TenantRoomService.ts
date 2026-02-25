@@ -3,6 +3,7 @@ import { TenantRecord } from './tenantService';
 import { getCurrentUserId } from './authSession';
 import { traceAsync } from './perfTrace';
 import { trackEvent } from './analyticsTracker';
+import { getCachedData, invalidateCache, setCached } from './cacheService';
 
 /* ===================== TYPES ===================== */
 
@@ -91,7 +92,7 @@ const fetchActiveTenantForRoom = async (roomId: number) => {
   return { ...data, tenant: tenantMap[data.tenant_id] } as TenantRoomRecord;
 };
 
-const fetchActiveTenantsForRooms = async (roomIds: number[]) => {
+const fetchActiveTenantsForRoomsFromServer = async (roomIds: number[]) => {
   const ids = Array.from(new Set(roomIds)).filter(Boolean);
   if (ids.length === 0) return {} as Record<number, TenantRoomRecord | null>;
 
@@ -137,6 +138,49 @@ const fetchActiveTenantsForRooms = async (roomIds: number[]) => {
   return map;
 };
 
+const fetchActiveTenantsForRooms = async (roomIds: number[]) => {
+  const ids = Array.from(new Set(roomIds)).filter(Boolean);
+  if (ids.length === 0) return {} as Record<number, TenantRoomRecord | null>;
+
+  const cached = getCachedData<Record<number, TenantRoomRecord | null>>(
+    'activeTenantsByRooms',
+  );
+
+  if (cached && ids.every(id => Object.prototype.hasOwnProperty.call(cached, id))) {
+    console.log('[cache] Returning cached active tenants by room:', ids.length);
+
+    fetchActiveTenantsForRoomsFromServer(ids)
+      .then(fresh => {
+        setCached('activeTenantsByRooms', { ...cached, ...fresh });
+      })
+      .catch(err => {
+        console.warn('[cache] Background refresh failed:', err);
+      });
+
+    const cachedSlice: Record<number, TenantRoomRecord | null> = {};
+    ids.forEach(id => {
+      cachedSlice[id] = cached[id] ?? null;
+    });
+    return cachedSlice;
+  }
+
+  const fresh = await fetchActiveTenantsForRoomsFromServer(ids);
+  setCached('activeTenantsByRooms', { ...(cached || {}), ...fresh });
+  return fresh;
+};
+
+const hasCachedActiveTenantsForRooms = (roomIds: number[]): boolean => {
+  const ids = Array.from(new Set(roomIds)).filter(Boolean);
+  if (ids.length === 0) return true;
+
+  const cached = getCachedData<Record<number, TenantRoomRecord | null>>(
+    'activeTenantsByRooms',
+  );
+  if (!cached) return false;
+
+  return ids.every(id => Object.prototype.hasOwnProperty.call(cached, id));
+};
+
 const fetchActiveRoomForTenants = async (tenantIds: number[]) => {
   const ids = Array.from(new Set(tenantIds)).filter(Boolean);
   if (ids.length === 0)
@@ -170,7 +214,7 @@ const fetchActiveRoomForTenants = async (tenantIds: number[]) => {
   return map;
 };
 
-export const fetchActiveRoomAssignmentsForTenants = async (
+const fetchActiveRoomAssignmentsForTenantsFromServer = async (
   tenantIds: number[],
 ): Promise<Record<number, ActiveRoomAssignmentWithRoomName | null>> => {
   const ids = Array.from(new Set(tenantIds)).filter(Boolean);
@@ -247,6 +291,56 @@ export const fetchActiveRoomAssignmentsForTenants = async (
     }
   });
   return map;
+};
+
+export const fetchActiveRoomAssignmentsForTenants = async (
+  tenantIds: number[],
+): Promise<Record<number, ActiveRoomAssignmentWithRoomName | null>> => {
+  const ids = Array.from(new Set(tenantIds)).filter(Boolean);
+  if (ids.length === 0)
+    return {} as Record<number, ActiveRoomAssignmentWithRoomName | null>;
+
+  const cached =
+    getCachedData<Record<number, ActiveRoomAssignmentWithRoomName | null>>(
+      'tenantRoomAssignments',
+    );
+
+  if (cached && ids.every(id => Object.prototype.hasOwnProperty.call(cached, id))) {
+    console.log('[cache] Returning cached tenant-room assignments:', ids.length);
+
+    fetchActiveRoomAssignmentsForTenantsFromServer(ids)
+      .then(fresh => {
+        setCached('tenantRoomAssignments', { ...cached, ...fresh });
+      })
+      .catch(err => {
+        console.warn('[cache] Background refresh failed:', err);
+      });
+
+    const cachedSlice: Record<number, ActiveRoomAssignmentWithRoomName | null> = {};
+    ids.forEach(id => {
+      cachedSlice[id] = cached[id] ?? null;
+    });
+    return cachedSlice;
+  }
+
+  const fresh = await fetchActiveRoomAssignmentsForTenantsFromServer(ids);
+  setCached('tenantRoomAssignments', { ...(cached || {}), ...fresh });
+  return fresh;
+};
+
+const hasCachedActiveRoomAssignmentsForTenants = (
+  tenantIds: number[],
+): boolean => {
+  const ids = Array.from(new Set(tenantIds)).filter(Boolean);
+  if (ids.length === 0) return true;
+
+  const cached =
+    getCachedData<Record<number, ActiveRoomAssignmentWithRoomName | null>>(
+      'tenantRoomAssignments',
+    );
+  if (!cached) return false;
+
+  return ids.every(id => Object.prototype.hasOwnProperty.call(cached, id));
 };
 
 /* ===================== GUARDS ===================== */
@@ -337,6 +431,7 @@ const addTenantToRoom = async ({
       });
 
       if (error) throw error;
+      invalidateCache(['activeTenantsByRooms', 'tenantRoomAssignments']);
       trackEvent('Room_OccupancySaved', {
         source: 'Room',
         room_id,
@@ -364,6 +459,7 @@ const vacateRoom = async (mappingId: number) => {
         .eq('user_id', userId);
 
       if (error) throw error;
+      invalidateCache(['activeTenantsByRooms', 'tenantRoomAssignments']);
       trackEvent('Room_Vacated', {
         source: 'Room',
         mapping_id: mappingId,
@@ -388,6 +484,7 @@ const updateJoiningDate = async (mappingId: number, joining_date: string) => {
         .eq('user_id', userId);
 
       if (error) throw error;
+      invalidateCache(['activeTenantsByRooms', 'tenantRoomAssignments']);
       trackEvent('Room_JoiningDateUpdated', {
         source: 'Room',
         mapping_id: mappingId,
@@ -402,7 +499,9 @@ const updateJoiningDate = async (mappingId: number, joining_date: string) => {
 export {
   fetchActiveTenantForRoom,
   fetchActiveTenantsForRooms,
+  hasCachedActiveTenantsForRooms,
   fetchActiveRoomForTenants,
+  hasCachedActiveRoomAssignmentsForTenants,
   hasAnyTenantMappingForRoom,
   fetchTenantHistoryForRoom,
   addTenantToRoom,

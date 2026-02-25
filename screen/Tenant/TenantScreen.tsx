@@ -24,9 +24,13 @@ import { TenantStackParamList } from '../../navigation/StackParam';
 import {
   deleteTenant,
   fetchTenants,
+  getCachedTenants,
   TenantRecord,
 } from '../../service/tenantService';
-import { fetchActiveRoomAssignmentsForTenants } from '../../service/TenantRoomService';
+import {
+  fetchActiveRoomAssignmentsForTenants,
+  hasCachedActiveRoomAssignmentsForTenants,
+} from '../../service/TenantRoomService';
 import { trackEvent } from '../../service/analyticsTracker';
 import { getSignedUrl } from '../../service/signedUrlCache';
 
@@ -47,7 +51,15 @@ const formatDate = (d?: string | null) =>
 export default function TenantScreen() {
   const navigation = useNavigation<Nav>();
 
-  const [initialLoading, setInitialLoading] = React.useState(true);
+  const [initialLoading, setInitialLoading] = React.useState(() => {
+    const cachedTenants = getCachedTenants();
+    const hasTenantCache = !!cachedTenants;
+    const tenantIds = (cachedTenants || []).map(t => t.id);
+    const hasActiveAssignmentsCache =
+      hasTenantCache && hasCachedActiveRoomAssignmentsForTenants(tenantIds);
+    const hasBothCaches = hasTenantCache && hasActiveAssignmentsCache;
+    return !hasBothCaches;
+  });
   const [refreshing, setRefreshing] = React.useState(false);
   const [tenants, setTenants] = React.useState<TenantRecord[]>([]);
   const [query, setQuery] = React.useState('');
@@ -62,7 +74,16 @@ export default function TenantScreen() {
   const loadTenants = React.useCallback(async (isRefresh = false) => {
     try {
       if (isRefresh) setRefreshing(true);
-      else setInitialLoading(true);
+      else {
+        const cachedTenants = getCachedTenants();
+        const hasTenantCache = !!cachedTenants;
+        const tenantIds = (cachedTenants || []).map(t => t.id);
+        const hasActiveAssignmentsCache =
+          hasTenantCache && hasCachedActiveRoomAssignmentsForTenants(tenantIds);
+        const hasBothCaches = hasTenantCache && hasActiveAssignmentsCache;
+        const shouldShowLoader = !hasBothCaches;
+        if (shouldShowLoader) setInitialLoading(true);
+      }
 
       const data = await fetchTenants();
       setTenants(data || []);
@@ -156,6 +177,13 @@ export default function TenantScreen() {
       }
     },
   ).current;
+
+  React.useEffect(() => {
+    const firstTenantIds = (tenants || []).slice(0, 10).map(t => t.id);
+    if (firstTenantIds.length > 0) {
+      void ensureSignedUrlsRef.current(firstTenantIds);
+    }
+  }, [tenants]);
 
   useFocusEffect(
     React.useCallback(() => {

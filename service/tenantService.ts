@@ -2,6 +2,7 @@ import supabase from './SupabaseClient';
 import { readUriAsArrayBuffer } from './readUriAsArrayBuffer';
 import { getCurrentUserId } from './authSession';
 import { traceAsync } from './perfTrace';
+import { invalidateCache, getCachedData, setCached } from './cacheService';
 
 /* ===================== TYPES ===================== */
 
@@ -56,7 +57,43 @@ const MAX_UPLOAD_BYTES = 20 * 1024 * 1024; // 20 MB
 
 /* ===================== FETCH ===================== */
 
+const getCachedTenants = (): TenantRecord[] | null => {
+  return getCachedData<TenantRecord[]>('tenants');
+};
+
+const hasCachedTenants = (): boolean => {
+  return !!getCachedTenants();
+};
+
 const fetchTenants = async () => {
+  // Return cache IMMEDIATELY if valid (no await)
+  const cached = getCachedData<TenantRecord[]>('tenants');
+  if (cached) {
+    console.log('[cache] Returning cached tenants:', cached.length);
+    
+    // Refresh in background WITHOUT awaiting
+    fetchTenantsFromServer()
+      .then(fresh => {
+        console.log('[cache] Background refresh completed:', fresh.length);
+        setCached('tenants', fresh);
+      })
+      .catch(err => {
+        console.warn('[cache] Background refresh failed:', err);
+      });
+    
+    // Return cache immediately (non-blocking)
+    return cached;
+  }
+
+  // No cache, fetch from server and wait
+  const data = await fetchTenantsFromServer();
+  setCached('tenants', data);
+  return data;
+};
+
+
+
+const fetchTenantsFromServer = async () => {
   const userId = await getCurrentUserId();
   const { data, error } = await supabase
     .from('tenant')
@@ -192,9 +229,13 @@ const saveTenant = async (payload: SavePayload) => {
             .select()
             .maybeSingle();
           if (updErr) throw updErr;
+          // Invalidate caches on create
+          invalidateCache(['tenants', 'dashboard', 'activeTenantsByRooms', 'tenantRoomAssignments']);
           return data as TenantRecord;
         }
 
+        // Invalidate caches on create
+        invalidateCache(['tenants', 'dashboard', 'activeTenantsByRooms', 'tenantRoomAssignments']);
         return inserted as TenantRecord;
       }
 
@@ -273,6 +314,8 @@ const saveTenant = async (payload: SavePayload) => {
           .maybeSingle();
 
         if (error) throw error;
+        // Invalidate caches on update
+        invalidateCache(['tenants', 'dashboard', 'activeTenantsByRooms', 'tenantRoomAssignments']);
         return data as TenantRecord;
       } catch (err) {
         // 🔥 ROLLBACK uploaded files
@@ -315,6 +358,9 @@ const deleteTenant = async (tenantId: number) => {
         deleteFileByUrl(existing.agreement_url),
       ]);
     }
+
+    // Invalidate caches on delete
+    invalidateCache(['tenants', 'dashboard', 'activeTenantsByRooms', 'tenantRoomAssignments']);
   });
 };
 
@@ -322,6 +368,8 @@ const deleteTenant = async (tenantId: number) => {
 
 export {
   getCurrentUserId,
+  getCachedTenants,
+  hasCachedTenants,
   fetchTenants,
   fetchTenantById,
   saveTenant,

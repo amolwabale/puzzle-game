@@ -25,9 +25,11 @@ import {
   fetchBills,
   BillRecord,
   fetchLatestSetting,
+  getCachedBills,
+  hasCachedBills,
 } from '../../service/BillService';
-import { fetchRooms } from '../../service/RoomService';
-import { fetchTenants, TenantRecord } from '../../service/tenantService';
+import { fetchRooms, getCachedRooms, hasCachedRooms } from '../../service/RoomService';
+import { fetchTenants, TenantRecord, getCachedTenants, hasCachedTenants } from '../../service/tenantService';
 import { fetchUserProfile, type UserProfile } from '../../service/MenuService';
 import { trackEvent } from '../../service/analyticsTracker';
 import { getSignedUrl } from '../../service/signedUrlCache';
@@ -116,7 +118,16 @@ export default function PaymentScreen() {
   const navigation = useNavigation<any>();
   const theme = useTheme();
 
-  const [initialLoading, setInitialLoading] = React.useState(true);
+  const [initialLoading, setInitialLoading] = React.useState(() => {
+    const billsCached = getCachedBills();
+    const hasBillsCache = !!billsCached;
+    const tenantsCached = getCachedTenants();
+    const hasTenantsCache = !!tenantsCached;
+    const roomsCached = getCachedRooms();
+    const hasRoomsCache = !!roomsCached;
+    const hasBothCaches = hasBillsCache && hasTenantsCache && hasRoomsCache;
+    return !hasBothCaches;
+  });
   const [refreshing, setRefreshing] = React.useState(false);
   const [bills, setBills] = React.useState<BillRecord[]>([]);
   const [missingBasics, setMissingBasics] = React.useState<MissingBasic[]>([]);
@@ -186,7 +197,17 @@ export default function PaymentScreen() {
   const load = React.useCallback(async (isRefresh = false) => {
     try {
       if (isRefresh) setRefreshing(true);
-      else setInitialLoading(true);
+      else {
+        // Re-check dual cache state before loading
+        const billsCached = getCachedBills();
+        const hasBillsCache = !!billsCached;
+        const tenantsCached = getCachedTenants();
+        const hasTenantsCache = !!tenantsCached;
+        const roomsCached = getCachedRooms();
+        const hasRoomsCache = !!roomsCached;
+        const hasBothCaches = hasBillsCache && hasTenantsCache && hasRoomsCache;
+        if (!hasBothCaches) setInitialLoading(true);
+      }
 
       const [billRows, rooms, tenants, setting, profile] = await Promise.all([
         fetchBills(),
@@ -241,7 +262,11 @@ export default function PaymentScreen() {
   useFocusEffect(
     React.useCallback(() => {
       load(false);
-    }, [load]),
+      // Preload first 10 bill item tenant avatars
+      if (bills.length > 0) {
+        void ensureTenantPhotosForBillsRef.current(bills.slice(0, 10));
+      }
+    }, [load, bills]),
   );
 
   const baseBills = React.useMemo(() => {

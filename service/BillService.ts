@@ -2,6 +2,8 @@ import supabase from './SupabaseClient';
 import { getCurrentUserId } from './authSession';
 import { traceAsync } from './perfTrace';
 import { trackEvent } from './analyticsTracker';
+import { invalidateCache, getCachedData, setCached } from './cacheService';
+import { fetchLatestSetting as fetchLatestSettingFromSettingService } from './SettingService';
 
 export type BillRecord = {
   id: number;
@@ -59,7 +61,41 @@ export type UpdateBillPayload = {
   status: string;
 };
 
+/* ===================== CACHE HELPERS ===================== */
+
+export const getCachedBills = (): BillRecord[] | null => {
+  return getCachedData<BillRecord[]>('bills');
+};
+
+export const hasCachedBills = (): boolean => {
+  return !!getCachedBills();
+};
+
+/* ===================== FETCH ===================== */
+
 export async function fetchBills(): Promise<BillRecord[]> {
+  // Return cache if valid
+  const cached = getCachedData<BillRecord[]>('bills');
+  if (cached) {
+    console.log('[cache] Returning cached bills:', cached.length);
+    // Refresh in background
+    (async () => {
+      try {
+        const fresh = await fetchBillsFromServer();
+        setCached('bills', fresh);
+      } catch (err) {
+        console.warn('[cache] Background refresh failed:', err);
+      }
+    })();
+    return cached;
+  }
+
+  const data = await fetchBillsFromServer();
+  setCached('bills', data);
+  return data;
+}
+
+async function fetchBillsFromServer(): Promise<BillRecord[]> {
   const userId = await getCurrentUserId();
 
   const { data, error } = await supabase
@@ -137,6 +173,7 @@ export async function createBill(
         .maybeSingle();
 
       if (error || !data) throw error;
+      invalidateCache(['bills', 'dashboard']);
       return data as any;
     },
     { room_id: payload.roomId, tenant_id: payload.tenantId },
@@ -175,6 +212,7 @@ export async function updateBill(
         .maybeSingle();
 
       if (error || !data) throw error;
+      invalidateCache(['bills', 'dashboard']);
       return data as any;
     },
     { bill_id: payload.billId, room_id: payload.roomId, tenant_id: payload.tenantId },
@@ -206,6 +244,7 @@ export async function updateBillPayment(params: {
         .maybeSingle();
 
       if (error || !data) throw error;
+      invalidateCache(['bills', 'dashboard']);
       return data as any;
     },
     { bill_id: params.billId, status: params.status },
@@ -220,11 +259,9 @@ export async function deleteBill(billId: number): Promise<void> {
       .delete()
       .eq('user_id', userId)
       .eq('id', billId);
+
     if (error) throw error;
-    trackEvent('Payment_Deleted', {
-      source: 'Payment',
-      bill_id: billId,
-    });
+    invalidateCache(['bills', 'dashboard']);
   });
 }
 
@@ -236,36 +273,5 @@ export async function fetchLatestSetting(): Promise<{
   property_name?: string;
   property_address?: string;
 }> {
-  const userId = await getCurrentUserId();
-
-  const { data, error } = await supabase
-    .from('setting')
-    .select(
-      'property_name, property_address, water, electricity_unit, rent_date, rent_due_date, modified_at, created_at',
-    )
-    .eq('user_id', userId)
-    .order('modified_at', { ascending: false, nullsFirst: false })
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (error) throw error;
-
-  const water = data?.water != null ? Number(data.water) : 0;
-  const electricity_unit =
-    data?.electricity_unit != null ? Number(data.electricity_unit) : 0;
-  const rent_date = data?.rent_date != null ? Number(data.rent_date) : 0;
-  const rent_due_date =
-    data?.rent_due_date != null ? Number(data.rent_due_date) : 0;
-  const property_name = data?.property_name ?? undefined;
-  const property_address = data?.property_address ?? undefined;
-
-  return {
-    water,
-    electricity_unit,
-    rent_date,
-    rent_due_date,
-    property_name,
-    property_address,
-  };
+  return fetchLatestSettingFromSettingService();
 }

@@ -27,6 +27,7 @@ import { TopMenuButton } from '../navigation/TopMenuButton.tsx';
 import { trackEvent } from '../service/analyticsTracker';
 import { checkForUpdate, getStoreUrl } from '../service/updateService';
 import { HardUpdateModal } from '../components/HardUpdateModal';
+import { initCacheForUser } from '../service/cacheService';
 const RootStack = createNativeStackNavigator<RootStackParamList>();
 
 function getDeepActiveRouteName(state: any): string | undefined {
@@ -227,6 +228,8 @@ export default function AppNavigator() {
         const { data, error } = await supabase.auth.getSession();
         
         if (isMounted) {
+          await initCacheForUser(data.session?.user?.id ?? null);
+
           if (data.session) {
             trackEvent('App_Started', {
               source: 'App',
@@ -289,6 +292,7 @@ export default function AppNavigator() {
       (_event, session) => {
         if (isMounted) {
           setSession(session);
+          void initCacheForUser(session?.user?.id ?? null);
         }
       },
     );

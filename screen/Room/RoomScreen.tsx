@@ -22,9 +22,15 @@ import {
 } from 'react-native-paper';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RoomStackParamList } from '../../navigation/StackParam';
-import { deleteRoom, fetchRooms, RoomRecord } from '../../service/RoomService';
+import {
+  deleteRoom,
+  fetchRooms,
+  getCachedRooms,
+  RoomRecord,
+} from '../../service/RoomService';
 import {
   fetchActiveTenantsForRooms,
+  hasCachedActiveTenantsForRooms,
   hasAnyTenantMappingForRoom,
   TenantRoomRecord,
 } from '../../service/TenantRoomService';
@@ -76,7 +82,15 @@ export default function RoomScreen() {
   const navigation = useNavigation<Nav>();
   const theme = useTheme();
 
-  const [initialLoading, setInitialLoading] = React.useState(true);
+  const [initialLoading, setInitialLoading] = React.useState(() => {
+    const cachedRooms = getCachedRooms();
+    const hasRoomsCache = !!cachedRooms;
+    const roomIds = (cachedRooms || []).map(r => r.id);
+    const hasActiveByRoomsCache =
+      hasRoomsCache && hasCachedActiveTenantsForRooms(roomIds);
+    const hasBothCaches = hasRoomsCache && hasActiveByRoomsCache;
+    return !hasBothCaches;
+  });
   const [refreshing, setRefreshing] = React.useState(false);
   const [rooms, setRooms] = React.useState<RoomRecord[]>([]);
   const [query, setQuery] = React.useState('');
@@ -89,21 +103,29 @@ export default function RoomScreen() {
   const [occupantPhotoByRoom, setOccupantPhotoByRoom] = React.useState<
     Record<number, string>
   >({});
+  const occupantPhotoSourceByRoomRef = React.useRef<Record<number, string>>({});
 
   const loadRooms = React.useCallback(async (isRefresh = false) => {
     try {
       if (isRefresh) setRefreshing(true);
-      else setInitialLoading(true);
+      else {
+        const cachedRooms = getCachedRooms();
+        const hasRoomsCache = !!cachedRooms;
+        const roomIds = (cachedRooms || []).map(r => r.id);
+        const hasActiveByRoomsCache =
+          hasRoomsCache && hasCachedActiveTenantsForRooms(roomIds);
+        const hasBothCaches = hasRoomsCache && hasActiveByRoomsCache;
+        if (!hasBothCaches) setInitialLoading(true);
+      }
 
       const data = await fetchRooms();
       setRooms(data || []);
 
       // Load occupant (active tenant) for each room in one call
-      const map = await fetchActiveTenantsForRooms((data || []).map(r => r.id));
+      const map = await fetchActiveTenantsForRooms((data || []).map((r: RoomRecord) => r.id));
       setActiveByRoom(map);
-      // Clear occupant signed URLs so fresh ones are generated on visibility.
-      setOccupantPhotoByRoom({});
-      // Photo signed URLs are now generated lazily per visible row.
+      // Keep existing signed URLs so returning to this screen does not blank avatars.
+      // Missing ones are still generated lazily and also preloaded for initial rows below.
     } catch (err: any) {
       Alert.alert('Load Failed', err.message || 'Could not load rooms');
     } finally {
@@ -123,17 +145,28 @@ export default function RoomScreen() {
       const active = activeByRoom || {};
       await Promise.all(
         (roomIds || []).map(async roomId => {
-          if (occupantPhotoByRoom[roomId]) return;
           const occ = active[roomId];
           const fullUrl = (occ?.tenant as any)?.profile_photo_url as
             | string
             | null
             | undefined;
           if (!fullUrl) return;
+
+          // Track source URL to detect profile photo changes
+          const sourceKey = fullUrl;
+          const cachedSourceKey = occupantPhotoSourceByRoomRef.current[roomId];
+
+          // If source URL hasn't changed and we have a signed URL, skip regeneration
+          if (cachedSourceKey === sourceKey && occupantPhotoByRoom[roomId]) {
+            return;
+          }
+
           const signed = await getSignedUrl(fullUrl).catch(
             () => undefined,
           );
           if (!signed) return;
+
+          occupantPhotoSourceByRoomRef.current[roomId] = sourceKey;
           setOccupantPhotoByRoom(prev =>
             prev[roomId] === signed ? prev : { ...prev, [roomId]: signed },
           );
@@ -156,6 +189,13 @@ export default function RoomScreen() {
       if (ids.length > 0) void ensureVisibleOccupantPhotosRef.current(ids);
     },
   ).current;
+
+  React.useEffect(() => {
+    const firstRoomIds = (rooms || []).slice(0, 10).map(r => r.id);
+    if (firstRoomIds.length > 0) {
+      void ensureVisibleOccupantPhotosRef.current(firstRoomIds);
+    }
+  }, [rooms, activeByRoom]);
 
   useFocusEffect(
     React.useCallback(() => {

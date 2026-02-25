@@ -20,12 +20,16 @@ import {
   BillRecord,
   fetchBills,
   fetchLatestSetting,
+  getCachedBills,
+  hasCachedBills,
 } from '../../service/BillService';
-import { fetchRooms, RoomRecord } from '../../service/RoomService';
+import { fetchRooms, RoomRecord, getCachedRooms, hasCachedRooms } from '../../service/RoomService';
 import {
   fetchTenants,
   getCurrentUserId,
   TenantRecord,
+  getCachedTenants,
+  hasCachedTenants,
 } from '../../service/tenantService';
 import { supabase } from '../../service/SupabaseClient';
 
@@ -166,7 +170,13 @@ export default function DashboardScreen() {
   const theme = useTheme();
   const navigation = useNavigation<any>();
 
-  const [loading, setLoading] = React.useState(true);
+  const [loading, setLoading] = React.useState(() => {
+    const hasBillsCache = hasCachedBills();
+    const hasTenantsCache = hasCachedTenants();
+    const hasRoomsCache = hasCachedRooms();
+    const hasAllCaches = hasBillsCache && hasTenantsCache && hasRoomsCache;
+    return !hasAllCaches;
+  });
   const [refreshing, setRefreshing] = React.useState(false);
 
   const [rooms, setRooms] = React.useState<RoomRecord[]>([]);
@@ -216,7 +226,14 @@ export default function DashboardScreen() {
 
   const load = React.useCallback(async (isRefresh = false) => {
     try {
-      isRefresh ? setRefreshing(true) : setLoading(true);
+      isRefresh ? setRefreshing(true) : (() => {
+        // Re-check cache state before loading
+        const hasBillsCache = hasCachedBills();
+        const hasTenantsCache = hasCachedTenants();
+        const hasRoomsCache = hasCachedRooms();
+        const hasAllCaches = hasBillsCache && hasTenantsCache && hasRoomsCache;
+        if (!hasAllCaches) setLoading(true);
+      })();
 
       const userId = await getCurrentUserId();
 

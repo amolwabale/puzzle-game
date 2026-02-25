@@ -27,7 +27,7 @@ import supabase from '../../service/SupabaseClient';
 import { FormInput } from '../../components/FormInput';
 import { trackEvent } from '../../service/analyticsTracker';
 import { getCurrentUserId } from '../../service/authSession';
-import { traceAsync } from '../../service/perfTrace';
+import { fetchSettings, saveSetting, hasCachedSettings } from '../../service/SettingService';
 type Errors = Partial<
   Record<
     | 'propertyName'
@@ -56,7 +56,10 @@ export default function SettingScreen() {
 
   /* ---------------- UI STATE ---------------- */
 
-  const [initialLoading, setInitialLoading] = React.useState(true);
+  const [initialLoading, setInitialLoading] = React.useState(() => {
+    const hasCache = hasCachedSettings();
+    return !hasCache;
+  });
   const [saving, setSaving] = React.useState(false);
   const [errors, setErrors] = React.useState<Errors>({});
   const [dayPickerOpenFor, setDayPickerOpenFor] = React.useState<
@@ -124,30 +127,17 @@ export default function SettingScreen() {
 
   /* ---------------- FETCH SETTINGS ---------------- */
 
-  const fetchSettings = React.useCallback(async () => {
+  const load = React.useCallback(async () => {
     let active = true;
 
     try {
-      setInitialLoading(true);
+      // Re-check cache state before loading
+      const hasCache = hasCachedSettings();
+      if (!hasCache) setInitialLoading(true);
 
-      const { data: userData, error: userError } =
-        await supabase.auth.getUser();
-      if (userError) throw userError;
-
-      const userId = userData.user?.id;
-      if (!userId) throw new Error('User not found. Please login again.');
-
-      const { data, error } = await supabase
-        .from('setting')
-        .select('*')
-        .eq('user_id', userId)
-        .order('modified_at', { ascending: false, nullsFirst: false })
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      const data = await fetchSettings();
 
       if (!active) return;
-      if (error) throw error;
 
       if (data) {
         setRecordId(data.id ?? null);
@@ -175,8 +165,8 @@ export default function SettingScreen() {
 
   useFocusEffect(
     React.useCallback(() => {
-      fetchSettings();
-    }, [fetchSettings]),
+      load();
+    }, [load]),
   );
 
   /* ---------------- VALIDATION ---------------- */
@@ -224,57 +214,25 @@ export default function SettingScreen() {
 
     setSaving(true);
     try {
-      await traceAsync(
-        'action_setting_save',
-        async () => {
-          const userId = await getCurrentUserId();
+      const result = await saveSetting({
+        propertyName,
+        propertyAddress: propertyAddress || undefined,
+        water: water ? Number(water) : null,
+        electricity: electricity ? Number(electricity) : null,
+        rentDate: rentDate ? Number(rentDate) : null,
+        rentDueDate: rentDueDate ? Number(rentDueDate) : null,
+      });
 
-          const payload = {
-            property_name: propertyName.trim(),
-            property_address: propertyAddress.trim() || null,
-            water: water ? Number(water) : null,
-            electricity_unit: electricity ? Number(electricity) : null,
-            rent_date: rentDate ? Number(rentDate) : null,
-            rent_due_date: rentDueDate ? Number(rentDueDate) : null,
-            user_id: userId,
-            modified_at: new Date().toISOString(),
-          };
+      trackEvent('Setting_Saved', {
+        source: 'Setting',
+        setting_id: result.id,
+      });
 
-          let result;
+      Alert.alert('Saved', 'Settings have been saved successfully.');
 
-          if (recordId) {
-            result = await supabase
-              .from('setting')
-              .update(payload)
-              .eq('id', recordId)
-              .eq('user_id', userId)
-              .select()
-              .maybeSingle();
-          } else {
-            result = await supabase
-              .from('setting')
-              .insert(payload)
-              .select()
-              .maybeSingle();
-          }
-
-          if (result.error) {
-            throw new Error(result.error.message);
-          }
-
-          trackEvent('Setting_Saved', {
-            source: 'Setting',
-            setting_id: result.data?.id,
-          });
-
-          Alert.alert('Saved', 'Settings have been saved successfully.');
-
-          if (result.data?.id) {
-            setRecordId(result.data.id);
-          }
-        },
-        { mode: recordId ? 'edit' : 'add' },
-      );
+      if (result.id) {
+        setRecordId(result.id);
+      }
     } catch (err: any) {
       Alert.alert('Save Failed', err.message || 'Something went wrong');
     } finally {
