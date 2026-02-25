@@ -66,6 +66,13 @@ const formatDate = (d?: string | null) =>
       })
     : '-';
 
+const toLocalISODate = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}T00:00:00.000Z`;
+};
+
 const getInitials = (name?: string | null) => {
   const parts = (name || '').trim().split(/\s+/).slice(0, 2);
   return parts.length
@@ -375,7 +382,7 @@ export default function RoomFormScreen() {
               // Same tenant: update joining date on mapping
               await updateJoiningDate(
                 activeTenant.id,
-                joiningDate!.toISOString(),
+                toLocalISODate(joiningDate!),
               );
             } else {
               // Different tenant: vacate current and create new mapping
@@ -383,7 +390,7 @@ export default function RoomFormScreen() {
               await addTenantToRoom({
                 tenant_id: selectedTenant!.id,
                 room_id: savedRoom.id,
-                joining_date: joiningDate!.toISOString(),
+                joining_date: toLocalISODate(joiningDate!),
               });
             }
           } else {
@@ -391,7 +398,7 @@ export default function RoomFormScreen() {
             await addTenantToRoom({
               tenant_id: selectedTenant!.id,
               room_id: savedRoom.id,
-              joining_date: joiningDate!.toISOString(),
+              joining_date: toLocalISODate(joiningDate!),
             });
           }
         } catch (err) {
