@@ -29,7 +29,10 @@ import { TenantStackParamList } from '../../navigation/StackParam';
 import { fetchTenantById, TenantRecord } from '../../service/tenantService';
 import { supabase } from '../../service/SupabaseClient'; // ✅ REQUIRED
 import { fetchRooms } from '../../service/RoomService';
-import { fetchActiveRoomForTenants } from '../../service/TenantRoomService';
+import {
+  fetchActiveRoomForTenants,
+  fetchAllActiveRoomsForTenants,
+} from '../../service/TenantRoomService';
 import { trackEvent } from '../../service/analyticsTracker';
 
 type Props = NativeStackScreenProps<TenantStackParamList, 'TenantView'>;
@@ -353,7 +356,7 @@ export default function TenantViewScreen() {
 
       setTenant(data);
 
-      const [signed, rooms, activeMap] = await Promise.all([
+      const [signed, rooms, activeMap, allRoomsMap] = await Promise.all([
         // 🔐 Signed URL for profile photo
         createSignedUrl((data as any).profile_photo_url),
 
@@ -362,6 +365,9 @@ export default function TenantViewScreen() {
 
         // Active mapping for this tenant (leaving_date is null)
         fetchActiveRoomForTenants([tenantId]),
+
+        // All active rooms for this tenant (for multi-room display)
+        fetchAllActiveRoomsForTenants([tenantId]),
       ]);
 
       setProfileSignedUrl(signed);
@@ -371,10 +377,15 @@ export default function TenantViewScreen() {
         if (r?.id != null) roomNameById[r.id] = r.name || '-';
       });
 
-      const assignment = activeMap?.[tenantId];
-      if (assignment) {
-        setRoomName(roomNameById[assignment.room_id] || '-');
-        setJoiningDateLine(`Joined on ${formatDate(assignment.joining_date)}`);
+      const allRooms = allRoomsMap?.[tenantId];
+      if (allRooms?.rooms && allRooms.rooms.length > 0) {
+        const roomNames = allRooms.rooms
+          .map(r => roomNameById[r.room_id] || '-')
+          .join(', ');
+        setRoomName(roomNames);
+        setJoiningDateLine(
+          `Joined on ${formatDate(allRooms.rooms[0]?.joining_date)}`,
+        );
       } else {
         setRoomName('No room assigned');
         setJoiningDateLine(undefined);

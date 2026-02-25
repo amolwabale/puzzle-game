@@ -12,6 +12,7 @@ interface CacheStore {
   bills: CacheEntry<any> | null;
   dashboard: CacheEntry<any> | null;
   tenantRoomAssignments: CacheEntry<any> | null;
+  tenantAllRooms: CacheEntry<any> | null;
   settings: CacheEntry<any> | null;
 }
 
@@ -24,6 +25,7 @@ const CACHE_KEYS: CacheKey[] = [
   'bills',
   'dashboard',
   'tenantRoomAssignments',
+  'tenantAllRooms',
   'settings',
 ];
 
@@ -34,6 +36,7 @@ const createEmptyCache = (): CacheStore => ({
   bills: null,
   dashboard: null,
   tenantRoomAssignments: null,
+  tenantAllRooms: null,
   settings: null,
 });
 

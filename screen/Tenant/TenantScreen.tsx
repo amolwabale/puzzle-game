@@ -30,6 +30,8 @@ import {
 import {
   fetchActiveRoomAssignmentsForTenants,
   hasCachedActiveRoomAssignmentsForTenants,
+  fetchAllActiveRoomsForTenants,
+  hasCachedAllActiveRoomsForTenants,
 } from '../../service/TenantRoomService';
 import { trackEvent } from '../../service/analyticsTracker';
 import { getSignedUrl } from '../../service/signedUrlCache';
@@ -57,7 +59,9 @@ export default function TenantScreen() {
     const tenantIds = (cachedTenants || []).map(t => t.id);
     const hasActiveAssignmentsCache =
       hasTenantCache && hasCachedActiveRoomAssignmentsForTenants(tenantIds);
-    const hasBothCaches = hasTenantCache && hasActiveAssignmentsCache;
+    const hasAllRoomsCache =
+      hasTenantCache && hasCachedAllActiveRoomsForTenants(tenantIds);
+    const hasBothCaches = hasTenantCache && hasActiveAssignmentsCache && hasAllRoomsCache;
     return !hasBothCaches;
   });
   const [refreshing, setRefreshing] = React.useState(false);
@@ -70,6 +74,9 @@ export default function TenantScreen() {
   const [assignmentByTenant, setAssignmentByTenant] = React.useState<
     Record<number, { roomName?: string; joiningDate?: string } | null>
   >({});
+  const [allRoomsByTenant, setAllRoomsByTenant] = React.useState<
+    Record<number, { rooms: Array<{ room_id: number; room_name?: string; joining_date: string }> }>
+  >({});
 
   const loadTenants = React.useCallback(async (isRefresh = false) => {
     try {
@@ -80,7 +87,9 @@ export default function TenantScreen() {
         const tenantIds = (cachedTenants || []).map(t => t.id);
         const hasActiveAssignmentsCache =
           hasTenantCache && hasCachedActiveRoomAssignmentsForTenants(tenantIds);
-        const hasBothCaches = hasTenantCache && hasActiveAssignmentsCache;
+        const hasAllRoomsCache =
+          hasTenantCache && hasCachedAllActiveRoomsForTenants(tenantIds);
+        const hasBothCaches = hasTenantCache && hasActiveAssignmentsCache && hasAllRoomsCache;
         const shouldShowLoader = !hasBothCaches;
         if (shouldShowLoader) setInitialLoading(true);
       }
@@ -91,6 +100,7 @@ export default function TenantScreen() {
       // room assignment for each tenant (active mapping = leaving_date is null)
       const tenantIds = (data || []).map(t => t.id);
       const activeMap = await fetchActiveRoomAssignmentsForTenants(tenantIds);
+      const allRoomsMap = await fetchAllActiveRoomsForTenants(tenantIds);
 
       const viewMap: Record<
         number,
@@ -108,6 +118,7 @@ export default function TenantScreen() {
         };
       });
       setAssignmentByTenant(viewMap);
+      setAllRoomsByTenant(allRoomsMap || {});
     } catch (err: any) {
       Alert.alert('Load Failed', err?.message || 'Could not load tenants');
     } finally {
@@ -224,6 +235,7 @@ export default function TenantScreen() {
       item={item}
       photoUrl={signedUrls[item.id]}
       assignment={assignmentByTenant[item.id]}
+      allRooms={allRoomsByTenant[item.id]}
       onView={() => {
         trackEvent('Navigation_TenantList_To_TenantView', {
           source: 'Tenant',
@@ -312,6 +324,7 @@ const TenantCard = ({
   item,
   photoUrl,
   assignment,
+  allRooms,
   onView,
   onEdit,
   onDelete,
@@ -319,19 +332,42 @@ const TenantCard = ({
   item: TenantRecord;
   photoUrl?: string;
   assignment?: { roomName?: string; joiningDate?: string } | null;
+  allRooms?: { rooms: Array<{ room_id: number; room_name?: string; joining_date: string }> } | null;
   onView: () => void;
   onEdit: () => void;
   onDelete: () => void;
 }) => {
   const theme = useTheme();
   const outline = (theme.colors as any).outlineVariant ?? theme.colors.outline;
+  const roomCount = allRooms?.rooms?.length ?? 0;
+  const hasMultipleRooms = roomCount > 1;
+
   return (
     <Surface style={[styles.card, { borderColor: outline }]} elevation={1}>
       <View style={styles.cardClip}>
         <TouchableRipple onPress={onView} style={styles.cardContent} borderless>
           {/* TouchableRipple expects exactly one child element */}
           <View style={styles.cardContentInner}>
-            <AvatarDisplay uri={photoUrl} size={AVATAR_SIZE} />
+            <View style={styles.avatarWrapper}>
+              <AvatarDisplay uri={photoUrl} size={AVATAR_SIZE} />
+              {hasMultipleRooms && (
+                <View
+                  style={[
+                    styles.roomCountBadge,
+                    { backgroundColor: theme.colors.primary },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.roomCountBadgeText,
+                      { color: theme.colors.onPrimary },
+                    ]}
+                  >
+                    {roomCount}
+                  </Text>
+                </View>
+              )}
+            </View>
 
             <View style={styles.cardBody}>
               <Text style={styles.cardTitle} numberOfLines={1}>
@@ -340,6 +376,7 @@ const TenantCard = ({
               <Text style={styles.cardSubtitle} numberOfLines={1}>
                 Room:{' '}
                 {assignment?.roomName ? assignment.roomName : 'Not assigned'}
+                {hasMultipleRooms && ' (+' + (roomCount - 1) + ')'}
               </Text>
               <Text style={styles.cardCaption} numberOfLines={1}>
                 Joined{' '}
@@ -490,6 +527,26 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+
+  avatarWrapper: {
+    position: 'relative',
+  },
+  roomCountBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+  },
+  roomCountBadgeText: {
+    fontSize: 10,
+    fontWeight: '900',
   },
 
   fab: { position: 'absolute', right: 16, bottom: 24 },

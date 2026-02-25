@@ -33,6 +33,14 @@ export type ActiveRoomAssignmentWithRoomName = ActiveTenantAssignment & {
   room_name?: string;
 };
 
+export type AllActiveRoomsWithNames = {
+  rooms: Array<{
+    room_id: number;
+    room_name?: string;
+    joining_date: string;
+  }>;
+};
+
 /* ===================== HELPERS ===================== */
 
 const fetchTenantsMap = async (): Promise<Record<number, TenantRecord>> => {
@@ -293,6 +301,79 @@ const fetchActiveRoomAssignmentsForTenantsFromServer = async (
   return map;
 };
 
+const fetchAllActiveRoomsForTenantsFromServer = async (
+  tenantIds: number[],
+): Promise<Record<number, AllActiveRoomsWithNames>> => {
+  const ids = Array.from(new Set(tenantIds)).filter(Boolean);
+  if (ids.length === 0)
+    return {} as Record<number, AllActiveRoomsWithNames>;
+
+  const userId = await getCurrentUserId();
+  const joined = await supabase
+    .from('tenant_room_mapping')
+    .select('tenant_id, room_id, joining_date, room:room_id(id, name)')
+    .eq('user_id', userId)
+    .in('tenant_id', ids)
+    .is('leaving_date', null);
+
+  const map: Record<number, AllActiveRoomsWithNames> = {};
+  ids.forEach(id => (map[id] = { rooms: [] }));
+
+  if (!joined.error) {
+    (joined.data || []).forEach((r: any) => {
+      map[r.tenant_id].rooms.push({
+        room_id: r.room_id,
+        joining_date: r.joining_date,
+        room_name: r.room?.name ?? undefined,
+      });
+    });
+    return map;
+  }
+
+  const shouldFallback =
+    joined.error?.message?.includes('relationship') ||
+    joined.error?.message?.includes('Could not find') ||
+    joined.error?.message?.includes('No relationship') ||
+    joined.error?.details?.includes('Could not find a relationship');
+
+  if (!shouldFallback) throw joined.error;
+
+  // Fallback: no FK relationship configured.
+  const plain = await supabase
+    .from('tenant_room_mapping')
+    .select('tenant_id, room_id, joining_date')
+    .eq('user_id', userId)
+    .in('tenant_id', ids)
+    .is('leaving_date', null);
+  if (plain.error) throw plain.error;
+
+  const roomIds = Array.from(
+    new Set((plain.data || []).map((r: any) => r.room_id).filter(Boolean)),
+  ) as number[];
+
+  const roomNameById: Record<number, string> = {};
+  if (roomIds.length > 0) {
+    const roomsRes = await supabase
+      .from('room')
+      .select('id, name')
+      .eq('user_id', userId)
+      .in('id', roomIds);
+    if (roomsRes.error) throw roomsRes.error;
+    (roomsRes.data || []).forEach((r: any) => {
+      if (r?.id != null) roomNameById[r.id] = r.name || '-';
+    });
+  }
+
+  (plain.data || []).forEach((r: any) => {
+    map[r.tenant_id].rooms.push({
+      room_id: r.room_id,
+      joining_date: r.joining_date,
+      room_name: roomNameById[r.room_id] || '-',
+    });
+  });
+  return map;
+};
+
 export const fetchActiveRoomAssignmentsForTenants = async (
   tenantIds: number[],
 ): Promise<Record<number, ActiveRoomAssignmentWithRoomName | null>> => {
@@ -337,6 +418,56 @@ const hasCachedActiveRoomAssignmentsForTenants = (
   const cached =
     getCachedData<Record<number, ActiveRoomAssignmentWithRoomName | null>>(
       'tenantRoomAssignments',
+    );
+  if (!cached) return false;
+
+  return ids.every(id => Object.prototype.hasOwnProperty.call(cached, id));
+};
+
+export const fetchAllActiveRoomsForTenants = async (
+  tenantIds: number[],
+): Promise<Record<number, AllActiveRoomsWithNames>> => {
+  const ids = Array.from(new Set(tenantIds)).filter(Boolean);
+  if (ids.length === 0)
+    return {} as Record<number, AllActiveRoomsWithNames>;
+
+  const cached =
+    getCachedData<Record<number, AllActiveRoomsWithNames>>(
+      'tenantAllRooms',
+    );
+
+  if (cached && ids.every(id => Object.prototype.hasOwnProperty.call(cached, id))) {
+    console.log('[cache] Returning cached tenant-all-rooms:', ids.length);
+
+    fetchAllActiveRoomsForTenantsFromServer(ids)
+      .then(fresh => {
+        setCached('tenantAllRooms', { ...cached, ...fresh });
+      })
+      .catch(err => {
+        console.warn('[cache] Background refresh failed:', err);
+      });
+
+    const cachedSlice: Record<number, AllActiveRoomsWithNames> = {};
+    ids.forEach(id => {
+      cachedSlice[id] = cached[id] ?? { rooms: [] };
+    });
+    return cachedSlice;
+  }
+
+  const fresh = await fetchAllActiveRoomsForTenantsFromServer(ids);
+  setCached('tenantAllRooms', { ...(cached || {}), ...fresh });
+  return fresh;
+};
+
+const hasCachedAllActiveRoomsForTenants = (
+  tenantIds: number[],
+): boolean => {
+  const ids = Array.from(new Set(tenantIds)).filter(Boolean);
+  if (ids.length === 0) return true;
+
+  const cached =
+    getCachedData<Record<number, AllActiveRoomsWithNames>>(
+      'tenantAllRooms',
     );
   if (!cached) return false;
 
@@ -431,7 +562,7 @@ const addTenantToRoom = async ({
       });
 
       if (error) throw error;
-      invalidateCache(['activeTenantsByRooms', 'tenantRoomAssignments']);
+      invalidateCache(['activeTenantsByRooms', 'tenantRoomAssignments', 'tenantAllRooms']);
       trackEvent('Room_OccupancySaved', {
         source: 'Room',
         room_id,
@@ -459,7 +590,7 @@ const vacateRoom = async (mappingId: number) => {
         .eq('user_id', userId);
 
       if (error) throw error;
-      invalidateCache(['activeTenantsByRooms', 'tenantRoomAssignments']);
+      invalidateCache(['activeTenantsByRooms', 'tenantRoomAssignments', 'tenantAllRooms']);
       trackEvent('Room_Vacated', {
         source: 'Room',
         mapping_id: mappingId,
@@ -484,7 +615,7 @@ const updateJoiningDate = async (mappingId: number, joining_date: string) => {
         .eq('user_id', userId);
 
       if (error) throw error;
-      invalidateCache(['activeTenantsByRooms', 'tenantRoomAssignments']);
+      invalidateCache(['activeTenantsByRooms', 'tenantRoomAssignments', 'tenantAllRooms']);
       trackEvent('Room_JoiningDateUpdated', {
         source: 'Room',
         mapping_id: mappingId,
@@ -502,6 +633,7 @@ export {
   hasCachedActiveTenantsForRooms,
   fetchActiveRoomForTenants,
   hasCachedActiveRoomAssignmentsForTenants,
+  hasCachedAllActiveRoomsForTenants,
   hasAnyTenantMappingForRoom,
   fetchTenantHistoryForRoom,
   addTenantToRoom,
