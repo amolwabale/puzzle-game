@@ -165,46 +165,6 @@ export default function LoginScreen() {
               </View>
             </Surface>
 
-            <Surface
-              style={[
-                styles.cloudNoteCard,
-                {
-                  borderColor: outlineColor(theme),
-                  backgroundColor: theme.colors.primaryContainer,
-                },
-              ]}
-              elevation={1}
-            >
-              <View style={styles.cloudNoteRow}>
-                <View
-                  style={[
-                    styles.cloudNoteIconWrap,
-                    { backgroundColor: theme.colors.surface },
-                  ]}
-                >
-                  <Icon
-                    source="cloud-check-outline"
-                    size={18}
-                    color={theme.colors.primary}
-                  />
-                </View>
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  <Text style={[styles.cloudNoteTitle, { color: theme.colors.onSurface }]}>
-                    Your data is saved safely online
-                  </Text>
-                  <Text
-                    style={[
-                      styles.cloudNoteText,
-                      { color: theme.colors.onSurfaceVariant },
-                    ]}
-                  >
-                    If you change phones, log in on another device, or reinstall the app,
-                    your information will still be available after you sign in.
-                  </Text>
-                </View>
-              </View>
-            </Surface>
-
             {/* FORM */}
             <Surface
               style={[
@@ -295,6 +255,46 @@ export default function LoginScreen() {
                 </Button>
               </View>
             </Surface>
+
+            <Surface
+              style={[
+                styles.cloudNoteCard,
+                {
+                  borderColor: outlineColor(theme),
+                  backgroundColor: theme.colors.primaryContainer,
+                },
+              ]}
+              elevation={1}
+            >
+              <View style={styles.cloudNoteRow}>
+                <View
+                  style={[
+                    styles.cloudNoteIconWrap,
+                    { backgroundColor: theme.colors.surface },
+                  ]}
+                >
+                  <Icon
+                    source="cloud-check-outline"
+                    size={18}
+                    color={theme.colors.primary}
+                  />
+                </View>
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={[styles.cloudNoteTitle, { color: theme.colors.onSurface }]}>
+                    Your data is saved safely online
+                  </Text>
+                  <Text
+                    style={[
+                      styles.cloudNoteText,
+                      { color: theme.colors.onSurfaceVariant },
+                    ]}
+                  >
+                    If you change phones, log in on another device, or reinstall the app,
+                    your information will still be available after you sign in.
+                  </Text>
+                </View>
+              </View>
+            </Surface>
           </View>
         </ScrollView>
       </View>
@@ -352,7 +352,7 @@ const styles = StyleSheet.create({
   },
   inner: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
   },
 
   hero: {
