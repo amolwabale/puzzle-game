@@ -153,7 +153,11 @@ export default function RoomScreen() {
           if (!fullUrl) return;
 
           // Track source URL to detect profile photo changes
-          const sourceKey = fullUrl;
+          const version =
+            (occ?.tenant as any)?.modified_at ??
+            (occ?.tenant as any)?.created_at ??
+            '';
+          const sourceKey = `${fullUrl}|${version}`;
           const cachedSourceKey = occupantPhotoSourceByRoomRef.current[roomId];
 
           // If source URL hasn't changed and we have a signed URL, skip regeneration

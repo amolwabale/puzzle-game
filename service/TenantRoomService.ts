@@ -66,7 +66,7 @@ const fetchActiveTenantForRoom = async (roomId: number) => {
   const joined = await supabase
     .from('tenant_room_mapping')
     .select(
-      'id, tenant_id, room_id, joining_date, leaving_date, tenant:tenant_id(id, name, profile_photo_url)',
+      'id, tenant_id, room_id, joining_date, leaving_date, tenant:tenant_id(id, name, profile_photo_url, modified_at, created_at)',
     )
     .eq('room_id', roomId)
     .eq('user_id', userId)
@@ -109,7 +109,7 @@ const fetchActiveTenantsForRoomsFromServer = async (roomIds: number[]) => {
   const joined = await supabase
     .from('tenant_room_mapping')
     .select(
-      'id, tenant_id, room_id, joining_date, leaving_date, tenant:tenant_id(id, name, profile_photo_url)',
+      'id, tenant_id, room_id, joining_date, leaving_date, tenant:tenant_id(id, name, profile_photo_url, modified_at, created_at)',
     )
     .eq('user_id', userId)
     .in('room_id', ids)
