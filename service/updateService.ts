@@ -37,7 +37,7 @@ const initializeRemoteConfig = async (): Promise<void> => {
     // Set config settings
     await remoteConfig().setConfigSettings({
       // Minimum fetch interval (0 for testing, 3600000 for production = 1 hour)
-      minimumFetchIntervalMillis: __DEV__ ? 0 : 3600000,
+      minimumFetchIntervalMillis: __DEV__ ? 0 : 300000,
     });
 
     // Set default values in case Remote Config is unavailable
