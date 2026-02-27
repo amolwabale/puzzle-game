@@ -12,6 +12,7 @@ import {
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { getVersion, getBuildNumber } from 'react-native-device-info';
 import { AuthStackParamList } from '../../navigation/StackParam';
 import { trackEvent } from '../../service/analyticsTracker';
 import { LoginWithGoogleIdToken } from '../../service/IdentityService';
@@ -27,6 +28,8 @@ export default function AuthScreen() {
   const theme = useTheme();
   const navigation = useNavigation<NavigationProp>();
   const [googleLoading, setGoogleLoading] = React.useState(false);
+  const appVersion = getVersion();
+  const buildNumber = getBuildNumber();
 
   React.useEffect(() => {
     // Configure once per app launch. (Requires rebuild after changing `.env`.)
@@ -415,7 +418,26 @@ export default function AuthScreen() {
             </Button>
           </View>
         </View>
+
       </Surface>
+
+      <View style={styles.versionWrap}>
+        <View
+          style={[
+            styles.versionPill,
+            {
+              backgroundColor: theme.colors.primaryContainer,
+              borderColor: theme.colors.primary,
+              shadowColor: shadowColor(theme),
+            },
+          ]}
+        >
+          <Icon source="tag-outline" size={14} color={theme.colors.primary} />
+          <Text style={[styles.versionText, { color: theme.colors.primary }]}>
+            v{appVersion} ({buildNumber})
+          </Text>
+        </View>
+      </View>
     </View>
   );
 }
@@ -536,5 +558,26 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     fontSize: 14,
     letterSpacing: 0.15,
+  },
+  versionWrap: {
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  versionPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  versionText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
 });
