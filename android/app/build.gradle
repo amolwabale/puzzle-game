@@ -90,7 +90,7 @@ android {
         applicationId = "com.tenantmanager"
         minSdk = rootProject.ext.minSdkVersion
         targetSdk = rootProject.ext.targetSdkVersion
-        versionCode = 5
+        versionCode = 6
         versionName = "1.0.0"
     }
 
