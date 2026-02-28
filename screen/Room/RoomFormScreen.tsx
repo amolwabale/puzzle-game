@@ -32,7 +32,7 @@ import { DatePickerModal } from 'react-native-paper-dates';
 import { RoomStackParamList } from '../../navigation/StackParam';
 import { FormInput } from '../../components/FormInput';
 import { TenantSelectionSheet } from '../../components/TenantSelectionSheet';
-import { fetchRoomById, fetchRooms, saveRoom } from '../../service/RoomService';
+import { fetchRoomById, fetchRoomsFresh, saveRoom } from '../../service/RoomService';
 import {
   addTenantToRoom,
   fetchActiveTenantForRoom,
@@ -297,7 +297,7 @@ export default function RoomFormScreen() {
 
       // Room name uniqueness (case-insensitive, trimmed)
       const normalized = name.trim().toLowerCase();
-      const existing = await fetchRooms();
+      const existing = await fetchRoomsFresh();
       const duplicate = (existing || []).find((r: any) => {
         const rn = String(r?.name || '')
           .trim()

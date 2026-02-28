@@ -91,6 +91,10 @@ const fetchTenants = async () => {
   return data;
 };
 
+const fetchTenantsFresh = async () => {
+  return await fetchTenantsFromServer();
+};
+
 
 
 const fetchTenantsFromServer = async () => {
@@ -371,6 +375,7 @@ export {
   getCachedTenants,
   hasCachedTenants,
   fetchTenants,
+  fetchTenantsFresh,
   fetchTenantById,
   saveTenant,
   deleteTenant,

@@ -61,6 +61,10 @@ const fetchRooms = async () => {
   return data;
 };
 
+const fetchRoomsFresh = async () => {
+  return await fetchRoomsFromServer();
+};
+
 const fetchRoomsFromServer = async () => {
   const userId = await getCurrentUserId();
 
@@ -170,6 +174,6 @@ const fetchRoomById = async (roomId: number) => {
 
 /* ===================== EXPORTS ===================== */
 
-export { getCachedRooms, hasCachedRooms, fetchRooms, fetchRoomById, saveRoom, deleteRoom };
+export { getCachedRooms, hasCachedRooms, fetchRooms, fetchRoomsFresh, fetchRoomById, saveRoom, deleteRoom };
 
 

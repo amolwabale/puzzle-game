@@ -32,7 +32,7 @@ import { launchImageLibrary } from 'react-native-image-picker';
 import { TenantStackParamList } from '../../navigation/StackParam';
 import {
   fetchTenantById,
-  fetchTenants,
+  fetchTenantsFresh,
   FileInput,
   saveTenant,
   TenantRecord,
@@ -310,7 +310,7 @@ export default function TenantFormScreen() {
 
       // Name uniqueness (case-insensitive, trimmed)
       const normalized = name.trim().toLowerCase();
-      const existing = await fetchTenants();
+      const existing = await fetchTenantsFresh();
       const duplicate = (existing || []).find((t: any) => {
         const tn = String(t?.name || '')
           .trim()
