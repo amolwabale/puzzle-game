@@ -264,6 +264,12 @@ export default function TenantScreen() {
     );
   }, [tenants, query]);
 
+  const searchPlaceholder = React.useMemo(() => {
+    const total = tenants.length;
+    if (total <= 0) return 'Search tenants';
+    return `Search tenants (${total} total)`;
+  }, [tenants.length]);
+
   return (
     <View style={styles.container}>
       {initialLoading ? (
@@ -285,7 +291,7 @@ export default function TenantScreen() {
           ListHeaderComponent={
             <View style={styles.listHeader}>
               <Searchbar
-                placeholder="Search tenants"
+                placeholder={searchPlaceholder}
                 placeholderTextColor="#9CA3AF"
                 value={query}
                 onChangeText={setQuery}
