@@ -13,7 +13,8 @@
     "pack-apk": "cd android && ./gradlew assembleRelease",
     "pack-bundle": "cd android && ./gradlew bundleRelease",
     "update-ios": "cd ios && pod install && cd ..",
-    "update-android": "cd android && ./gradlew clean && cd ..",
+    "bump-android-version-code": "node scripts/bumpAndroidVersionCode.js",
+    "update-android": "npm run bump-android-version-code && cd android && ./gradlew clean && cd ..",
     "android:nuke": "rm -rf android/.cxx android/app/.cxx android/build android/app/build && rm -rf ~/.gradle/caches && cd android && ./gradlew clean && cd .."
   },
   "dependencies": {
