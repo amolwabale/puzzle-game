@@ -168,23 +168,10 @@ export default function TenantViewScreen() {
 
   const requestAndroidGalleryPermissionIfNeeded = async () => {
     if (Platform.OS !== 'android') return true;
+    const v = Number(Platform.Version) || 0;
+    // Scoped storage: adding app-created media needs no storage permission.
+    if (v >= 29) return true;
     try {
-      const v = Number(Platform.Version) || 0;
-      // Android 13+
-      if (v >= 33) {
-        const res = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES,
-        );
-        return res === PermissionsAndroid.RESULTS.GRANTED;
-      }
-      // Android 10-12: read permission is usually enough for CameraRoll operations
-      if (v >= 29) {
-        const res = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
-        );
-        return res === PermissionsAndroid.RESULTS.GRANTED;
-      }
-      // Android 9 and below
       const res = await PermissionsAndroid.request(
         PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
       );
@@ -298,7 +285,7 @@ export default function TenantViewScreen() {
         if (!saved) {
           Alert.alert(
             'Save failed',
-            'Could not save to Gallery. Please allow Photos permission in Settings and try again.',
+            'Could not save to Gallery. Please try again.',
           );
           return;
         }
@@ -564,7 +551,7 @@ export default function TenantViewScreen() {
           if (!saved) {
             Alert.alert(
               'Save failed',
-              'Could not save to Gallery. Please allow Photos permission in Settings and try again.',
+              'Could not save to Gallery. Please try again.',
             );
             return;
           }
