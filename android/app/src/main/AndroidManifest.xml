@@ -1,5 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-  xmlns:tools="http://schemas.android.com/tools">
+  xmlns:tools="http://schemas.android.com/tools"
+  package="com.mixmind.slidingpuzzle">
   <uses-permission android:name="android.permission.INTERNET" />
   <!-- Prevent react-native-blob-util from adding broad gallery read access. -->
   <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove" />

@@ -84,7 +84,7 @@ android {
         abortOnError = false
         checkReleaseBuilds = false
     }
-    namespace = "com.tenantmanager"
+    namespace = "com.mixmind.slidingpuzzle"
 
     defaultConfig {
         applicationId = "com.mixmind.slidingpuzzle"
