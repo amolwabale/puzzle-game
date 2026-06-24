@@ -94,6 +94,7 @@ export default function SlidingPuzzle() {
     setBoard(solved.slice());
     setMoves(0);
     setSeconds(0);
+    try { void trackEvent('game_reset'); } catch {}
   }
 
   function handleTilePress(index: number) {
@@ -247,6 +248,7 @@ export default function SlidingPuzzle() {
             setBoard(b);
             setMoves(0);
             setSeconds(0);
+            try { void trackEvent('shuffle'); } catch {}
           }}>
           <Text style={[styles.buttonText, styles.buttonTextPrimary]}>Shuffle</Text>
         </TouchableOpacity>
