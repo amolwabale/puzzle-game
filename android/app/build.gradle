@@ -87,7 +87,7 @@ android {
     namespace = "com.tenantmanager"
 
     defaultConfig {
-        applicationId = "com.tenantmanager"
+        applicationId = "com.mixmind.slidingpuzzle"
         minSdk = rootProject.ext.minSdkVersion
         targetSdk = rootProject.ext.targetSdkVersion
         versionCode = 8

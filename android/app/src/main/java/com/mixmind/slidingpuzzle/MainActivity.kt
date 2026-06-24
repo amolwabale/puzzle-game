@@ -1,4 +1,4 @@
-package com.tenantmanager
+package com.mixmind.slidingpuzzle
 
 import android.os.Bundle
 import com.facebook.react.ReactActivity
@@ -10,23 +10,14 @@ import com.zoontek.rnbootsplash.RNBootSplash
 
 class MainActivity : ReactActivity() {
 
-  /**
-   * Returns the name of the main component registered from JavaScript. This is used to schedule
-   * rendering of the component.
-   */
   override fun getMainComponentName(): String = "TenantManager"
 
   override fun onCreate(savedInstanceState: Bundle?) {
-    // react-native-screens >= 4.16
     supportFragmentManager.fragmentFactory = RNScreensFragmentFactory()
     RNBootSplash.init(this, R.style.BootTheme)
     super.onCreate(savedInstanceState)
   }
 
-  /**
-   * Returns the instance of the [ReactActivityDelegate]. We use [DefaultReactActivityDelegate]
-   * which allows you to enable New Architecture with a single boolean flags [fabricEnabled]
-   */
   override fun createReactActivityDelegate(): ReactActivityDelegate =
       DefaultReactActivityDelegate(this, mainComponentName, fabricEnabled)
 }

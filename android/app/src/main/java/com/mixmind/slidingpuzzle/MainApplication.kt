@@ -1,4 +1,4 @@
-package com.tenantmanager
+package com.mixmind.slidingpuzzle
 
 import android.app.Application
 import com.facebook.react.PackageList
