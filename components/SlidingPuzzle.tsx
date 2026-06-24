@@ -1,4 +1,5 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
+import {trackEvent} from '../service/analyticsTracker';
 import {
   View,
   Text,
@@ -104,6 +105,12 @@ export default function SlidingPuzzle() {
     const newMoves = moves + 1;
     setBoard(next);
     setMoves(newMoves);
+    try {
+      const movedValue = next[empty];
+      void trackEvent('tile_click', {tile: movedValue, moves: newMoves});
+    } catch (e) {
+      // ignore analytics failure
+    }
     if (isSolved(next)) {
       // trigger win animation then show results
       triggerWinAnimation(newMoves, seconds);
@@ -113,6 +120,11 @@ export default function SlidingPuzzle() {
   function triggerWinAnimation(finalMoves: number, finalSeconds: number) {
     // persist result immediately
     void saveRecord(finalMoves, finalSeconds);
+    try {
+      void trackEvent('game_win', {moves: finalMoves, seconds: finalSeconds});
+    } catch (e) {
+      // ignore
+    }
     setShowWin(true);
     // reset anim values
     starAnims.forEach(a => a.setValue(0));
