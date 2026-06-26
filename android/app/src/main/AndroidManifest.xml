@@ -2,6 +2,9 @@
   xmlns:tools="http://schemas.android.com/tools"
   package="com.mixmind.slidingpuzzle">
   <uses-permission android:name="android.permission.INTERNET" />
+  <!-- Prevent Google Play services/Firebase libraries from adding advertising ID access. -->
+  <uses-permission android:name="com.google.android.gms.permission.AD_ID" tools:node="remove" />
+  <uses-permission android:name="android.permission.ACCESS_ADSERVICES_AD_ID" tools:node="remove" />
   <!-- Prevent react-native-blob-util from adding broad gallery read access. -->
   <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove" />
   <!-- Required only when saving files on Android 9 and below. -->
