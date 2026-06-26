@@ -57,6 +57,13 @@ react {
     autolinkLibrariesWithApp()
 }
 
+// Load keystore properties if present (keystore.properties placed at android/keystore.properties)
+def keystorePropertiesFile = rootProject.file('android/keystore.properties')
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 /**
  * Set this to true to Run Proguard on Release builds to minify the Java bytecode.
  */
@@ -102,10 +109,23 @@ android {
             keyPassword = 'android'
         }
         release {
-            storeFile file(MYAPP_RELEASE_STORE_FILE)
-            storePassword MYAPP_RELEASE_STORE_PASSWORD
-            keyAlias MYAPP_RELEASE_KEY_ALIAS
-            keyPassword MYAPP_RELEASE_KEY_PASSWORD
+            if (keystorePropertiesFile.exists()) {
+                storeFile file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            } else if (project.hasProperty('MYAPP_RELEASE_STORE_FILE') && MYAPP_RELEASE_STORE_FILE) {
+                storeFile file(MYAPP_RELEASE_STORE_FILE)
+                storePassword MYAPP_RELEASE_STORE_PASSWORD
+                keyAlias MYAPP_RELEASE_KEY_ALIAS
+                keyPassword MYAPP_RELEASE_KEY_PASSWORD
+            } else {
+                // Fallback to debug keystore for local testing when no release keystore is provided
+                storeFile = file('debug.keystore')
+                storePassword = 'android'
+                keyAlias = 'androiddebugkey'
+                keyPassword = 'android'
+            }
         }
     }
 

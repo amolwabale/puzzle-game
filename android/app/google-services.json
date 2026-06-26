@@ -1,67 +1,26 @@
 {
   "project_info": {
-    "project_number": "753719167263",
-    "project_id": "tenantmanager-4d6ee",
-    "storage_bucket": "tenantmanager-4d6ee.firebasestorage.app"
+    "project_number": "253040200058",
+    "project_id": "sliding-puzzle-35027",
+    "storage_bucket": "sliding-puzzle-35027.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:753719167263:android:09446c8d77253df762c82a",
+        "mobilesdk_app_id": "1:253040200058:android:902d2d9c0ea90b51afeec3",
         "android_client_info": {
-          "package_name": "com.tenantmanager"
+          "package_name": "com.mixmind.slidingpuzzle"
         }
       },
-      "oauth_client": [
-        {
-          "client_id": "753719167263-6mea5ucdbvafi0gpen8u1kb9cmjsditd.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.tenantmanager",
-            "certificate_hash": "ebefc6e4526afcd490dea4ed483aaeb7fe5e5ac2"
-          }
-        },
-        {
-          "client_id": "753719167263-6pqr4f8bq7bkfph2bp95sdmsv2urah0e.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.tenantmanager",
-            "certificate_hash": "1f1cd62c3d4e8ed654dcbdf02789aafb71e9e1af"
-          }
-        },
-        {
-          "client_id": "753719167263-r12rm60qtb67ccll9su63q7lftk6blev.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.tenantmanager",
-            "certificate_hash": "fd2def942477bc6baa75754b866bf219fac819bb"
-          }
-        },
-        {
-          "client_id": "753719167263-rcrvp92iv87d2r0mg55jnmihmr580qi8.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
+      "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyB93Jzf8OW_bHpDrtMib5i5a-Vhv242WF4"
+          "current_key": "AIzaSyCkzd6gx6KrlAOjnH99QbNT7zLxXm3-vUw"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "753719167263-rcrvp92iv87d2r0mg55jnmihmr580qi8.apps.googleusercontent.com",
-              "client_type": 3
-            },
-            {
-              "client_id": "753719167263-ga45v1ork0l9hjrg22g4048kcp736294.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "org.reactjs.native.example.TenantManager"
-              }
-            }
-          ]
+          "other_platform_oauth_client": []
         }
       }
     }

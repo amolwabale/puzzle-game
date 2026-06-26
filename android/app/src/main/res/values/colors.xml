@@ -1,3 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="bootsplash_background">#ffffff</color>
+  <color name="ic_launcher_background">#071133</color>
+  <!-- Required by react-native-bootsplash and native launch theme -->
+  <color name="bootsplash_background">#071133</color>
 </resources>

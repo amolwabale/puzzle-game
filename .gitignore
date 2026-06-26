@@ -36,6 +36,10 @@ local.properties
 !debug.keystore
 .kotlin/
 
+# Local keystore and signing properties - do not commit
+android/keystore.properties
+android/release-keystore.jks
+
 # node.js
 #
 node_modules/

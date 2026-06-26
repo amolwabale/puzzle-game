@@ -11,6 +11,8 @@ import {
   Easing,
   Modal,
   FlatList,
+  NativeModules,
+  Platform,
 } from 'react-native';
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import BootSplash from 'react-native-bootsplash';
@@ -18,6 +20,56 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const GRID = 3;
 const SIZE = GRID * GRID;
+type TileStrobeKind = 'success' | 'error';
+
+const TileSound = NativeModules.TileSound as
+  | {
+      playTileShuffleSound?: () => void;
+      playTileErrorSound?: () => void;
+      playGameStartSound?: () => void;
+      playGameWinSound?: () => void;
+    }
+  | undefined;
+
+function playTileShuffleSound() {
+  if (Platform.OS !== 'android') return;
+
+  try {
+    TileSound?.playTileShuffleSound?.();
+  } catch (e) {
+    // Sound should never interrupt gameplay.
+  }
+}
+
+function playTileErrorSound() {
+  if (Platform.OS !== 'android') return;
+
+  try {
+    TileSound?.playTileErrorSound?.();
+  } catch (e) {
+    // Sound should never interrupt gameplay.
+  }
+}
+
+function playGameStartSound() {
+  if (Platform.OS !== 'android') return;
+
+  try {
+    TileSound?.playGameStartSound?.();
+  } catch (e) {
+    // Sound should never interrupt gameplay.
+  }
+}
+
+function playGameWinSound() {
+  if (Platform.OS !== 'android') return;
+
+  try {
+    TileSound?.playGameWinSound?.();
+  } catch (e) {
+    // Sound should never interrupt gameplay.
+  }
+}
 
 function idxToPos(index: number) {
   return {row: Math.floor(index / GRID), col: index % GRID};
@@ -43,6 +95,8 @@ export default function SlidingPuzzle() {
   const [seconds, setSeconds] = useState(0);
   const [showWin, setShowWin] = useState(false);
   const starAnims = useRef(Array.from({length: 3}, () => new Animated.Value(0))).current;
+  const tileStrobeAnims = useRef(Array.from({length: SIZE}, () => new Animated.Value(0))).current;
+  const [tileStrobeColors, setTileStrobeColors] = useState<Record<number, string>>({});
   const [records, setRecords] = useState<Array<{moves:number;seconds:number;at:string}>>([]);
   const [recordsVisible, setRecordsVisible] = useState(false);
   const {width: windowWidth} = useWindowDimensions();
@@ -69,6 +123,7 @@ export default function SlidingPuzzle() {
     } catch (e) {
       // ignore if bootsplash not configured
     }
+    playGameStartSound();
   }, []);
 
   useEffect(() => {
@@ -94,18 +149,70 @@ export default function SlidingPuzzle() {
     setBoard(solved.slice());
     setMoves(0);
     setSeconds(0);
+    playGameStartSound();
     try { void trackEvent('game_reset'); } catch {}
+  }
+
+  function triggerTileStrobe(index: number, kind: TileStrobeKind) {
+    const anim = tileStrobeAnims[index];
+    const color =
+      kind === 'success'
+        ? 'rgba(34, 197, 94, 0.82)'
+        : 'rgba(248, 113, 113, 0.86)';
+
+    setTileStrobeColors(colors => ({...colors, [index]: color}));
+    anim.stopAnimation();
+    anim.setValue(0);
+
+    Animated.sequence([
+      Animated.timing(anim, {
+        toValue: 1,
+        duration: 70,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+      Animated.timing(anim, {
+        toValue: 0.28,
+        duration: 55,
+        easing: Easing.inOut(Easing.quad),
+        useNativeDriver: true,
+      }),
+      Animated.timing(anim, {
+        toValue: 0.78,
+        duration: 60,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+      Animated.timing(anim, {
+        toValue: 0,
+        duration: kind === 'success' ? 170 : 210,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setTileStrobeColors(colors => {
+        const next = {...colors};
+        delete next[index];
+        return next;
+      });
+    });
   }
 
   function handleTilePress(index: number) {
     const empty = board.indexOf(0);
-    if (!canMove(empty, index)) return;
+    if (!canMove(empty, index)) {
+      triggerTileStrobe(index, 'error');
+      playTileErrorSound();
+      return;
+    }
     const next = board.slice();
     next[empty] = next[index];
     next[index] = 0;
     const newMoves = moves + 1;
     setBoard(next);
     setMoves(newMoves);
+    triggerTileStrobe(empty, 'success');
+    playTileShuffleSound();
     try {
       const movedValue = next[empty];
       void trackEvent('tile_click', {tile: movedValue, moves: newMoves});
@@ -126,6 +233,7 @@ export default function SlidingPuzzle() {
     } catch (e) {
       // ignore
     }
+    playGameWinSound();
     setShowWin(true);
     // reset anim values
     starAnims.forEach(a => a.setValue(0));
@@ -193,6 +301,11 @@ export default function SlidingPuzzle() {
               const val = board[i];
               const isLastCol = col === GRID - 1;
               const isLastRow = row === GRID - 1;
+              const strobeColor = tileStrobeColors[i];
+              const strobeScale = tileStrobeAnims[i].interpolate({
+                inputRange: [0, 1],
+                outputRange: [0.88, 1.08],
+              });
               return (
                 <TouchableOpacity
                   key={i}
@@ -208,6 +321,20 @@ export default function SlidingPuzzle() {
                       marginBottom: isLastRow ? 0 : tileGap,
                     },
                   ]}>
+                  {strobeColor ? (
+                    <Animated.View
+                      pointerEvents="none"
+                      style={[
+                        styles.tileStrobe,
+                        {
+                          backgroundColor: strobeColor,
+                          borderColor: strobeColor,
+                          opacity: tileStrobeAnims[i],
+                          transform: [{scale: strobeScale}],
+                        },
+                      ]}
+                    />
+                  ) : null}
                   {val !== 0 ? (
                     <Text style={[styles.tileText, {fontSize: Math.max(18, Math.round(tileSize * 0.36))}]}> 
                       {val}
@@ -248,11 +375,14 @@ export default function SlidingPuzzle() {
             setBoard(b);
             setMoves(0);
             setSeconds(0);
+            playTileShuffleSound();
             try { void trackEvent('shuffle'); } catch {}
           }}>
           <Text style={[styles.buttonText, styles.buttonTextPrimary]}>Shuffle</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.button} onPress={() => { loadRecords(); setRecordsVisible(true); }}>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => { loadRecords(); setRecordsVisible(true); try { void trackEvent('records_open'); } catch {} }}>
           <Text style={styles.buttonText}>Records</Text>
         </TouchableOpacity>
       </View>
@@ -340,6 +470,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
+    overflow: 'hidden',
   },
   empty: {
     backgroundColor: 'transparent',
@@ -348,6 +479,16 @@ const styles = StyleSheet.create({
     color: '#e6e6e6',
     fontSize: 28,
     fontWeight: '700',
+  },
+  tileStrobe: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 8,
+    borderWidth: 2,
+    shadowColor: '#ffffff',
+    shadowOffset: {width: 0, height: 0},
+    shadowOpacity: 0.7,
+    shadowRadius: 10,
+    elevation: 6,
   },
   infoRow: {
     flexDirection: 'row',

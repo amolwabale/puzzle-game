@@ -1,5 +1,5 @@
 {
-  "name": "TenantManager",
+  "name": "sliding-puzzle",
   "version": "0.0.1",
   "private": true,
   "scripts": {
@@ -15,7 +15,8 @@
     "update-ios": "cd ios && pod install && cd ..",
     "bump-android-version-code": "node scripts/bumpAndroidVersionCode.js",
     "update-android": "npm run bump-android-version-code && cd android && ./gradlew clean && cd ..",
-    "android:nuke": "rm -rf android/.cxx android/app/.cxx android/build android/app/build && rm -rf ~/.gradle/caches && cd android && ./gradlew clean && cd .."
+    "android:nuke": "rm -rf android/.cxx android/app/.cxx android/build android/app/build && rm -rf ~/.gradle/caches && cd android && ./gradlew clean && cd ..",
+    "generate-icons": "node scripts/generate-icons.js"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^2.2.0",
@@ -74,6 +75,7 @@
     "prettier": "2.8.8",
     "react-native-make": "^1.0.1",
     "react-test-renderer": "19.2.0",
+    "sharp": "^0.35.2",
     "typescript": "^5.8.3"
   },
   "engines": {
