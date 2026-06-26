@@ -22,6 +22,17 @@ const GRID = 3;
 const SIZE = GRID * GRID;
 type TileStrobeKind = 'success' | 'error';
 
+const tileColors = [
+  '#22d3ee',
+  '#a78bfa',
+  '#f472b6',
+  '#fbbf24',
+  '#34d399',
+  '#60a5fa',
+  '#fb7185',
+  '#c084fc',
+];
+
 const TileSound = NativeModules.TileSound as
   | {
       playTileShuffleSound?: () => void;
@@ -290,8 +301,15 @@ export default function SlidingPuzzle() {
 
   return (
     <SafeAreaView style={[styles.container, {paddingTop: Math.max(12, insets.top)}]}>
+      <View pointerEvents="none" style={styles.bgBubbleOne} />
+      <View pointerEvents="none" style={styles.bgBubbleTwo} />
+      <View pointerEvents="none" style={styles.bgBubbleThree} />
+
+      <View style={styles.heroBadge}>
+        <Text style={styles.heroBadgeText}>🧠 Brainy Fun</Text>
+      </View>
       <Text style={styles.title}>Sliding Puzzle</Text>
-      <Text style={styles.subtitle}>Slide tiles to order them — it's a brainy quick challenge.</Text>
+      <Text style={styles.subtitle}>Slide • Think • Win — a colorful puzzle challenge for curious minds.</Text>
 
       <View style={[styles.board, {width: boardSize, padding: boardPadding}]}> 
         {Array.from({length: GRID}).map((_, row) => (
@@ -314,6 +332,9 @@ export default function SlidingPuzzle() {
                   style={[
                     styles.tile,
                     val === 0 && styles.empty,
+                    val !== 0 && {
+                      backgroundColor: tileColors[(val - 1) % tileColors.length],
+                    },
                     {
                       width: tileSize,
                       height: tileSize,
@@ -348,12 +369,18 @@ export default function SlidingPuzzle() {
       </View>
 
       <View style={styles.infoRow}>
-        <Text style={styles.info}>Moves: {moves}</Text>
-        <Text style={styles.info}>Time: {seconds}s</Text>
+        <View style={styles.scorePill}>
+          <Text style={styles.scoreLabel}>Moves</Text>
+          <Text style={styles.scoreValue}>{moves}</Text>
+        </View>
+        <View style={styles.scorePill}>
+          <Text style={styles.scoreLabel}>Time</Text>
+          <Text style={styles.scoreValue}>{seconds}s</Text>
+        </View>
       </View>
 
       <View style={styles.controls}>
-        <TouchableOpacity style={styles.button} onPress={() => reset()}>
+        <TouchableOpacity style={[styles.button, styles.resetButton]} onPress={() => reset()}>
           <Text style={styles.buttonText}>Reset</Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -381,13 +408,13 @@ export default function SlidingPuzzle() {
           <Text style={[styles.buttonText, styles.buttonTextPrimary]}>Shuffle</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={styles.button}
+          style={[styles.button, styles.recordsButton]}
           onPress={() => { loadRecords(); setRecordsVisible(true); try { void trackEvent('records_open'); } catch {} }}>
           <Text style={styles.buttonText}>Records</Text>
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.footer}>Tap tiles adjacent to the empty space to move them.</Text>
+      <Text style={styles.footer}>✨ Tap a tile next to the empty space and make the board sparkle!</Text>
 
       <Modal visible={showWin} transparent animationType="fade">
         <View style={styles.winOverlay} pointerEvents="none">
@@ -441,44 +468,119 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     padding: 20,
-    backgroundColor: '#0f172a',
+    backgroundColor: '#0ea5e9',
+    overflow: 'hidden',
+  },
+  bgBubbleOne: {
+    position: 'absolute',
+    width: 260,
+    height: 260,
+    borderRadius: 130,
+    backgroundColor: 'rgba(250, 204, 21, 0.42)',
+    top: -90,
+    left: -70,
+  },
+  bgBubbleTwo: {
+    position: 'absolute',
+    width: 310,
+    height: 310,
+    borderRadius: 155,
+    backgroundColor: 'rgba(167, 139, 250, 0.34)',
+    right: -110,
+    top: 90,
+  },
+  bgBubbleThree: {
+    position: 'absolute',
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    backgroundColor: 'rgba(52, 211, 153, 0.28)',
+    bottom: -80,
+    left: 26,
+  },
+  heroBadge: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255, 255, 255, 0.94)',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.72)',
+    shadowColor: '#075985',
+    shadowOffset: {width: 0, height: 5},
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  heroBadgeText: {
+    color: '#0f172a',
+    fontSize: 13,
+    fontWeight: '900',
   },
   title: {
-    color: '#f8fafc',
-    fontSize: 32,
-    fontWeight: '800',
-    marginTop: 8,
+    color: '#ffffff',
+    fontSize: 38,
+    fontWeight: '900',
+    marginTop: 10,
+    letterSpacing: 0.2,
+    textShadowColor: 'rgba(7, 89, 133, 0.45)',
+    textShadowOffset: {width: 0, height: 3},
+    textShadowRadius: 8,
   },
   subtitle: {
-    color: '#cbd5e1',
-    fontSize: 14,
+    color: '#ecfeff',
+    fontSize: 15,
+    fontWeight: '700',
     marginTop: 6,
     marginBottom: 18,
     textAlign: 'center',
     maxWidth: 420,
+    lineHeight: 21,
+    textShadowColor: 'rgba(8, 47, 73, 0.26)',
+    textShadowOffset: {width: 0, height: 1},
+    textShadowRadius: 4,
   },
   board: {
-    borderRadius: 12,
-    backgroundColor: '#0b1220',
+    borderRadius: 28,
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+    borderWidth: 5,
+    borderColor: 'rgba(255, 255, 255, 0.9)',
+    shadowColor: '#075985',
+    shadowOffset: {width: 0, height: 14},
+    shadowOpacity: 0.24,
+    shadowRadius: 22,
+    elevation: 12,
   },
   row: {
     flexDirection: 'row',
   },
   tile: {
     margin: 0,
-    backgroundColor: '#1f2937',
-    borderRadius: 8,
+    backgroundColor: '#22d3ee',
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
+    borderWidth: 0,
+    shadowColor: '#0f172a',
+    shadowOffset: {width: 0, height: 5},
+    shadowOpacity: 0.12,
+    shadowRadius: 7,
+    elevation: 4,
   },
   empty: {
-    backgroundColor: 'transparent',
+    backgroundColor: 'rgba(14, 165, 233, 0.1)',
+    borderWidth: 0,
+    shadowOpacity: 0,
+    elevation: 0,
   },
   tileText: {
-    color: '#e6e6e6',
+    color: '#102033',
     fontSize: 28,
-    fontWeight: '700',
+    fontWeight: '900',
+    zIndex: 2,
+    textShadowColor: 'rgba(255, 255, 255, 0.45)',
+    textShadowOffset: {width: 0, height: 1},
+    textShadowRadius: 2,
   },
   tileStrobe: {
     ...StyleSheet.absoluteFillObject,
@@ -497,6 +599,32 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 24,
   },
+  scorePill: {
+    minWidth: 112,
+    alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.93)',
+    shadowColor: '#075985',
+    shadowOffset: {width: 0, height: 6},
+    shadowOpacity: 0.14,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  scoreLabel: {
+    color: '#0369a1',
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+  },
+  scoreValue: {
+    color: '#0f172a',
+    fontSize: 20,
+    fontWeight: '900',
+    marginTop: 1,
+  },
   info: {
     color: '#cbd5e1',
     fontSize: 16,
@@ -508,24 +636,47 @@ const styles = StyleSheet.create({
   button: {
     paddingVertical: 10,
     paddingHorizontal: 18,
-    borderRadius: 10,
-    backgroundColor: '#111827',
+    borderRadius: 16,
+    backgroundColor: '#f97316',
     marginHorizontal: 8,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.66)',
+    shadowColor: '#0f172a',
+    shadowOffset: {width: 0, height: 6},
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    elevation: 6,
   },
   primary: {
-    backgroundColor: '#06b6d4',
+    backgroundColor: '#facc15',
+  },
+  resetButton: {
+    backgroundColor: '#fb7185',
+  },
+  recordsButton: {
+    backgroundColor: '#8b5cf6',
   },
   buttonText: {
-    color: '#e6e6e6',
-    fontWeight: '700',
+    color: '#ffffff',
+    fontWeight: '900',
+    textShadowColor: 'rgba(15, 23, 42, 0.22)',
+    textShadowOffset: {width: 0, height: 1},
+    textShadowRadius: 2,
   },
   buttonTextPrimary: {
-    color: '#061014',
+    color: '#2b2100',
+    textShadowColor: 'rgba(255, 255, 255, 0.32)',
   },
   footer: {
-    color: '#94a3b8',
+    color: '#f0f9ff',
     marginTop: 18,
-    fontSize: 13,
+    fontSize: 14,
+    fontWeight: '800',
+    textAlign: 'center',
+    maxWidth: 380,
+    textShadowColor: 'rgba(8, 47, 73, 0.28)',
+    textShadowOffset: {width: 0, height: 1},
+    textShadowRadius: 3,
   },
   winOverlay: {
     flex: 1,
